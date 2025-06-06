@@ -1,2 +1,0 @@
-# WonderWall
-MHW unpacking test
