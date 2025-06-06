@@ -15,7 +15,6 @@
 *.so
 *.dylib
 *.dll
-*.db
 
 # Fortran module files
 *.mod
@@ -69,7 +68,6 @@ Saved/*
 
 # Compiled source files for the engine to use
 Intermediate/*
-Binaries/*
 Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
