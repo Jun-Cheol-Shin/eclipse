@@ -39,12 +39,12 @@ void UEcpGameLayout::OnChangedTransitioning(UCommonActivatableWidgetContainerBas
 {
 	if (true == bIsTransitioning)
 	{
-
+		// disable input ?
 	}
 
 	else
 	{
-
+		// enable input ?
 	}
 
 }
