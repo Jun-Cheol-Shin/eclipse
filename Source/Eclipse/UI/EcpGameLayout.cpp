@@ -6,6 +6,16 @@
 #include "CommonUI/Public/Widgets/CommonActivatableWidgetContainer.h"
 #include "CommonActivatableWidget.h"
 
+UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLayer InLayer)
+{
+	if (Layers.Contains(InLayer))
+	{
+		return Layers.FindRef(InLayer);
+	}
+
+	return nullptr;
+}
+
 /*static*/ UEcpGameLayout* UEcpGameLayout::GetGameLayout(APlayerController* InPlayerController)
 {
 	// TODO : Get Owning Layout
