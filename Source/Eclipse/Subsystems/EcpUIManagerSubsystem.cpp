@@ -88,6 +88,8 @@ void UEcpUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UEcpUIManagerSubsystem::Deinitialize()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Deinitialize UIManager."));
+
+	PlayerViewportGameLayouts.Reset();
 }
 
 
