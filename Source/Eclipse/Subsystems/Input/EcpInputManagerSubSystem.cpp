@@ -2,18 +2,22 @@
 
 
 #include "EcpInputManagerSubSystem.h"
+#include "EcpInputProcessor.h"
 
-bool UEcpInputManagerSubSystem::ShouldCreateSubsystem(UObject* Outer) const
-{
-	return false;
-}
 
 void UEcpInputManagerSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Initialize InputManager."));
+
+	InputProcessor = MakeShareable<FEcpInputProcessor>(new FEcpInputProcessor());
+
 }
 
 void UEcpInputManagerSubSystem::Deinitialize()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Deinitialize InputManager."));
+
+
+	InputProcessor.Reset();
+	InputProcessor = nullptr;
 }

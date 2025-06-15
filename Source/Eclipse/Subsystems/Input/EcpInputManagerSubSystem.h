@@ -9,6 +9,9 @@
 /**
  * 
  */
+
+class FEcpInputProcessor;
+
 UCLASS()
 class ECLIPSE_API UEcpInputManagerSubSystem : public ULocalPlayerSubsystem
 {
@@ -16,7 +19,11 @@ class ECLIPSE_API UEcpInputManagerSubSystem : public ULocalPlayerSubsystem
 	
 	
 protected:
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+
+private:
+	TSharedPtr<FEcpInputProcessor> InputProcessor = nullptr;
 };
