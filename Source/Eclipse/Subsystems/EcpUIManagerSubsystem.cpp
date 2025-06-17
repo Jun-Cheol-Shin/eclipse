@@ -61,23 +61,16 @@ void UEcpUIManagerSubsystem::NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer)
 
 bool UEcpUIManagerSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
-    if (!Super::ShouldCreateSubsystem(Outer))
-    {
-        return false;
-    }
+	if (!CastChecked<UGameInstance>(Outer)->IsDedicatedServerInstance())
+	{
+		TArray<UClass*> ChildClasses;
+		GetDerivedClasses(GetClass(), ChildClasses, false);
 
-    /*
-    UWorld* World = Cast<UWorld>(Outer);
-    return World->GetNetMode() < NM_Client;*/
+		// Only create an instance if there is no override implementation defined elsewhere
+		return ChildClasses.Num() == 0;
+	}
 
-// only possible create from server?
-
-#if UE_SERVER
-    return Super::ShouldCreateSubsystem(Outer);
-#else
-    return false;
-#endif
-
+	return false;
 }
 
 void UEcpUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)

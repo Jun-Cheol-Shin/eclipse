@@ -11,12 +11,15 @@ void UEcpInputManagerSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	InputProcessor = MakeShareable<FEcpInputProcessor>(new FEcpInputProcessor());
 
+	FSlateApplication::Get().RegisterInputPreProcessor(InputProcessor);
+
 }
 
 void UEcpInputManagerSubSystem::Deinitialize()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Deinitialize InputManager."));
 
+	FSlateApplication::Get().UnregisterInputPreProcessor(InputProcessor);
 
 	InputProcessor.Reset();
 	InputProcessor = nullptr;
