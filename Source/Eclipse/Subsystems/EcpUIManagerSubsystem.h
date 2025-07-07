@@ -11,49 +11,50 @@ class UEcpGameLayout;
 
 
 USTRUCT()
-struct FLocalPlayerInfo
+struct FRootViewportLayoutInfo
 {
 	GENERATED_BODY()
 
 public:
-	FLocalPlayerInfo() {};
-	FLocalPlayerInfo(int32 InContId, const FPlatformUserId& InUserId) : ControllerId(InContId), PlatformUserId(InUserId) {}
+	UPROPERTY(Transient)
+	TObjectPtr<ULocalPlayer> LocalPlayer = nullptr;
 
-public:
-	int32 ControllerId = -1;
-	FPlatformUserId PlatformUserId{};
+	UPROPERTY(Transient)
+	TObjectPtr<UEcpGameLayout> RootLayout = nullptr;
 
-	bool operator==(const FLocalPlayerInfo& OtherInfo) const { return OtherInfo.ControllerId == this->ControllerId || OtherInfo.PlatformUserId == this->PlatformUserId; }
+	UPROPERTY(Transient)
+	bool bAddedToViewport = false;
 
-	friend uint32 GetTypeHash(const FLocalPlayerInfo& OtherInfo)
+	FRootViewportLayoutInfo() {}
+	FRootViewportLayoutInfo(ULocalPlayer* InLocalPlayer, UEcpGameLayout* InRootLayout, bool bIsInViewport)
+		: LocalPlayer(InLocalPlayer)
+		, RootLayout(InRootLayout)
+		, bAddedToViewport(bIsInViewport)
 	{
-		uint32 Hash = FCrc::MemCrc32(&OtherInfo, sizeof(FLocalPlayerInfo));
-		return Hash;
 	}
+
+	bool operator==(const ULocalPlayer* OtherLocalPlayer) const { return LocalPlayer == OtherLocalPlayer; }
 };
 
 
 
-UCLASS()
+UCLASS(Config = Game)
 class ECLIPSE_API UEcpUIManagerSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
 public:
-
+	//void Show()
 
 protected:
-	// ULocalPlayer Event
 	void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);
-	void OnChangedControllerId(int32 InNewId, int32 InOldId);
+	void OnPlayerControllerChanged(APlayerController* InController);
 
 private:
-	// TODO : friend class UGameInstance........
+	friend class UEcpGameInstance;
 
 	void NotifyPlayerAdded(ULocalPlayer* LocalPlayer);
 	void NotifyPlayerRemoved(ULocalPlayer* LocalPlayer);
-	void NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer);
-
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
@@ -65,9 +66,16 @@ protected:
 	virtual void Deinitialize() override;
 
 
+private:
+	void CreateGameLayout(APlayerController* InNewController);
+	void AddLayoutInViewport(ULocalPlayer* InLocalPlayer, UEcpGameLayout* InLayout);
+
 
 private:
 	UPROPERTY(Transient)
-	TMap<FLocalPlayerInfo, UEcpGameLayout*> PlayerViewportGameLayouts;
+	TMap<FPlatformUserId, FRootViewportLayoutInfo> PlayerViewportGameLayouts;
+
+	UPROPERTY(Config, EditAnywhere)
+	TSoftClassPtr<UEcpGameLayout> LayoutClass;
 	
 };

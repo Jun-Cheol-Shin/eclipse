@@ -18,11 +18,13 @@ class UCommonActivatableWidget;
 UENUM(BlueprintType)
 enum class EEclipseGameLayer : uint8
 {
-	System = 0,
-	Modal,
-	Left_Sheet,
-	Right_Sheet,
-	Window,
+	System = 0,			// System Error Messsage
+	Production,			// Reward, Level Up Production
+	Notify,				// Not Stack, It's a Queue Container. ex. In Game Message, Success enchant, Get Rare Item)
+	Modal,				// Modal Popup Layer
+	Left_Sheet,			// NPC Interaction UI
+	Right_Sheet,		// Diablo Inventory Layer
+	Window,				// Main HUD & Contents Window Widget
 };
 
 UENUM()
@@ -44,7 +46,6 @@ public:
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, ActivatableWidgetT*)> StateFunc)
 	{
 		//static_assert(TIsDerivedFrom<ActivatableWidgetT, UCommonActivatableWidget>::IsDerived, "Only CommonActivatableWidgets can be used here");
-
 		//const FName SuspendInputToken = bSuspendInputUntilComplete ? UCommonUIExtensions::SuspendInputForPlayer(GetOwningPlayer(), NAME_PushingWidgetToLayer) : NAME_None;
 
 

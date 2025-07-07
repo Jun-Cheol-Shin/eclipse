@@ -33,12 +33,10 @@ UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLay
 
 void UEcpGameLayout::OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget)
 {
-	// RegistGameLayer이 호출 된 후 바로 호출?
-	if (nullptr == InWidget) return;
+	if (!ensure(InWidget && OnCompleteDisplayedWidget.IsBound())) return;
 
 	for (auto& [Layer, Container] : Layers)
 	{
-		// 완전 탐색으로 어떤 레이어인지 찾아야 함 (개선 필요)
 		if (Container->GetWidgetList().Contains(InWidget))
 		{
 			OnCompleteDisplayedWidget.ExecuteIfBound(Layer, InWidget);
