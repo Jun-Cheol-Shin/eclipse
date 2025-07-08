@@ -11,16 +11,16 @@
 #include "EcpGameLayout.generated.h"
 
 
-class UCommonActivatableWidgetContainerBase;
 class UCommonActivatableWidget;
+class UEcpLayer;
 
 
 UENUM(BlueprintType)
 enum class EEclipseGameLayer : uint8
 {
 	System = 0,			// System Error Messsage
-	Production,			// Reward, Level Up Production
-	Notify,				// Not Stack, It's a Queue Container. ex. In Game Message, Success enchant, Get Rare Item)
+	Production,			// Reward, Level Up, Success enchant, etc...
+	Notify,				// Not Stack, It's a Queue Container. ex. In Game Message, Megaphone)
 	Modal,				// Modal Popup Layer
 	Left_Sheet,			// NPC Interaction UI
 	Right_Sheet,		// Diablo Inventory Layer
@@ -99,25 +99,19 @@ private:
 
 
 public:
-	DECLARE_DELEGATE_TwoParams(FOnCompleteDisplayedWidget, EEclipseGameLayer, UCommonActivatableWidget*);
-		FOnCompleteDisplayedWidget OnCompleteDisplayedWidget;
-
 	static UEcpGameLayout* GetGameLayout(APlayerController* InPlayerController);
 	static UEcpGameLayout* GetGameLayout(ULocalPlayer* InPlayer);
 
 
 protected:
-	// UCommonActivatableWidgetContainerBase Event
-	void OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget);
-	void OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning);
-
+	void OnChangedDisplayedWidget(UCommonActivatableWidget* InDisplayedWidget, UEcpLayer* InLayer);
 
 protected:
 	UFUNCTION(BlueprintCallable)
-	void RegistGameLayer(EEclipseGameLayer InLayer, UCommonActivatableWidgetContainerBase* InContainer);
+	void RegistGameLayer(EEclipseGameLayer InLayerType, UEcpLayer* InLayer);
 	
 private:
 	UPROPERTY(Transient)
-	TMap<EEclipseGameLayer, TObjectPtr<UCommonActivatableWidgetContainerBase>> Layers;
+	TMap<EEclipseGameLayer, UEcpLayer*> Layers;
 	
 };

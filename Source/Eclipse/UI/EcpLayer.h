@@ -3,16 +3,43 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonActivatableWidget.h"
+#include "CommonUserWidget.h"
 #include "EcpLayer.generated.h"
 
-/**
- * 
- */
-UCLASS()
-class ECLIPSE_API UEcpLayer : public UCommonActivatableWidget
+
+class UCommonActivatableWidget;
+class UCommonActivatableWidgetStack;
+class UCommonActivatableWidgetQueue;
+class UCommonActivatableWidgetContainerBase;
+
+
+USTRUCT(BlueprintType)
+struct FEcpLayerUIVariable
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<UCommonActivatableWidgetQueue> WidgetQueue = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	TObjectPtr<UCommonActivatableWidgetStack> WidgetStack = nullptr;
+};
+
+
+
+UCLASS()
+class ECLIPSE_API UEcpLayer : public UCommonUserWidget
+{
+	GENERATED_BODY()
+
+public:
+	DECLARE_DELEGATE_TwoParams(FOnCompleteDisplayedWidget, UCommonActivatableWidget*, UEcpLayer*);
+	FOnCompleteDisplayedWidget OnCompleteDisplayedWidget;
+
+private:
+	void OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget);
+	void OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning);
 
 protected:
 	virtual void OnClick() {};
@@ -35,9 +62,15 @@ private:
 
 private:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeOnInitialized() override;
 
 private:
 	bool bTouchStart = false;
+
+
+protected:
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	FEcpLayerUIVariable UIVariable;
 	
 };

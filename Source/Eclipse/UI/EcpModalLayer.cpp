@@ -9,10 +9,13 @@
 
 void UEcpModalLayer::OnClick()
 {
-	if (UEcpUIManagerSubsystem* UISubsystem = GetGameInstanceChecked().GetSubsystem<UEcpUIManagerSubsystem>())
+	if (nullptr != UIVariable.WidgetQueue)
 	{
-		// todo : Hide
 
+	}
+
+	else if (nullptr != UIVariable.WidgetStack)
+	{
 
 	}
 }
@@ -25,21 +28,10 @@ void UEcpModalLayer::OnConstruct()
 		DefaultColor = BackGroundImage->GetColorAndOpacity();
 	}
 
-	if (ensure(PopupWidget))
-	{
-		PopupWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
+
+	SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UEcpModalLayer::NativeOnActivated()
-{
-	//RegisterScrollRecipient();
-}
-
-void UEcpModalLayer::NativeOnDeactivated()
-{
-	//UnregisterScrollRecipient();
-}
 
 void UEcpModalLayer::SetBlackScreen(bool bIsVisible)
 {

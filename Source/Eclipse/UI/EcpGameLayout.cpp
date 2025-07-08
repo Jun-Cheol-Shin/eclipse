@@ -2,16 +2,17 @@
 
 
 #include "EcpGameLayout.h"
+#include "EcpLayer.h"
 
 #include "CommonUI/Public/Widgets/CommonActivatableWidgetContainer.h"
 #include "CommonActivatableWidget.h"
 
 UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLayer InLayer)
 {
-	if (Layers.Contains(InLayer))
+	/*if (Layers.Contains(InLayer))
 	{
 		return Layers.FindRef(InLayer);
-	}
+	}*/
 
 	return nullptr;
 }
@@ -31,59 +32,38 @@ UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLay
 
 }
 
-void UEcpGameLayout::OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget)
-{
-	// RegistGameLayer이 호출 된 후 바로 호출?
-	if (nullptr == InWidget) return;
 
-	for (auto& [Layer, Container] : Layers)
+void UEcpGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InDisplayedWidget, UEcpLayer* InLayer)
+{
+	const EEclipseGameLayer* LayerTypePtr = Layers.FindKey(InLayer);
+
+	if (ensure(LayerTypePtr))
 	{
-		// 완전 탐색으로 어떤 레이어인지 찾아야 함 (개선 필요)
-		if (Container->GetWidgetList().Contains(InWidget))
-		{
-			OnCompleteDisplayedWidget.ExecuteIfBound(Layer, InWidget);
-			return;
-		}
+		// Find LayerType
+
+		*LayerTypePtr;
+		InDisplayedWidget;
 	}
 }
 
-void UEcpGameLayout::OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning)
-{
-	if (true == bIsTransitioning)
-	{
-		// disable input ?
-	}
-
-	else
-	{
-		// enable input ?
-	}
-
-}
-
-void UEcpGameLayout::RegistGameLayer(EEclipseGameLayer InLayer, UCommonActivatableWidgetContainerBase* InContainer)
+void UEcpGameLayout::RegistGameLayer(EEclipseGameLayer InLayerType, UEcpLayer* InLayer)
 {
 	if (false == IsDesignTime())
 	{
-		if (Layers.Contains(InLayer))
+		if (Layers.Contains(InLayerType))
 		{
-			if (UCommonActivatableWidgetContainerBase* Container = Layers.FindRef(InLayer))
+			if (UEcpLayer* Layer = Layers.FindRef(InLayerType))
 			{
-				Container->OnDisplayedWidgetChanged().RemoveAll(this);
-				Container->OnTransitioningChanged.RemoveAll(this);
+				Layer->OnCompleteDisplayedWidget.Unbind();
 			}
 
-			Layers.Remove(InLayer);
+			Layers.Remove(InLayerType);
 		}
 
-		if (ensure(InContainer))
+		if (ensure(nullptr != InLayer))
 		{
-			//InContainer->SetTransitionDuration(0.f);
-
-			InContainer->OnDisplayedWidgetChanged().AddUObject(this, &UEcpGameLayout::OnDisplayedWidgetChanged);
-			InContainer->OnTransitioningChanged.AddUObject(this, &UEcpGameLayout::OnChangedTransitioning);
-
-			Layers.Emplace(InLayer, InContainer);
+			InLayer->OnCompleteDisplayedWidget;
+			Layers.Emplace(InLayerType, InLayer);
 		}
 	}
 }
