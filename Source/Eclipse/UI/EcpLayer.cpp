@@ -50,6 +50,21 @@ void UEcpLayer::NativeOnInitialized()
 }
 
 
+UCommonActivatableWidgetContainerBase* UEcpLayer::GetActivatableWidgetContainer() const
+{
+	if (nullptr != UIVariable.WidgetQueue)
+	{
+		return UIVariable.WidgetQueue;
+	}
+
+	else if (nullptr != UIVariable.WidgetStack)
+	{
+		return UIVariable.WidgetStack;
+	}
+
+	return nullptr;
+}
+
 void UEcpLayer::OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget)
 {
 	if (nullptr == InWidget) return;

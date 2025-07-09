@@ -37,6 +37,14 @@ public:
 	DECLARE_DELEGATE_TwoParams(FOnCompleteDisplayedWidget, UCommonActivatableWidget*, UEcpLayer*);
 	FOnCompleteDisplayedWidget OnCompleteDisplayedWidget;
 
+	UCommonActivatableWidgetContainerBase* GetActivatableWidgetContainer() const;
+
+protected:
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	FEcpLayerUIVariable UIVariable;
+
+
+	// callback
 private:
 	void OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget);
 	void OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning);
@@ -67,10 +75,4 @@ private:
 
 private:
 	bool bTouchStart = false;
-
-
-protected:
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	FEcpLayerUIVariable UIVariable;
-	
 };

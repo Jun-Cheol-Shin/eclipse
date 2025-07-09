@@ -18,6 +18,7 @@ class ECLIPSE_API UEcpModalLayer : public UEcpLayer
 protected:
 	virtual void OnClick() override;
 	virtual void OnConstruct() override;
+
 private:
 	void SetBlackScreen(bool bIsVisible);
 

@@ -5,18 +5,29 @@
 #include "Components/NamedSlot.h"
 #include "Components/Image.h"
 
+#include "CommonActivatableWidget.h"
+
+#include "Widgets/CommonActivatableWidgetContainer.h"
 #include "../Subsystems/EcpUIManagerSubsystem.h"
 
 void UEcpModalLayer::OnClick()
 {
-	if (nullptr != UIVariable.WidgetQueue)
-	{
+	if (false == ensure(UIVariable.WidgetStack)) return;
 
+	if (UIVariable.WidgetStack->GetNumWidgets() > 0)
+	{
+		UCommonActivatableWidget* const& TopWidget = UIVariable.WidgetStack->GetWidgetList().Top();
+		
+		if (nullptr != TopWidget && nullptr != &TopWidget)
+		{
+			UIVariable.WidgetStack->RemoveWidget(*TopWidget);
+		}
 	}
 
-	else if (nullptr != UIVariable.WidgetStack)
-	{
 
+	if (UIVariable.WidgetStack->GetNumWidgets() <= 0)
+	{
+		SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 

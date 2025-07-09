@@ -40,6 +40,11 @@ UCLASS(meta = (DisableNativeTick))
 class ECLIPSE_API UEcpGameLayout : public UCommonUserWidget
 {
 	GENERATED_BODY()
+
+public:
+	static UEcpGameLayout* GetGameLayout(APlayerController* InPlayerController);
+	static UEcpGameLayout* GetGameLayout(ULocalPlayer* InPlayer);
+
 	
 public:
 	template <typename ActivatableWidgetT = UCommonActivatableWidget>
@@ -96,11 +101,6 @@ public:
 
 private:
 	UCommonActivatableWidgetContainerBase* GetLayout(EEclipseGameLayer InLayer);
-
-
-public:
-	static UEcpGameLayout* GetGameLayout(APlayerController* InPlayerController);
-	static UEcpGameLayout* GetGameLayout(ULocalPlayer* InPlayer);
 
 
 protected:

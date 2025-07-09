@@ -7,15 +7,6 @@
 #include "CommonUI/Public/Widgets/CommonActivatableWidgetContainer.h"
 #include "CommonActivatableWidget.h"
 
-UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLayer InLayer)
-{
-	/*if (Layers.Contains(InLayer))
-	{
-		return Layers.FindRef(InLayer);
-	}*/
-
-	return nullptr;
-}
 
 /*static*/ UEcpGameLayout* UEcpGameLayout::GetGameLayout(APlayerController* InPlayerController)
 {
@@ -39,8 +30,6 @@ void UEcpGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InDispla
 
 	if (ensure(LayerTypePtr))
 	{
-		// Find LayerType
-
 		*LayerTypePtr;
 		InDisplayedWidget;
 	}
@@ -62,8 +51,18 @@ void UEcpGameLayout::RegistGameLayer(EEclipseGameLayer InLayerType, UEcpLayer* I
 
 		if (ensure(nullptr != InLayer))
 		{
-			InLayer->OnCompleteDisplayedWidget;
+			InLayer->OnCompleteDisplayedWidget.BindUObject(this, &UEcpGameLayout::OnChangedDisplayedWidget);
 			Layers.Emplace(InLayerType, InLayer);
 		}
 	}
+}
+
+UCommonActivatableWidgetContainerBase* UEcpGameLayout::GetLayout(EEclipseGameLayer InLayer)
+{
+	if (UEcpLayer* EcpLayer = Layers.FindRef(InLayer))
+	{
+		return EcpLayer->GetActivatableWidgetContainer();
+	}
+
+	return nullptr;
 }
