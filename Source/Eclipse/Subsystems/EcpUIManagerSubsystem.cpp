@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EcpUIManagerSubsystem.h"
-#include "../UI/EcpGameLayout.h"
+#include "../UI/LayerWidgetRegistryAsset.h"
 
 void UEcpUIManagerSubsystem::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
 {
@@ -47,6 +47,7 @@ void UEcpUIManagerSubsystem::NotifyPlayerRemoved(ULocalPlayer* LocalPlayer)
 		LayoutInfo->bAddedToViewport = false;
 		
 		TObjectPtr<UEcpGameLayout> GameLayout = LayoutInfo->RootLayout;
+
 		if (nullptr != GameLayout)
 		{
 			GameLayout->RemoveFromParent();
@@ -76,11 +77,23 @@ void UEcpUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	UE_LOG(LogTemp, Warning, TEXT("Initialize UIManager."));
 
 	PlayerViewportGameLayouts.Reset();
+	//TSubclassOf<ULayerWidgetRegistryAsset> RegistryAssetSubClass = WidgetRegistryAssetSoftPtr.LoadSynchronous();
+
+	if (WidgetRegistryAssetSoftPtr.ToSoftObjectPath().IsValid())
+	{
+		RegistryAsset = WidgetRegistryAssetSoftPtr.LoadSynchronous();
+
+		/*if (ensure(RegistryAsset && RegistryAsset->GetLayerWidgetNum(EEclipseGameLayer::System) > 0))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Success"));
+		}*/
+	}
+
 }
 
 void UEcpUIManagerSubsystem::Deinitialize()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Deinitialize UIManager."));
+	RegistryAsset = nullptr;
 
 	for (auto& [PlatformId, Layout] : PlayerViewportGameLayouts)
 	{
@@ -92,6 +105,8 @@ void UEcpUIManagerSubsystem::Deinitialize()
 	}
 
 	PlayerViewportGameLayouts.Empty();
+
+	UE_LOG(LogTemp, Warning, TEXT("Deinitialize UIManager."));
 }
 
 void UEcpUIManagerSubsystem::CreateGameLayout(APlayerController* InNewController)
@@ -130,6 +145,25 @@ void UEcpUIManagerSubsystem::AddLayoutInViewport(ULocalPlayer* InLocalPlayer, UE
 		}
 	}
 
+}
+
+bool UEcpUIManagerSubsystem::GetOwningLayoutInfo(OUT FRootViewportLayoutInfo& OutInfo) const
+{
+	if (false == ensure(GetGameInstance())) return false;
+
+	ULocalPlayer* MyLocalPlayer = GetGameInstance()->GetFirstGamePlayer();
+	if (ensure(MyLocalPlayer))
+	{
+		if (PlayerViewportGameLayouts.Contains(MyLocalPlayer->GetPlatformUserId()))
+		{
+			OutInfo = PlayerViewportGameLayouts.FindRef(MyLocalPlayer->GetPlatformUserId());
+
+			return true;
+		}
+
+	}
+
+	return false;
 }
 
 void UEcpUIManagerSubsystem::OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId)

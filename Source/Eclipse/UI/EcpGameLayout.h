@@ -4,13 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-
-#include "Engine/StreamableManager.h"
-#include "Widgets/CommonActivatableWidgetContainer.h"
-
 #include "EcpGameLayout.generated.h"
 
 
+struct FStreamableHandle;
+class UCommonActivatableWidgetContainerBase;
 class UCommonActivatableWidget;
 class UEcpLayer;
 
@@ -41,67 +39,14 @@ class ECLIPSE_API UEcpGameLayout : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	static UEcpGameLayout* GetGameLayout(APlayerController* InPlayerController);
-	static UEcpGameLayout* GetGameLayout(ULocalPlayer* InPlayer);
-
 	
 public:
-	template <typename ActivatableWidgetT = UCommonActivatableWidget>
-	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, ActivatableWidgetT*)> StateFunc)
-	{
-		//static_assert(TIsDerivedFrom<ActivatableWidgetT, UCommonActivatableWidget>::IsDerived, "Only CommonActivatableWidgets can be used here");
-		//const FName SuspendInputToken = bSuspendInputUntilComplete ? UCommonUIExtensions::SuspendInputForPlayer(GetOwningPlayer(), NAME_PushingWidgetToLayer) : NAME_None;
-
-
-		FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
-		TSharedPtr<FStreamableHandle> StreamingHandle = StreamableManager.RequestAsyncLoad(ActivatableWidgetClass.ToSoftObjectPath(), FStreamableDelegate::CreateWeakLambda(this,
-			[this, LayerName, ActivatableWidgetClass, StateFunc]()
-			{
-				// deny input lock
-				//UCommonUIExtensions::ResumeInputForPlayer(GetOwningPlayer(), SuspendInputToken);
-
-
-				ActivatableWidgetT* Widget = PushWidgetToLayerStack<ActivatableWidgetT>(LayerName, ActivatableWidgetClass.Get(), [StateFunc](ActivatableWidgetT& WidgetToInit) 
-					{
-						StateFunc(EAsyncWidgetState::Initialize, &WidgetToInit);
-					});
-
-
-				// After Load...
-				StateFunc(EAsyncWidgetState::AfterPush, Widget);
-			})
-		);
-
-		StreamingHandle->BindCancelDelegate(FStreamableDelegate::CreateWeakLambda(this,
-			[this, StateFunc]()
-			{
-				// release input lock
-				//UCommonUIExtensions::ResumeInputForPlayer(GetOwningPlayer(), SuspendInputToken);
-
-				StateFunc(EAsyncWidgetState::Canceled, nullptr);
-			}));
-
-		return StreamingHandle;
-	}
-
-
-	template <typename ActivatableWidgetT = UCommonActivatableWidget>
-	ActivatableWidgetT* PushWidgetToLayerStack(EEclipseGameLayer LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(ActivatableWidgetT&)> InitInstanceFunc)
-	{
-		//static_assert(TIsDerivedFrom<ActivatableWidgetT, UCommonActivatableWidget>::IsDerived, "Only CommonActivatableWidgets can be used here");
-
-		if (UCommonActivatableWidgetContainerBase* Layer = GetLayout(LayerName))
-		{
-			return Layer->AddWidget<ActivatableWidgetT>(ActivatableWidgetClass, InitInstanceFunc);
-		}
-
-		return nullptr;
-	}
+	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc);
+	UCommonActivatableWidget* PushWidgetToLayerStack(EEclipseGameLayer LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc);
+	void RemoveWidgetToLayerStack(EEclipseGameLayer LayerName, const FString& InWidgetPath);
 
 private:
 	UCommonActivatableWidgetContainerBase* GetLayout(EEclipseGameLayer InLayer);
-
 
 protected:
 	void OnChangedDisplayedWidget(UCommonActivatableWidget* InDisplayedWidget, UEcpLayer* InLayer);
