@@ -16,14 +16,14 @@ class UEcpLayer;
 UENUM(BlueprintType)
 enum class EEclipseGameLayer : uint8
 {
-	System = 0,			// System Error Messsage												(Game Input Mode Is UIOnly)
-	Production,			// Reward, Level Up, Success enchant, etc...							(Game Input Mode Is GameAndUI)
-	Modal,				// Modal Popup Layer													(Game Input Mode Is UIOnly)
-	Left_Sheet,			// NPC Interaction UI													(Game Input Mode Is GameAndUI)
-	Right_Sheet,		// Diablo Inventory Layer												(Game Input Mode Is GameAndUI)
-	Bottom_Sheet,		//																		(Game Input Mode Is GameAndUI)
-	Window,				// Contents Window Widget												(Game Input Mode Is UIOnly)
-	MainHUD,			// MainHUD Layer														(Game Input Mode Is GameOnly)
+	System = 0,			// System Error Messsage												( Input Mode Is UIOnly )
+	Production,			// Reward, Level Up, Success enchant, etc...							( Input Mode Is GameAndUI )
+	Modal,				// Modal Popup Layer													( Input Mode Is UIOnly )
+	Left_Sheet,			// NPC Interaction UI													( Input Mode Is GameAndUI )
+	Right_Sheet,		// Diablo Inventory Layer												( Input Mode Is GameAndUI )
+	Bottom_Sheet,		//																		( Input Mode Is GameAndUI )
+	Window,				// Contents Window Widget												( Input Mode Is UIOnly )
+	MainHUD,			// MainHUD Layer														( Input Mode Is GameOnly )
 
 	Count,
 };
