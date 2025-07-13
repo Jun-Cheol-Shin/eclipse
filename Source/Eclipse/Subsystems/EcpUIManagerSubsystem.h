@@ -50,7 +50,7 @@ class ECLIPSE_API UEcpUIManagerSubsystem : public UGameInstanceSubsystem
 	
 public:
 	template <typename T = UEcpUserWidget>
-	void ShowLayerWidget(FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc)
+	void ShowLayerWidget(FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature())
 	{
 		if (false == ensure(RegistryAsset))
 		{
@@ -153,6 +153,9 @@ public:
 		MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(GameLayerType, T::StaticClass()->GetPathName());
 	}
 
+
+	void ShowLayerWidget(EEclipseGameLayer InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature());
+	void HideLayerWidget(UCommonActivatableWidget* InWidget);
 
 protected:
 	void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);

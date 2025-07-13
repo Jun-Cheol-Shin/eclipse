@@ -22,6 +22,8 @@ public:
 
 	FChangedGamepadDetectedEvent OnGamepadChangeDetected;
 
+	void SetInputFilter(ECommonInputType InputType, bool bIsLock);
+
 protected:
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override {};
 
@@ -62,9 +64,6 @@ private:
 	UEcpInputManagerSubSystem& InputSubsystem;
 
 	bool InputMethodPermissions[(uint8)ECommonInputType::Count];
-
-	// The reasons we might be filtering input right now.
-	TMap<FName, bool> FilterInputTypeWithReasons[(uint8)ECommonInputType::Count];
 
 	FName LastSeenGamepadInputDeviceName;
 	FString LastSeenGamepadHardwareDeviceIdentifier;

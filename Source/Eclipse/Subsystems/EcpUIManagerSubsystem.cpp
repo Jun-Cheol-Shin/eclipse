@@ -2,6 +2,7 @@
 
 #include "EcpUIManagerSubsystem.h"
 #include "../UI/LayerWidgetRegistryAsset.h"
+#include "Engine/StreamableManager.h"
 
 void UEcpUIManagerSubsystem::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
 {
@@ -164,6 +165,72 @@ bool UEcpUIManagerSubsystem::GetOwningLayoutInfo(OUT FRootViewportLayoutInfo& Ou
 	}
 
 	return false;
+}
+
+void UEcpUIManagerSubsystem::ShowLayerWidget(EEclipseGameLayer InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc)
+{
+	FRootViewportLayoutInfo MyLayoutInfo;
+	if (false == GetOwningLayoutInfo(OUT MyLayoutInfo))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Owning Layout Info %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+
+	if (ensure(MyLayoutInfo.RootLayout))
+	{
+		TSharedPtr<FStreamableHandle> Handle = MyLayoutInfo.RootLayout->PushWidgetToLayerStackAsync(InLayerType, true, InWidgetClass, [InCompleteLoadedFunc](EAsyncWidgetState InState, UCommonActivatableWidget* InLoadingWidget)
+			{
+				switch (InState)
+				{
+				case EAsyncWidgetState::Canceled:
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Cancel Load Widget."));
+				}
+				break;
+
+				case EAsyncWidgetState::Initialize:
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Initialize Load Widget. %s"), *GetNameSafe(InLoadingWidget));
+				}
+				break;
+
+				case EAsyncWidgetState::AfterPush:
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Complete Load Widget. %s"), *GetNameSafe(InLoadingWidget));
+
+					if (InCompleteLoadedFunc.IsBound())
+					{
+						InCompleteLoadedFunc.ExecuteIfBound(Cast<UEcpUserWidget>(InLoadingWidget));
+					}
+				}
+				break;
+
+				default:
+					break;
+				}
+
+			});
+
+		if (Handle.IsValid() == false)
+		{
+			// Already Loaded?
+		}
+
+		else if (Handle->HasLoadCompletedOrStalled())
+		{
+			// Complete Load
+		}
+
+		else if (Handle->IsLoadingInProgress())
+		{
+			// During Load
+		}
+	}
+}
+
+void UEcpUIManagerSubsystem::HideLayerWidget(UCommonActivatableWidget* InWidget)
+{
+
 }
 
 void UEcpUIManagerSubsystem::OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId)

@@ -13,6 +13,14 @@ class UCommonActivatableWidgetQueue;
 class UCommonActivatableWidgetContainerBase;
 
 
+UENUM(BlueprintType)
+enum class ELayerInputMode : uint8
+{
+	GameOnly,
+	GameAndUI,
+	UIOnly,
+};
+
 USTRUCT(BlueprintType)
 struct FEcpLayerUIVariable
 {
@@ -27,17 +35,22 @@ public:
 };
 
 
-
 UCLASS()
 class ECLIPSE_API UEcpLayer : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	DECLARE_DELEGATE_TwoParams(FOnCompleteDisplayedWidget, UCommonActivatableWidget*, UEcpLayer*);
-	FOnCompleteDisplayedWidget OnCompleteDisplayedWidget;
+	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnCompleteDisplayedWidget, UCommonActivatableWidget*, UEcpLayer*, bool /* bIsShow */);
+	FOnCompleteDisplayedWidget OnCompleteDisplayedWidgetDelegate;
 
 	UCommonActivatableWidgetContainerBase* GetActivatableWidgetContainer() const;
+	int GetActivatedWidgetNum() const;
+	bool IsOnlyOneWidget(UCommonActivatableWidget* InWidget);
+
+	
+	UFUNCTION(BlueprintCallable)
+	bool IsNeedUIOnlyInputMode() const;
 
 protected:
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
@@ -47,26 +60,26 @@ protected:
 	// callback
 private:
 	void OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget);
-	void OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning);
+	//void OnChangedTransitioning(UCommonActivatableWidgetContainerBase* InLayer, bool bIsTransitioning);
 
 protected:
-	virtual void OnClick() {};
-	
-	// Called after widget setted
 	virtual void OnConstruct() {};
+	virtual void OnDestruct() {};
+
+	virtual void OnClick() {};
+	virtual void OnTouch() {};
+
 	
 private:
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	
-	virtual void NativeOnMouseLeave(const FPointerEvent& InEvent) override;
 
-	/*
 	virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	*/
+	
+	virtual void NativeOnMouseLeave(const FPointerEvent& InEvent) override;
 
 private:
 	virtual void NativeConstruct() override;
@@ -75,4 +88,8 @@ private:
 
 private:
 	bool bTouchStart = false;
+
+private:
+	UPROPERTY(EditInstanceOnly, meta = (Category = "Eclipse Layer Setting", DisplayPriority = 1, AllowPrivateAccess = true))
+	ELayerInputMode InputMode;
 };

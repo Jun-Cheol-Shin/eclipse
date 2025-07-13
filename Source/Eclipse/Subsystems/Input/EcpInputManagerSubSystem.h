@@ -23,6 +23,7 @@ class ECLIPSE_API UEcpInputManagerSubSystem : public ULocalPlayerSubsystem
 
 public:
 	static bool IsMobileGamepadKey(const FKey& InKey);
+	void SetInputFilter(ECommonInputType InputType, bool bIsLock);
 
 public:
 	DECLARE_EVENT_OneParam(UEcpInputManagerSubSystem, FInputMethodChangedEvent, ECommonInputType);
@@ -52,9 +53,5 @@ private:
 	/**  */
 	UPROPERTY(Transient)
 	FName GamepadInputType;
-
-	/**  */
-	UPROPERTY(Transient)
-	TMap<FName, ECommonInputType> CurrentInputLocks;
 
 };

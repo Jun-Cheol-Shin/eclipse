@@ -16,13 +16,15 @@ class UEcpLayer;
 UENUM(BlueprintType)
 enum class EEclipseGameLayer : uint8
 {
-	System = 0,			// System Error Messsage
-	Production,			// Reward, Level Up, Success enchant, etc...
-	Notify,				// Not Stack, It's a Queue Container. ex. In Game Message, Megaphone)
-	Modal,				// Modal Popup Layer
-	Left_Sheet,			// NPC Interaction UI
-	Right_Sheet,		// Diablo Inventory Layer
-	Window,				// Main HUD & Contents Window Widget
+	System = 0,			// System Error Messsage												(Game Input Mode Is UIOnly)
+	Production,			// Reward, Level Up, Success enchant, etc...							(Game Input Mode Is GameAndUI)
+	Modal,				// Modal Popup Layer													(Game Input Mode Is UIOnly)
+	Left_Sheet,			// NPC Interaction UI													(Game Input Mode Is GameAndUI)
+	Right_Sheet,		// Diablo Inventory Layer												(Game Input Mode Is GameAndUI)
+	Window,				// Contents Window Widget												(Game Input Mode Is UIOnly)
+	MainHUD,			// MainHUD Layer														(Game Input Mode Is GameOnly)
+
+	Count,
 };
 
 UENUM()
@@ -39,17 +41,20 @@ class ECLIPSE_API UEcpGameLayout : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
-	
 public:
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc);
 	UCommonActivatableWidget* PushWidgetToLayerStack(EEclipseGameLayer LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc);
+
 	void RemoveWidgetToLayerStack(EEclipseGameLayer LayerName, const FString& InWidgetPath);
+
+
+private:
+	// EcpLayer CallBack
+	void OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UEcpLayer* InLayer, bool bIsActivated);
+	void RefreshGameLayerInputMode();
 
 private:
 	UCommonActivatableWidgetContainerBase* GetLayout(EEclipseGameLayer InLayer);
-
-protected:
-	void OnChangedDisplayedWidget(UCommonActivatableWidget* InDisplayedWidget, UEcpLayer* InLayer);
 
 protected:
 	UFUNCTION(BlueprintCallable)
@@ -58,5 +63,6 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TMap<EEclipseGameLayer, UEcpLayer*> Layers;
+	bool InputModeChecker[(uint8)EEclipseGameLayer::Count];
 	
 };

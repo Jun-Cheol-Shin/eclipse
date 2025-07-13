@@ -154,6 +154,11 @@ ECommonInputType FEcpInputProcessor::GetInputType(const FPointerEvent& InPointer
 	return ECommonInputType::MouseAndKeyboard;
 }
 
+void FEcpInputProcessor::SetInputFilter(ECommonInputType InputType, bool bIsLock)
+{
+	InputMethodPermissions[(uint8)InputType] = bIsLock;
+}
+
 bool FEcpInputProcessor::HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent)
 {
 	const ECommonInputType InputType = GetInputType(InKeyEvent.GetKey());

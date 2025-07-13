@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project `tings.
 
 
 #include "EcpModalLayer.h"
@@ -23,12 +23,6 @@ void UEcpModalLayer::OnClick()
 			UIVariable.WidgetStack->RemoveWidget(*TopWidget);
 		}
 	}
-
-
-	if (UIVariable.WidgetStack->GetNumWidgets() <= 0)
-	{
-		SetVisibility(ESlateVisibility::Collapsed);
-	}
 }
 
 void UEcpModalLayer::OnConstruct()
@@ -38,11 +32,7 @@ void UEcpModalLayer::OnConstruct()
 		BackGroundImage->SetVisibility(ESlateVisibility::Visible);
 		DefaultColor = BackGroundImage->GetColorAndOpacity();
 	}
-
-
-	SetVisibility(ESlateVisibility::Collapsed);
 }
-
 
 void UEcpModalLayer::SetBlackScreen(bool bIsVisible)
 {

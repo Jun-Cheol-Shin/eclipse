@@ -37,6 +37,14 @@ const FName UEcpInputManagerSubSystem::GetCurrentGamepadName() const
 	return GamepadInputType;
 }
 
+void UEcpInputManagerSubSystem::SetInputFilter(ECommonInputType InputType, bool bIsLock)
+{
+	if (InputProcessor.IsValid())
+	{
+		InputProcessor->SetInputFilter(InputType, bIsLock);
+	}
+}
+
 void UEcpInputManagerSubSystem::SetCurrentInputType(ECommonInputType InputType)
 {
 	CurrentInputType = InputType;
