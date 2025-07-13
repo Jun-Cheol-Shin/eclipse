@@ -112,6 +112,16 @@ void FEcpInputProcessor::RefreshCurrentInputMethod(ECommonInputType InputMethod)
 			}
 		}
 	}
+
+	else if (InputMethod == ECommonInputType::Touch)
+	{
+		OnTouchChangeDetected.Broadcast();
+	}
+
+	else
+	{
+		OnMouseAndKeyboardChangeDetected.Broadcast();
+	}
 }
 
 ECommonInputType FEcpInputProcessor::GetInputType(const FKey& InKey)

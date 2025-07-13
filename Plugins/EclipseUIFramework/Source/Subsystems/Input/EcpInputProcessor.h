@@ -20,9 +20,14 @@ public:
 	}
 	virtual ~FEcpInputProcessor() {};
 
+	void SetInputFilter(ECommonInputType InputType, bool bIsLock);
+
+
 	FChangedGamepadDetectedEvent OnGamepadChangeDetected;
 
-	void SetInputFilter(ECommonInputType InputType, bool bIsLock);
+
+	FChangedInputTypeDetectedEvent OnTouchChangeDetected;
+	FChangedInputTypeDetectedEvent OnMouseAndKeyboardChangeDetected;
 
 protected:
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override {};

@@ -3,14 +3,36 @@
 
 #include "EcpGameLayout.h"
 #include "EcpLayer.h"
+#include "../Subsystems/Input/EcpInputManagerSubSystem.h"
+#include "../UI/EcpUIFunctions.h"
 
 #include "CommonUI/Public/Widgets/CommonActivatableWidgetContainer.h"
 #include "CommonActivatableWidget.h"
 
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
-#include "../UI/EcpUIFunctions.h"
 
+
+void UEcpGameLayout::OnDetectedTouch()
+{
+	// todo : change mobile main hud
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Touch!"));
+	}
+}
+
+void UEcpGameLayout::OnDetectedMouseAndKeyboard()
+{
+	// todo : change pc main hud
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Mouse And Keyboard!"));
+	}
+
+}
 
 void UEcpGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UEcpLayer* InLayer, bool bIsActivated)
 {
@@ -98,6 +120,36 @@ void UEcpGameLayout::RegistGameLayer(EEclipseGameLayer InLayerType, UEcpLayer* I
 			InLayer->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
+}
+
+void UEcpGameLayout::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	ULocalPlayer* MyLocalPlayer = GetOwningLocalPlayer();
+	if (false == ensure(MyLocalPlayer)) return;
+
+	UEcpInputManagerSubSystem* EcpInputSubSystem = MyLocalPlayer->GetSubsystem<UEcpInputManagerSubSystem>();
+	if (ensure(EcpInputSubSystem))
+	{
+		EcpInputSubSystem->GetOnTouchDetected().AddUObject(this, &UEcpGameLayout::OnDetectedTouch);
+		EcpInputSubSystem->GetOnMouseAndKeyboardDetected().AddUObject(this, &UEcpGameLayout::OnDetectedMouseAndKeyboard);
+	}
+}
+
+void UEcpGameLayout::NativeDestruct()
+{
+	ULocalPlayer* MyLocalPlayer = GetOwningLocalPlayer();
+	if (false == ensure(MyLocalPlayer)) return;
+
+	UEcpInputManagerSubSystem* EcpInputSubSystem = MyLocalPlayer->GetSubsystem<UEcpInputManagerSubSystem>();
+	if (ensure(EcpInputSubSystem))
+	{
+		EcpInputSubSystem->GetOnTouchDetected().RemoveAll(this);
+		EcpInputSubSystem->GetOnMouseAndKeyboardDetected().RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
 }
 
 TSharedPtr<FStreamableHandle> UEcpGameLayout::PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc)

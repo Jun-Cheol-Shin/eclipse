@@ -80,3 +80,18 @@ bool UEcpInputManagerSubSystem::IsMobileGamepadKey(const FKey& InKey)
 
 	return PhysicalMobileKeys.Contains(InKey);
 }
+
+FChangedGamepadDetectedEvent& UEcpInputManagerSubSystem::GetOnGamepadChangeDetected()
+{
+	return InputProcessor->OnGamepadChangeDetected;
+}
+
+FChangedInputTypeDetectedEvent& UEcpInputManagerSubSystem::GetOnTouchDetected()
+{
+	return InputProcessor->OnTouchChangeDetected;
+}
+
+FChangedInputTypeDetectedEvent& UEcpInputManagerSubSystem::GetOnMouseAndKeyboardDetected()
+{
+	return InputProcessor->OnMouseAndKeyboardChangeDetected;
+}

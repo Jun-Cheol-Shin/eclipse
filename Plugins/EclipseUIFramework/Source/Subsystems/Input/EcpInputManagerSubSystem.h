@@ -13,6 +13,7 @@
 class FEcpInputProcessor;
 
 DECLARE_EVENT_OneParam(FEcpInputProcessor, FChangedGamepadDetectedEvent, FName);
+DECLARE_MULTICAST_DELEGATE(FChangedInputTypeDetectedEvent)
 
 UCLASS(MinimalAPI)
 class UEcpInputManagerSubSystem : public ULocalPlayerSubsystem
@@ -30,6 +31,9 @@ public:
 	FInputMethodChangedEvent OnInputMethodChangedNative;
 
 	FChangedGamepadDetectedEvent& GetOnGamepadChangeDetected();
+	FChangedInputTypeDetectedEvent& GetOnTouchDetected();
+	FChangedInputTypeDetectedEvent& GetOnMouseAndKeyboardDetected();
+
 	
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }

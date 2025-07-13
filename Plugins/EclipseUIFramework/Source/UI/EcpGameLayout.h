@@ -50,6 +50,10 @@ public:
 
 
 private:
+	// InputSubSystem Callback
+	void OnDetectedTouch();
+	void OnDetectedMouseAndKeyboard();
+
 	// EcpLayer CallBack
 	void OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UEcpLayer* InLayer, bool bIsActivated);
 	void RefreshGameLayerInputMode();
@@ -65,5 +69,10 @@ private:
 	UPROPERTY(Transient)
 	TMap<EEclipseGameLayer, UEcpLayer*> Layers;
 	bool InputModeChecker[(uint8)EEclipseGameLayer::Count];
+
+
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	
 };
