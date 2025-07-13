@@ -28,7 +28,21 @@ void UEcpUIFunctions::ShowLayerWidgetFromPlayerController(const APlayerControlle
 
 void UEcpUIFunctions::HideLayerWidget(const ULocalPlayer* InLocalPlayer, UCommonActivatableWidget* InLayerWidget)
 {
+	if (nullptr == InLocalPlayer) return;
 
+	UEcpGameInstance* EcpGameInstance = Cast<UEcpGameInstance>(InLocalPlayer->GetGameInstance());
+	if (false == ensure(EcpGameInstance)) return;
+
+	UEcpUIManagerSubsystem* UISubSystem = EcpGameInstance->GetSubsystem<UEcpUIManagerSubsystem>();
+	if (nullptr != UISubSystem)
+	{
+		UISubSystem->HideLayerWidget(InLayerWidget);
+	}
+}
+
+void UEcpUIFunctions::HideLayerWidgetFromPlayerController(const APlayerController* InController, UCommonActivatableWidget* InLayerWidget)
+{
+	HideLayerWidget(InController->GetLocalPlayer(), InLayerWidget);
 }
 
 void UEcpUIFunctions::SetInputLockFromPlayerController(const APlayerController* InController, bool bLock)

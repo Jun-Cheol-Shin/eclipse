@@ -230,7 +230,17 @@ void UEcpUIManagerSubsystem::ShowLayerWidget(EEclipseGameLayer InLayerType, TSof
 
 void UEcpUIManagerSubsystem::HideLayerWidget(UCommonActivatableWidget* InWidget)
 {
-
+	FRootViewportLayoutInfo MyLayoutInfo;
+	if (false == GetOwningLayoutInfo(OUT MyLayoutInfo))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Owning Layout Info %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+	
+	if (ensure(MyLayoutInfo.RootLayout))
+	{
+		MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(InWidget);
+	}
 }
 
 void UEcpUIManagerSubsystem::OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId)

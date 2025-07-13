@@ -34,7 +34,7 @@ void UEcpGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget
 void UEcpGameLayout::RefreshGameLayerInputMode()
 {
 	APlayerController* PlayerController = GetOwningPlayer();
-	if (false == ensure(PlayerController)) return;
+	if (nullptr == PlayerController) return;
 
 	bool bActivatedUILayer = false;
 
@@ -139,27 +139,18 @@ UCommonActivatableWidget* UEcpGameLayout::PushWidgetToLayerStack(EEclipseGameLay
 	return nullptr;
 }
 
-void UEcpGameLayout::RemoveWidgetToLayerStack(EEclipseGameLayer LayerName, const FString& InWidgetPath)
+void UEcpGameLayout::RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget)
 {
-	//static_assert(TIsDerivedFrom<ActivatableWidgetT, UCommonActivatableWidget>::IsDerived, "Only CommonActivatableWidgets can be used here");
+	if (nullptr == InWidget) return;
 
-	UCommonActivatableWidgetContainerBase* Layer = GetLayout(LayerName);
-	if (false == ensure(Layer)) return;
-
-	UCommonActivatableWidget* RemoveWidget = nullptr;
-
-	for (auto& Widget : Layer->GetWidgetList())
+	for (auto& [LayerType, Layer]  : Layers)
 	{
-		if (Widget->StaticClass()->GetPathName().Equals(InWidgetPath))
-		{
-			RemoveWidget = Widget;
-			break;
-		}
-	}
+		if (nullptr == Layer) continue;
 
-	if (nullptr != RemoveWidget)
-	{
-		Layer->RemoveWidget(*RemoveWidget);
+		UCommonActivatableWidgetContainerBase* Container = Layer->GetActivatableWidgetContainer();
+		if (nullptr == Container) continue;
+
+		Container->RemoveWidget(*InWidget);
 	}
 
 }

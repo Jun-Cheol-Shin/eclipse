@@ -21,6 +21,7 @@ enum class EEclipseGameLayer : uint8
 	Modal,				// Modal Popup Layer													(Game Input Mode Is UIOnly)
 	Left_Sheet,			// NPC Interaction UI													(Game Input Mode Is GameAndUI)
 	Right_Sheet,		// Diablo Inventory Layer												(Game Input Mode Is GameAndUI)
+	Bottom_Sheet,		//																		(Game Input Mode Is GameAndUI)
 	Window,				// Contents Window Widget												(Game Input Mode Is UIOnly)
 	MainHUD,			// MainHUD Layer														(Game Input Mode Is GameOnly)
 
@@ -45,7 +46,7 @@ public:
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(EEclipseGameLayer LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc);
 	UCommonActivatableWidget* PushWidgetToLayerStack(EEclipseGameLayer LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc);
 
-	void RemoveWidgetToLayerStack(EEclipseGameLayer LayerName, const FString& InWidgetPath);
+	void RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget);
 
 
 private:
