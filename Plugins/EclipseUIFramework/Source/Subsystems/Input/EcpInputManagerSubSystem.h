@@ -31,8 +31,11 @@ public:
 	FInputMethodChangedEvent OnInputMethodChangedNative;
 
 	FChangedGamepadDetectedEvent& GetOnGamepadChangeDetected();
-	FChangedInputTypeDetectedEvent& GetOnTouchDetected();
-	FChangedInputTypeDetectedEvent& GetOnMouseAndKeyboardDetected();
+
+	FChangedInputTypeDetectedEvent OnChangedDetectMouseAndKeyboard;
+	FChangedInputTypeDetectedEvent OnChangedDetectTouch;
+	FChangedInputTypeDetectedEvent OnChangedDetectGamePad;
+
 
 	
 protected:
@@ -52,7 +55,7 @@ private:
 	TSharedPtr<FEcpInputProcessor> InputProcessor = nullptr;
 
 	UPROPERTY(Transient)
-	ECommonInputType CurrentInputType;
+	ECommonInputType CurrentInputType = ECommonInputType::Count;
 
 	/**  */
 	UPROPERTY(Transient)

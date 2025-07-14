@@ -26,9 +26,6 @@ public:
 	FChangedGamepadDetectedEvent OnGamepadChangeDetected;
 
 
-	FChangedInputTypeDetectedEvent OnTouchChangeDetected;
-	FChangedInputTypeDetectedEvent OnMouseAndKeyboardChangeDetected;
-
 protected:
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override {};
 

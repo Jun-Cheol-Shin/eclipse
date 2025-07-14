@@ -2,29 +2,22 @@
 
 using UnrealBuildTool;
 
-public class EclipseUIFramework : ModuleRules
+public class NotifyUI : ModuleRules
 {
-	public EclipseUIFramework(ReadOnlyTargetRules Target) : base(Target)
+	public NotifyUI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Core",
-				"CoreUObject", 
-				"Engine", 
-				"InputCore",
-                "EnhancedInput",
-                "CommonUI",
-                "CommonInput",
+                "CoreUObject",
+                "Engine",
                 "Slate",
                 "SlateCore",
-                "UMG",
-                "ApplicationCore",
-                "DeveloperSettings",
-                "UnrealEd"
+                "CommonUI",
+                "UMG", 
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -33,10 +26,9 @@ public class EclipseUIFramework : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				
 				// ... add private dependencies that you statically link with here ...	
-
-			
-            }
+			}
 			);
 		
 		

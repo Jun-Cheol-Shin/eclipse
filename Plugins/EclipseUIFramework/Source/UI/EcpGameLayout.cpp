@@ -132,21 +132,21 @@ void UEcpGameLayout::NativeConstruct()
 	UEcpInputManagerSubSystem* EcpInputSubSystem = MyLocalPlayer->GetSubsystem<UEcpInputManagerSubSystem>();
 	if (ensure(EcpInputSubSystem))
 	{
-		EcpInputSubSystem->GetOnTouchDetected().AddUObject(this, &UEcpGameLayout::OnDetectedTouch);
-		EcpInputSubSystem->GetOnMouseAndKeyboardDetected().AddUObject(this, &UEcpGameLayout::OnDetectedMouseAndKeyboard);
+		EcpInputSubSystem->OnChangedDetectTouch.AddUObject(this, &UEcpGameLayout::OnDetectedTouch);
+		EcpInputSubSystem->OnChangedDetectMouseAndKeyboard.AddUObject(this, &UEcpGameLayout::OnDetectedMouseAndKeyboard);
 	}
 }
 
 void UEcpGameLayout::NativeDestruct()
 {
 	ULocalPlayer* MyLocalPlayer = GetOwningLocalPlayer();
-	if (false == ensure(MyLocalPlayer)) return;
+	if (nullptr == MyLocalPlayer) return;
 
 	UEcpInputManagerSubSystem* EcpInputSubSystem = MyLocalPlayer->GetSubsystem<UEcpInputManagerSubSystem>();
 	if (ensure(EcpInputSubSystem))
 	{
-		EcpInputSubSystem->GetOnTouchDetected().RemoveAll(this);
-		EcpInputSubSystem->GetOnMouseAndKeyboardDetected().RemoveAll(this);
+		EcpInputSubSystem->OnChangedDetectMouseAndKeyboard.RemoveAll(this);
+		EcpInputSubSystem->OnChangedDetectTouch.RemoveAll(this);
 	}
 
 	Super::NativeDestruct();
