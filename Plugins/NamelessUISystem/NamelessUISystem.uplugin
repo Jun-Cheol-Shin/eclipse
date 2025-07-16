@@ -1,0 +1,31 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "NamelessUISystem",
+	"Description": "Nameless UISystem Framework",
+	"Category": "Other",
+	"CreatedBy": "Jun-Cheol-Shin",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "NamelessUISystem",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"ConfigName": "NamelessUISystem"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "CommonUI",
+			"Enabled": true
+		}
+	]
+}
