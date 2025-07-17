@@ -10,14 +10,18 @@
 
 class UTextBlock;
 class UCommonLazyImage;
+class FTextFormat;
 
 UENUM(BlueprintType)
-enum class ECountDownTextType : uint8
+enum class ECountDownTextDirection : uint8
 {
+	None,
 	Top,
 	Middle,
 	Bottom,
 };
+
+
 
 
 USTRUCT(BlueprintType)
@@ -28,10 +32,34 @@ struct FNotificationParams
 
 public:
 	FNotificationParams() {};
+
+	// Normal Type Text
 	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage) : MessageType(InType), RegistTime(InRegistTime), TopMessage(InMessage) {};
 	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FText& InMessage_2) : MessageType(InType), RegistTime(InRegistTime), TopMessage(InMessage), MiddleMessage(InMessage_2) {};
 	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FText& InMessage_2, const FText& InMessage_3)
 		: MessageType(InType), RegistTime(InRegistTime), TopMessage(InMessage), MiddleMessage(InMessage_2), BottomMessage(InMessage_3) {};
+
+	// Counting Type Text
+	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FTextFormat& InFormat, double InCountDownSec, const FText& InMessage = FText(), const FText& InMessage_2 = FText()) : 
+		MessageType(InType), RegistTime(InRegistTime), CountTextType(ECountDownTextDirection::Top), Format(InFormat), CountDown(InCountDownSec), MiddleMessage(InMessage), BottomMessage(InMessage_2)
+	{
+		TopMessage = FText::Format(InFormat, InCountDownSec);
+	}
+
+	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FTextFormat& InFormat, double InCountDownSec, const FText& InMessage_2) :
+		MessageType(InType), RegistTime(InRegistTime), CountTextType(ECountDownTextDirection::Middle), Format(InFormat), CountDown(InCountDownSec), TopMessage(InMessage), BottomMessage(InMessage_2)
+	{
+
+		MiddleMessage = FText::Format(InFormat, InCountDownSec);
+	}
+
+	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FText& InMessage_2, const FTextFormat& InFormat, double InCountDownSec) :
+		MessageType(InType), RegistTime(InRegistTime), CountTextType(ECountDownTextDirection::Bottom), Format(InFormat), CountDown(InCountDownSec), TopMessage(InMessage), MiddleMessage(InMessage_2)
+	{
+		BottomMessage = FText::Format(InFormat, InCountDownSec);
+	}
+
+
 
 	virtual ~FNotificationParams() {};
 
@@ -41,6 +69,11 @@ public:
 	FText TopMessage = FText();
 	FText MiddleMessage = FText();
 	FText BottomMessage = FText();
+
+
+	ECountDownTextDirection CountTextType = ECountDownTextDirection::None;
+	FTextFormat Format = FTextFormat();
+	double CountDown = 0.f;
 };
 
 
@@ -53,18 +86,35 @@ public:
 	DECLARE_DELEGATE(FOnEndedNotifySignature)
 	FOnEndedNotifySignature OnEndedNotify;
 
+	DECLARE_DELEGATE_OneParam(FOnTouchSignature, const FGameplayTag&)
+	FOnEndedNotifySignature OnTouchDelegate;
 
-	void RegistMessage(const FNotificationParams& InParam);
-	void RegistCountDownMessage(const FNotificationParams& InParam, ECountDownTextType InCountDownTextType, const FTextFormat& InFormat, double InCountDown);
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistMessage(const FGameplayTag& InType, const FText& InMessage);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistTwoMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistThreeMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo, const FText& InMessageThree);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void UnregistMessage(const FGameplayTag& InTag);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistCountDownMessage(const FGameplayTag& InType, const FString& InFormat, double InCountDown, const FText& InMessage = FText(), const FText& InMessageTwo = FText());
 
 private:
-	void CheckIconLoading(const FNotificationParams& InParam);
-	void SetNextMessage(const FNotificationParams& InParam);
+	void RegistMessage(const FNotificationParams& InParam);
+
+private:
+	void NextMessage();
+	void SetMessage(const FNotificationParams& InParam);
 
 	void SetMessageText(const FText& InParamText, UTextBlock* InTextBlock);
-	void SetCountDownText(int64 InCountDownSec);
-
 	bool GetIconType(const FGameplayTag& InMessageType, OUT TSoftObjectPtr<UObject>* OutImageSource);
+
+	void SetCountdownMessage(int64 InShowCountDownSec);
 
 
 	// Widget Variable
@@ -118,6 +168,8 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InPointEvent) override;
+
 private:
 	FWidgetAnimationDynamicEvent FadeInAnimationEvent;
 	FWidgetAnimationDynamicEvent FadeOutAnimationEvent;
@@ -125,10 +177,11 @@ private:
 	FTSTicker::FDelegateHandle TickDelegateHandle;
 
 	TQueue<FNotificationParams> ParamQueue;
+	TSet<FGameplayTag> UnregistTagSet;
 
-	double CurrentMessageDuration = 0.f;
-	double CountDown = 0;
+	double CurrentDuration = 0.f;
 
-	ECountDownTextType CountDownTextType = ECountDownTextType::Top;
-	FTextFormat CountDownTextFormat = FTextFormat();
+
+	FNotificationParams CurrentParam;
+	int64 CurrentShowingCountDown = 0;
 };
