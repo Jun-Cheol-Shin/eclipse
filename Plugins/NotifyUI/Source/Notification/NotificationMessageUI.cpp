@@ -108,7 +108,7 @@ void UNotificationMessageUI::NextMessage()
 			{
 				Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				Icon->SetBrushFromLazyDisplayAsset(IconImage);
-
+				SetMessage(StartParam);
 				// goto OnChangedLoadingState
 			}
 		}
@@ -127,6 +127,11 @@ void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 	double CurrentCountDown = InParam.CountDown - (FSlateApplication::Get().GetCurrentTime() - InParam.RegistTime);
 	CurrentShowingCountDown = FMath::CeilToInt64(CurrentCountDown);
 	SetCountdownMessage(CurrentShowingCountDown);
+
+	if (bCustomStyle && CustomStyle.Contains(CurrentParam.MessageType))
+	{
+		SetMessageStyle(CustomStyle[CurrentParam.MessageType]);
+	}
 
 	SetVisibility(true == bSkipToClick ? ESlateVisibility::Visible : ESlateVisibility::HitTestInvisible);
 
@@ -161,13 +166,44 @@ void UNotificationMessageUI::SetMessageText(const FText& InParamText, UTextBlock
 
 void UNotificationMessageUI::SetMessageStyle(const FNotifyStyleData& InStyle)
 {
+	if (InStyle.TextColor.IsValidIndex(0))
+	{
+		TopMessage->SetColorAndOpacity(InStyle.TextColor[0]);
+	}
+	if (InStyle.TextColor.IsValidIndex(1))
+	{
+		MiddleMessage->SetColorAndOpacity(InStyle.TextColor[1]);
+	}
+	if (InStyle.TextColor.IsValidIndex(2))
+	{
+		BottomMessage->SetColorAndOpacity(InStyle.TextColor[2]);
+	}
+
+	if (InStyle.FontInfo.IsValidIndex(0))
+	{
+		TopMessage->SetFont(InStyle.FontInfo[0]);
+	}
+
+	if (InStyle.FontInfo.IsValidIndex(1))
+	{
+		MiddleMessage->SetFont(InStyle.FontInfo[1]);
+	}
+
+	if (InStyle.FontInfo.IsValidIndex(2))
+	{
+		BottomMessage->SetFont(InStyle.FontInfo[2]);
+	}
 
 }
 
 
 bool UNotificationMessageUI::GetIconType(const FGameplayTag& InMessageType, OUT TSoftObjectPtr<UObject>* OutImageSource)
 {
-	//*OutImageSource = 
+	if (bCustomStyle && CustomStyle.Contains(InMessageType))
+	{
+		*OutImageSource = CustomStyle[InMessageType].IconSoftPtr;
+		return true;
+	}
 
 	return false;
 }

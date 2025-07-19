@@ -20,6 +20,10 @@ public:
 	UNLUIStatics() {}
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
+	static UCommonActivatableWidget* GetTopWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType);
+
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
 	static void ShowLayerWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")

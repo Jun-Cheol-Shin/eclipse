@@ -156,6 +156,8 @@ public:
 	void ShowLayerWidget(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature());
 	void HideLayerWidget(UCommonActivatableWidget* InWidget);
 
+	UCommonActivatableWidget* GetTopLayerWidget(const FGameplayTag& InLayerType);
+
 protected:
 	void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);
 	void OnPlayerControllerChanged(APlayerController* InController);

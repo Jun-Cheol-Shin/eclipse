@@ -212,6 +212,20 @@ void UNLGameLayout::RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget)
 
 }
 
+UCommonActivatableWidget* UNLGameLayout::GetTopWidget(const FGameplayTag& InLayerType) const
+{
+	if (true == Layers.Contains(InLayerType))
+	{
+		UNLGameLayer* GameLayer = Layers[InLayerType];
+		if (nullptr != GameLayer && nullptr != GameLayer->GetActivatableWidgetContainer())
+		{
+			return GameLayer->GetActivatableWidgetContainer()->GetActiveWidget();
+		}
+	}
+
+	return nullptr;
+}
+
 UCommonActivatableWidgetContainerBase* UNLGameLayout::GetLayout(const FGameplayTag& InLayer)
 {
 	if (UNLGameLayer* GameLayer = Layers.FindRef(InLayer))

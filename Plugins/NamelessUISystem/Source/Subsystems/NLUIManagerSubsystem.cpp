@@ -245,6 +245,23 @@ void UNLUIManagerSubsystem::HideLayerWidget(UCommonActivatableWidget* InWidget)
 	}
 }
 
+UCommonActivatableWidget* UNLUIManagerSubsystem::GetTopLayerWidget(const FGameplayTag& InLayerType)
+{
+	FRootViewportLayoutInfo MyLayoutInfo;
+	if (false == GetOwningLayoutInfo(OUT MyLayoutInfo))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Owning Layout Info %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+
+	if (ensure(MyLayoutInfo.RootLayout))
+	{
+		return MyLayoutInfo.RootLayout->GetTopWidget(InLayerType);
+	}
+
+	return nullptr;
+}
+
 void UNLUIManagerSubsystem::OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId)
 {
 	if (PlayerViewportGameLayouts.Contains(InOldId))

@@ -51,6 +51,8 @@ public:
 
 	void RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget);
 
+	UCommonActivatableWidget* GetTopWidget(const FGameplayTag& InLayerType) const;
+
 
 private:
 	// InputSubSystem Callback

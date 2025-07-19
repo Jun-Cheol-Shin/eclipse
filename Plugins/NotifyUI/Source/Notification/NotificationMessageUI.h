@@ -28,16 +28,13 @@ struct FNotifyStyleData
 	GENERATED_BODY()
 	
 public:
-	FNotifyStyleData() 
+	FNotifyStyleData()
 	{
-		
-		/*if (!IsRunningDedicatedServer())
+		for (int i = 0; i < 3; ++i)
 		{
-			FString DefaultFontName = TEXT("/Engine/EngineFonts/Roboto");
-
-			static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(*DefaultFontName);
-			FontInfo = FSlateFontInfo(RobotoFontObj.Object, 24, FName("Bold"));
-		}*/
+			FontInfo[i].FontObject = LoadObject<UObject>(nullptr, TEXT("/Engine/EngineFonts/Roboto.Roboto"));
+			FontInfo[i].Size = 20;
+		}
 	};
 	virtual ~FNotifyStyleData() {};
 
@@ -53,11 +50,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UTexture> IconSoftPtr = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FSlateFontInfo FontInfo{};
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FLinearColor BackgroundColor = FLinearColor::White;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, EditFixedSize)
+	TArray<FSlateFontInfo> FontInfo =
+	{
+		FSlateFontInfo(),
+		FSlateFontInfo(),
+		FSlateFontInfo(),
+	};
 };
 
 
@@ -169,7 +168,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, meta = (Category = "Message Setting", AllowPrivateAccess = "true"))
 	bool bCustomStyle = false;
 
-	UPROPERTY(EditDefaultsOnly, meta = (Category = "Message Setting", AllowPrivateAccess = "true", EditCondition = "true == bCustomStyle", EditConditionHides))
+	UPROPERTY(EditDefaultsOnly, Transient, meta = (Category = "Message Setting", AllowPrivateAccess = "true", EditCondition = "true == bCustomStyle", EditConditionHides))
 	TMap<FGameplayTag, FNotifyStyleData> CustomStyle;
 
 	
