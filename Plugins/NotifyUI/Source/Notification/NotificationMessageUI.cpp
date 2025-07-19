@@ -8,28 +8,45 @@
 
 #include "Animation/WidgetAnimation.h"
 
-void UNotificationMessageUI::RegistMessage(const FGameplayTag& InType, const FText& InMessage)
+void UNotificationMessageUI::RegistOneMessage(const FGameplayTag& InType, const FText& InMessage)
 {
-	FNotificationParams NewParam;
-	NewParam.MessageType = InType;
-	NewParam.RegistTime = FSlateApplication::Get().GetCurrentTime();
-	NewParam.TopMessage = InMessage;
-
-	RegistMessage(NewParam);
+	RegistMessage_Internal(InType, InMessage, FText(), FText());
 }
 
-void UNotificationMessageUI::RegistTwoMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo)
+void UNotificationMessageUI::RegistTwoMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessage_2)
 {
-	FNotificationParams NewParam;
-	NewParam.MessageType = InType;
-	NewParam.RegistTime = FSlateApplication::Get().GetCurrentTime();
-	NewParam.TopMessage = InMessage;
-	NewParam.MiddleMessage = InMessageTwo;
-
-	RegistMessage(NewParam);
+	RegistMessage_Internal(InType, InMessage, InMessage_2, FText());
 }
 
-void UNotificationMessageUI::RegistThreeMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo, const FText& InMessageThree)
+void UNotificationMessageUI::RegistThreeMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessage_2, const FText& InMessage_3)
+{
+	RegistMessage_Internal(InType, InMessage, InMessage_2, InMessage_3);
+}
+
+void UNotificationMessageUI::RegistTopCountMessage(const FGameplayTag& InType, const FString& InFormat, double InCountDown)
+{
+	FNotificationParams NewParam(InType, FSlateApplication::Get().GetCurrentTime(), FTextFormat::FromString(InFormat), InCountDown);
+	RegistParameter(NewParam);
+}
+
+void UNotificationMessageUI::RegistMiddleCountMessage(const FGameplayTag& InType, const FText& InTopMessage, const FString& InFormat, double InCountDown)
+{
+	FNotificationParams NewParam(InType, FSlateApplication::Get().GetCurrentTime(), InTopMessage, FTextFormat::FromString(InFormat), InCountDown, FText());
+	RegistParameter(NewParam);
+}
+
+void UNotificationMessageUI::RegistBottomCountMessage(const FGameplayTag& InType, const FText& InTopMessage, const FText& InMiddleMessage, const FString& InFormat, double InCountDown)
+{
+	FNotificationParams NewParam(InType, FSlateApplication::Get().GetCurrentTime(), InTopMessage, InMiddleMessage, FTextFormat::FromString(InFormat), InCountDown);
+	RegistParameter(NewParam);
+}
+
+void UNotificationMessageUI::UnregistMessage(const FGameplayTag& InTag)
+{
+	UnregistTagSet.Add(InTag);
+}
+
+void UNotificationMessageUI::RegistMessage_Internal(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo, const FText& InMessageThree)
 {
 	FNotificationParams NewParam;
 	NewParam.MessageType = InType;
@@ -38,21 +55,10 @@ void UNotificationMessageUI::RegistThreeMessage(const FGameplayTag& InType, cons
 	NewParam.MiddleMessage = InMessageTwo;
 	NewParam.BottomMessage = InMessageThree;
 
-	RegistMessage(NewParam);
+	RegistParameter(NewParam);
 }
 
-void UNotificationMessageUI::UnregistMessage(const FGameplayTag& InTag)
-{
-	UnregistTagSet.Add(InTag);
-}
-
-void UNotificationMessageUI::RegistCountDownMessage(const FGameplayTag& InType, const FString& InFormat, double InCountDown, const FText& InMessage, const FText& InMessageTwo)
-{
-	FNotificationParams NewParam(InType, FSlateApplication::Get().GetCurrentTime(), FTextFormat::FromString(InFormat), InCountDown, InMessage, InMessageTwo);
-	RegistMessage(NewParam);
-}
-
-void UNotificationMessageUI::RegistMessage(const FNotificationParams& InParam)
+void UNotificationMessageUI::RegistParameter(const FNotificationParams& InParam)
 {
 	if (false == IsVisible())
 	{
@@ -88,7 +94,6 @@ void UNotificationMessageUI::NextMessage()
 	
 	else
 	{
-
 		TSoftObjectPtr<UObject> IconImage = nullptr;
 		if (false == GetIconType(StartParam.MessageType, &IconImage))
 		{
@@ -123,7 +128,7 @@ void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 	CurrentShowingCountDown = FMath::CeilToInt64(CurrentCountDown);
 	SetCountdownMessage(CurrentShowingCountDown);
 
-	SetVisibility(true == bTouchable ? ESlateVisibility::Visible : ESlateVisibility::HitTestInvisible);
+	SetVisibility(true == bSkipToClick ? ESlateVisibility::Visible : ESlateVisibility::HitTestInvisible);
 
 	if (bAnimating)
 	{
@@ -152,6 +157,11 @@ void UNotificationMessageUI::SetMessageText(const FText& InParamText, UTextBlock
 			InTextBlock->SetText(InParamText);
 		}
 	}
+}
+
+void UNotificationMessageUI::SetMessageStyle(const FNotifyStyleData& InStyle)
+{
+
 }
 
 
@@ -279,9 +289,7 @@ void UNotificationMessageUI::NativeConstruct()
 	FTSTicker::RemoveTicker(TickDelegateHandle);
 
 	SetVisibility(ESlateVisibility::Collapsed);
-
-
-	SetConsumePointerInput(bTouchable);
+	SetConsumePointerInput(true);
 }
 
 void UNotificationMessageUI::NativeDestruct()
@@ -311,8 +319,32 @@ void UNotificationMessageUI::NativeDestruct()
 
 FReply UNotificationMessageUI::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InPointEvent)
 {
-	//OnTouchDelegate
+	OnTouchDelegate.Broadcast(CurrentParam.MessageType);
+
+	if (true == bSkipToClick)
+	{
+		NextMessage();
+	}
+	
+	return FReply::Handled();
+}
+
+FReply UNotificationMessageUI::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InPointEvent)
+{
+	OnTouchDelegate.Broadcast(CurrentParam.MessageType);
+
+	if (true == bSkipToClick)
+	{
+		NextMessage();
+	}
 
 	return FReply::Handled();
+}
+
+void UNotificationMessageUI::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+
 }
 
