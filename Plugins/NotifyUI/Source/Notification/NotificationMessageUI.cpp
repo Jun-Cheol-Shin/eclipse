@@ -2,11 +2,9 @@
 
 
 #include "NotificationMessageUI.h"
-
-#include "CommonLazyImage.h"
-#include "Components/TextBlock.h"
-
 #include "Animation/WidgetAnimation.h"
+
+DEFINE_LOG_CATEGORY(NotityUILog);
 
 void UNotificationMessageUI::RegistOneMessage(const FGameplayTag& InType, const FText& InMessage)
 {
@@ -60,6 +58,13 @@ void UNotificationMessageUI::RegistMessage_Internal(const FGameplayTag& InType, 
 
 void UNotificationMessageUI::RegistParameter(const FNotificationParams& InParam)
 {
+	if (CurrentQueueSize >= MaximumQueueSize)
+	{
+		UE_LOG(NotityUILog, Warning, TEXT("Message Queue is full."))
+		return;
+	}
+
+	++CurrentQueueSize;
 	if (false == IsVisible())
 	{
 		ParamQueue.Enqueue(InParam);
@@ -86,6 +91,8 @@ void UNotificationMessageUI::NextMessage()
 	FNotificationParams StartParam;
 	ParamQueue.Dequeue(OUT StartParam);
 
+	--CurrentQueueSize;
+
 	if (UnregistTagSet.Contains(StartParam.MessageType))
 	{
 		UnregistTagSet.Remove(StartParam.MessageType);
@@ -97,21 +104,16 @@ void UNotificationMessageUI::NextMessage()
 		TSoftObjectPtr<UObject> IconImage = nullptr;
 		if (false == GetIconType(StartParam.MessageType, &IconImage))
 		{
-			if (ensure(Icon)) Icon->SetVisibility(ESlateVisibility::Collapsed);
-			SetMessage(StartParam);
+			if (nullptr != Message) Message->SetDisbleIcon();
+			//if (ensure(Icon)) Icon->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
 		else
 		{
-			// todo
-			if (ensure(Icon))
-			{
-				Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				Icon->SetBrushFromLazyDisplayAsset(IconImage);
-				SetMessage(StartParam);
-				// goto OnChangedLoadingState
-			}
+			if (nullptr != Message) Message->SetLazyIcon(IconImage);
 		}
+
+		SetMessage(StartParam);
 	}
 
 }
@@ -119,20 +121,55 @@ void UNotificationMessageUI::NextMessage()
 void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 {
 	CurrentParam = InParam;
-	SetMessageText(InParam.TopMessage, TopMessage);
-	SetMessageText(InParam.MiddleMessage, MiddleMessage);
-	SetMessageText(InParam.BottomMessage, BottomMessage);
 
-	CurrentDuration = FSlateApplication::Get().GetCurrentTime() + Duration;
-	double CurrentCountDown = InParam.CountDown - (FSlateApplication::Get().GetCurrentTime() - InParam.RegistTime);
-	CurrentShowingCountDown = FMath::CeilToInt64(CurrentCountDown);
-	SetCountdownMessage(CurrentShowingCountDown);
-
-	if (bCustomStyle && CustomStyle.Contains(CurrentParam.MessageType))
+	if (nullptr != Message)
 	{
-		SetMessageStyle(CustomStyle[CurrentParam.MessageType]);
+		CurrentDuration = FSlateApplication::Get().GetCurrentTime() + Duration;
+		double CurrentCountDown = InParam.CountDown - (FSlateApplication::Get().GetCurrentTime() - InParam.RegistTime);
+		CurrentShowingCountDown = FMath::CeilToInt64(CurrentCountDown);
+		Message->SetMessageText(CurrentParam.CountTextType, FText::Format(CurrentParam.Format, CurrentShowingCountDown));
+
+
+		switch (CurrentParam.CountTextType)
+		{
+		case ETextDirection::Bottom:
+		{
+			Message->SetMessageText(ETextDirection::Top, InParam.TopMessage);
+			Message->SetMessageText(ETextDirection::Middle, InParam.MiddleMessage);
+		}
+			break;
+
+		case ETextDirection::Top:
+		{
+			Message->SetMessageText(ETextDirection::Middle, InParam.MiddleMessage);
+			Message->SetMessageText(ETextDirection::Bottom, InParam.BottomMessage);
+		}
+			break;
+
+		case ETextDirection::Middle:
+		{
+			Message->SetMessageText(ETextDirection::Top, InParam.TopMessage);
+			Message->SetMessageText(ETextDirection::Bottom, InParam.BottomMessage);
+		}
+			break;
+
+		default:
+		{
+			Message->SetMessageText(ETextDirection::Top, InParam.TopMessage);
+			Message->SetMessageText(ETextDirection::Middle, InParam.MiddleMessage);
+			Message->SetMessageText(ETextDirection::Bottom, InParam.BottomMessage);
+		}
+			break;
+		}
+
+
+		if (bCustomStyle && CustomStyle.Contains(CurrentParam.MessageType))
+		{
+			Message->SetMessageStyle(CustomStyle[CurrentParam.MessageType]);
+		}
 	}
 
+	
 	SetVisibility(true == bSkipToClick ? ESlateVisibility::Visible : ESlateVisibility::HitTestInvisible);
 
 	if (bAnimating)
@@ -147,56 +184,6 @@ void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 	}
 }
 
-void UNotificationMessageUI::SetMessageText(const FText& InParamText, UTextBlock* InTextBlock)
-{
-	if (nullptr != InTextBlock)
-	{
-		if (InParamText.IsEmpty())
-		{
-			InTextBlock->SetVisibility(ESlateVisibility::Collapsed);
-		}
-
-		else
-		{
-			InTextBlock->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			InTextBlock->SetText(InParamText);
-		}
-	}
-}
-
-void UNotificationMessageUI::SetMessageStyle(const FNotifyStyleData& InStyle)
-{
-	if (InStyle.TextColor.IsValidIndex(0))
-	{
-		TopMessage->SetColorAndOpacity(InStyle.TextColor[0]);
-	}
-	if (InStyle.TextColor.IsValidIndex(1))
-	{
-		MiddleMessage->SetColorAndOpacity(InStyle.TextColor[1]);
-	}
-	if (InStyle.TextColor.IsValidIndex(2))
-	{
-		BottomMessage->SetColorAndOpacity(InStyle.TextColor[2]);
-	}
-
-	if (InStyle.FontInfo.IsValidIndex(0))
-	{
-		TopMessage->SetFont(InStyle.FontInfo[0]);
-	}
-
-	if (InStyle.FontInfo.IsValidIndex(1))
-	{
-		MiddleMessage->SetFont(InStyle.FontInfo[1]);
-	}
-
-	if (InStyle.FontInfo.IsValidIndex(2))
-	{
-		BottomMessage->SetFont(InStyle.FontInfo[2]);
-	}
-
-}
-
-
 bool UNotificationMessageUI::GetIconType(const FGameplayTag& InMessageType, OUT TSoftObjectPtr<UObject>* OutImageSource)
 {
 	if (bCustomStyle && CustomStyle.Contains(InMessageType))
@@ -206,34 +193,6 @@ bool UNotificationMessageUI::GetIconType(const FGameplayTag& InMessageType, OUT 
 	}
 
 	return false;
-}
-
-void UNotificationMessageUI::SetCountdownMessage(int64 InShowCountDownSec)
-{
-	switch (CurrentParam.CountTextType)
-	{
-	case ECountDownTextDirection::Bottom:
-	{
-		SetMessageText(FText::Format(CurrentParam.Format, InShowCountDownSec), BottomMessage);
-	}
-		break;
-
-	case ECountDownTextDirection::Top:
-	{
-		SetMessageText(FText::Format(CurrentParam.Format, InShowCountDownSec), TopMessage);
-	}
-		break;
-
-	case ECountDownTextDirection::Middle:
-	{
-		SetMessageText(FText::Format(CurrentParam.Format, InShowCountDownSec), MiddleMessage);
-	}
-		break;
-
-	default:
-	case ECountDownTextDirection::None:
-		break;
-	}
 }
 
 void UNotificationMessageUI::OnEndedFadeOutAnimation()
@@ -273,13 +232,13 @@ bool UNotificationMessageUI::OnTicking(float InDeltaTime)
 		if (NowCalculatedCountDownInt <= 0)
 		{
 			CurrentShowingCountDown = 0;
-			SetCountdownMessage(0);
+			if (nullptr != Message) Message->SetMessageText(CurrentParam.CountTextType, FText::Format(CurrentParam.Format, 0));
 		}
 
 		else if (NowCalculatedCountDownInt < CurrentShowingCountDown)
 		{
 			CurrentShowingCountDown = NowCalculatedCountDownInt;
-			SetCountdownMessage(CurrentShowingCountDown);
+			if (nullptr != Message) Message->SetMessageText(CurrentParam.CountTextType, FText::Format(CurrentParam.Format, CurrentShowingCountDown));
 		}
 	}
 
@@ -316,12 +275,6 @@ void UNotificationMessageUI::NativeConstruct()
 
 	}
 
-
-	if (nullptr != Icon)
-	{
-		Icon->OnLoadingStateChanged().AddUObject(this, &UNotificationMessageUI::OnChangedLoadingState);
-	}
-
 	FTSTicker::RemoveTicker(TickDelegateHandle);
 
 	SetVisibility(ESlateVisibility::Collapsed);
@@ -330,13 +283,7 @@ void UNotificationMessageUI::NativeConstruct()
 
 void UNotificationMessageUI::NativeDestruct()
 {
-
 	FTSTicker::RemoveTicker(TickDelegateHandle);
-
-	if (nullptr != Icon)
-	{
-		Icon->OnLoadingStateChanged().RemoveAll(this);
-	}
 
 	if (nullptr != FadeOut && FadeOutAnimationEvent.IsBound())
 	{

@@ -7,18 +7,26 @@
 #include "../Subsystems/Input/NLInputManagerSubSystem.h"
 #include "../Subsystems/NLUIManagerSubsystem.h"
 
+UNLGameLayout* UNLUIStatics::GetGameLayoutForPlayer(const ULocalPlayer* InLocalPlayer)
+{
+	UNLGameInstance* EcpGameInstance = Cast<UNLGameInstance>(InLocalPlayer->GetGameInstance());
+	if (false == ensure(EcpGameInstance)) return nullptr;
+
+	UNLUIManagerSubsystem* UISubSystem = EcpGameInstance->GetSubsystem<UNLUIManagerSubsystem>();
+	if (false == ensure(UISubSystem)) return nullptr;
+
+	return UISubSystem->GetPlayerGameLayout(InLocalPlayer);
+}
+
 UCommonActivatableWidget* UNLUIStatics::GetTopWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType)
 {
 	UNLGameInstance* EcpGameInstance = Cast<UNLGameInstance>(InLocalPlayer->GetGameInstance());
-	if (false == ensure(EcpGameInstance)) return;
+	if (false == ensure(EcpGameInstance)) return nullptr;
 
 	UNLUIManagerSubsystem* UISubSystem = EcpGameInstance->GetSubsystem<UNLUIManagerSubsystem>();
-	if (false == ensure(UISubSystem)) return;
+	if (false == ensure(UISubSystem)) return nullptr;
 
-
-
-
-	return nullptr;
+	return UISubSystem->GetTopLayerWidget(InLayerType);
 }
 
 void UNLUIStatics::ShowLayerWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayer, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass)

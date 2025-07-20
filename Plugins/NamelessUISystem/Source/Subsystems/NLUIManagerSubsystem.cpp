@@ -251,12 +251,22 @@ UCommonActivatableWidget* UNLUIManagerSubsystem::GetTopLayerWidget(const FGamepl
 	if (false == GetOwningLayoutInfo(OUT MyLayoutInfo))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid Owning Layout Info %s"), ANSI_TO_TCHAR(__FUNCTION__));
-		return;
+		return nullptr;
 	}
 
 	if (ensure(MyLayoutInfo.RootLayout))
 	{
 		return MyLayoutInfo.RootLayout->GetTopWidget(InLayerType);
+	}
+
+	return nullptr;
+}
+
+UNLGameLayout* UNLUIManagerSubsystem::GetPlayerGameLayout(const ULocalPlayer* InPlayer) const
+{
+	if (PlayerViewportGameLayouts.Contains(InPlayer->GetPlatformUserId()))
+	{
+		return PlayerViewportGameLayouts[InPlayer->GetPlatformUserId()].RootLayout;
 	}
 
 	return nullptr;

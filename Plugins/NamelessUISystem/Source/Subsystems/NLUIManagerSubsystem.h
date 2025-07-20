@@ -158,6 +158,8 @@ public:
 
 	UCommonActivatableWidget* GetTopLayerWidget(const FGameplayTag& InLayerType);
 
+	UNLGameLayout* GetPlayerGameLayout(const ULocalPlayer* InPlayer) const;
+
 protected:
 	void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);
 	void OnPlayerControllerChanged(APlayerController* InController);

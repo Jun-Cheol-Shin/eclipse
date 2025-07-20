@@ -20,6 +20,11 @@ public:
 	UNLUIStatics() {}
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
+	static UNLGameLayout* GetGameLayoutForPlayer(const ULocalPlayer* InLocalPlayer);
+
+
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
 	static UCommonActivatableWidget* GetTopWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType);
 
 
