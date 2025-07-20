@@ -89,6 +89,7 @@ class NOTIFYUI_API UCommonNotifyMessageUI : public UCommonUserWidget
 
 public:
 	void SetMessageText(const FText& InText, const FText& InText_2 = FText(), const FText& InText_3 = FText());
+
 	void SetMessageText(ETextDirection InType, const FText& InText);
 
 	void SetMessageStyle(const FNotifyStyleData& InStyle);

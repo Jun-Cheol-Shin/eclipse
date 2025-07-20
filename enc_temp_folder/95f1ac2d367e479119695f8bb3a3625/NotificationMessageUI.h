@@ -56,7 +56,7 @@ public:
 
 public:
 	FGameplayTag MessageType = FGameplayTag();
-	int64 RegistTime = 0;
+	double RegistTime = 0;
 	FText TopMessage = FText();
 	FText MiddleMessage = FText();
 	FText BottomMessage = FText();
@@ -83,25 +83,25 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistOneMessage(FGameplayTag InType, const FText& InMessage);
+	void RegistOneMessage(const FGameplayTag& InType, const FText& InMessage);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistTwoMessage(FGameplayTag InType, const FText& InMessage, const FText& InMessage_2);
+	void RegistTwoMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessage_2);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistThreeMessage(FGameplayTag InType, const FText& InMessage, const FText& InMessage_2, const FText& InMessage_3);
+	void RegistThreeMessage(const FGameplayTag& InType, const FText& InMessage, const FText& InMessage_2, const FText& InMessage_3);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistTopCountMessage(FGameplayTag InType, const FString& InFormat, double InCountDown);
+	void RegistTopCountMessage(const FGameplayTag& InType, const FString& InFormat, double InCountDown);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistMiddleCountMessage(FGameplayTag InType, const FText& InTopMessage, const FString& InFormat, double InCountDown);
+	void RegistMiddleCountMessage(const FGameplayTag& InType, const FText& InTopMessage, const FString& InFormat, double InCountDown);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistBottomCountMessage(FGameplayTag InType, const FText& InTopMessage, const FText& InMiddleMessage, const FString& InFormat, double InCountDown);
+	void RegistBottomCountMessage(const FGameplayTag& InType, const FText& InTopMessage, const FText& InMiddleMessage, const FString& InFormat, double InCountDown);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void UnregistMessage(FGameplayTag InTag);
+	void UnregistMessage(const FGameplayTag& InTag);
 
 private:
 	UPROPERTY(EditInstanceOnly, meta = (Category = "Message Setting", AllowPrivateAccess = "true"))
@@ -177,7 +177,7 @@ private:
 	TQueue<FNotificationParams> ParamQueue;
 	TSet<FGameplayTag> UnregistTagSet;
 
-	int64 CurrentDuration = 0;
+	double CurrentDuration = 0.f;
 
 
 	FNotificationParams CurrentParam;

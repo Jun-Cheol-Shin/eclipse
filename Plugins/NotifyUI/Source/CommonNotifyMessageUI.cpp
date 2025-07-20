@@ -3,7 +3,7 @@
 
 #include "CommonNotifyMessageUI.h"
 
-#include "Components/TextBlock.h"
+#include "CommonRichTextBlock.h"
 #include "CommonLazyImage.h"
 
 
@@ -11,56 +11,64 @@ void UCommonNotifyMessageUI::SetMessageStyle(const FNotifyStyleData& InStyle)
 {
 	if (InStyle.TextColor.IsValidIndex(0))
 	{
-		TopMessage->SetColorAndOpacity(InStyle.TextColor[0]);
+		if (nullptr != UIVariable.TopMessage) UIVariable.TopMessage->SetDefaultColorAndOpacity(InStyle.TextColor[0]);
 	}
 	if (InStyle.TextColor.IsValidIndex(1))
 	{
-		MiddleMessage->SetColorAndOpacity(InStyle.TextColor[1]);
+		if (nullptr != UIVariable.MiddleMessage) UIVariable.MiddleMessage->SetDefaultColorAndOpacity(InStyle.TextColor[1]);
 	}
 	if (InStyle.TextColor.IsValidIndex(2))
 	{
-		BottomMessage->SetColorAndOpacity(InStyle.TextColor[2]);
+		if (nullptr != UIVariable.BottomMessage) UIVariable.BottomMessage->SetDefaultColorAndOpacity(InStyle.TextColor[2]);
 	}
 
 	if (InStyle.FontInfo.IsValidIndex(0))
 	{
-		TopMessage->SetFont(InStyle.FontInfo[0]);
+		if (nullptr != UIVariable.TopMessage) UIVariable.TopMessage->SetDefaultFont(InStyle.FontInfo[0]);
 	}
 
 	if (InStyle.FontInfo.IsValidIndex(1))
 	{
-		MiddleMessage->SetFont(InStyle.FontInfo[1]);
+		if (nullptr != UIVariable.MiddleMessage) UIVariable.MiddleMessage->SetDefaultFont(InStyle.FontInfo[1]);
 	}
 
 	if (InStyle.FontInfo.IsValidIndex(2))
 	{
-		BottomMessage->SetFont(InStyle.FontInfo[2]);
+		if (nullptr != UIVariable.BottomMessage) UIVariable.BottomMessage->SetDefaultFont(InStyle.FontInfo[2]);
 	}
 
 }
 
+void UCommonNotifyMessageUI::SetMessageText(const FText& InText, const FText& InText_2, const FText& InText_3)
+{
+	SetMessageText(ETextDirection::Top, InText);
+
+	SetMessageText(ETextDirection::Middle, InText_2);
+
+	SetMessageText(ETextDirection::Bottom, InText_3);
+}
 
 void UCommonNotifyMessageUI::SetMessageText(ETextDirection InType, const FText& InText)
 {
-	UTextBlock* SettingText = nullptr;
+	UCommonRichTextBlock* SettingText = nullptr;
 
 	switch (InType)
 	{
 	case ETextDirection::Top:
 	{
-		SettingText = TopMessage;
+		SettingText = UIVariable.TopMessage;
 	}
 	break;
 
 	case ETextDirection::Middle:
 	{
-		SettingText = MiddleMessage;
+		SettingText = UIVariable.MiddleMessage;
 	}
 	break;
 
 	case ETextDirection::Bottom:
 	{
-		SettingText = BottomMessage;
+		SettingText = UIVariable.BottomMessage;
 	}
 		break;
 
@@ -73,7 +81,7 @@ void UCommonNotifyMessageUI::SetMessageText(ETextDirection InType, const FText& 
 
 	if (nullptr != SettingText)
 	{
-		if (InText.IsEmpty())
+		/*if (InText.IsEmpty())
 		{
 			SettingText->SetVisibility(ESlateVisibility::Collapsed);
 		}
@@ -82,17 +90,26 @@ void UCommonNotifyMessageUI::SetMessageText(ETextDirection InType, const FText& 
 		{
 			SettingText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SettingText->SetText(InText);
-		}
+		}*/
+
+		SettingText->SetText(InText);
 	}
 }
 
 void UCommonNotifyMessageUI::SetLazyIcon(const TSoftObjectPtr<UObject>& InSoftPtr)
 {
-	Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	Icon->SetBrushFromLazyDisplayAsset(InSoftPtr);
+	if (nullptr != UIVariable.Icon)
+	{
+		UIVariable.Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		UIVariable.Icon->SetBrushFromLazyDisplayAsset(InSoftPtr);
+	}
 }
 
 void UCommonNotifyMessageUI::SetDisbleIcon()
 {
-	Icon->SetVisibility(ESlateVisibility::Collapsed);
+	if (nullptr != UIVariable.Icon)
+	{
+		UIVariable.Icon->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
 }
