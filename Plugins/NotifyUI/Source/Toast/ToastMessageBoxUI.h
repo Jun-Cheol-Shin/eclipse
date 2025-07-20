@@ -52,6 +52,6 @@ public:
 	void RegistToast(FGameplayTag InTag, const FText& InText);
 
 private:
-	void OnEndedFadeOutAnimation();
+	void OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText);
 
 };

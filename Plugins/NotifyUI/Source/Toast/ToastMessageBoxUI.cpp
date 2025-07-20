@@ -117,11 +117,9 @@ void UToastMessageBoxUI::RegistToast(FGameplayTag InTag, const FText& InText)
 
 }
 
-void UToastMessageBoxUI::OnEndedFadeOutAnimation()
+void UToastMessageBoxUI::OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText)
 {
 	if (nullptr == ToastBox) return;
 
-	const TArray<UToastMessageTextUI*>& EntryList = ToastBox->GetTypedEntries<UToastMessageTextUI>();
-
-
+	ToastBox->RemoveEntry(InMessageText);
 }

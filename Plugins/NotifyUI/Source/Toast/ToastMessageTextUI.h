@@ -24,7 +24,7 @@ class NOTIFYUI_API UToastMessageTextUI : public UCommonNotifyMessageUI
 	GENERATED_BODY()
 
 public:
-	DECLARE_DELEGATE(FOnCompleteAnimEndSignature)
+	DECLARE_DELEGATE_OneParam(FOnCompleteAnimEndSignature, UToastMessageTextUI*)
 	FOnCompleteAnimEndSignature OnCompleteAnimEndDelegate;
 	
 	void PlayToastAnimation(EAnimationType InType);

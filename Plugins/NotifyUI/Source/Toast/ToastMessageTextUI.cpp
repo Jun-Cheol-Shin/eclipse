@@ -103,6 +103,6 @@ void UToastMessageTextUI::OnCompleteFadeInAnimation()
 
 	if (OnCompleteAnimEndDelegate.IsBound())
 	{
-		OnCompleteAnimEndDelegate.ExecuteIfBound();
+		OnCompleteAnimEndDelegate.ExecuteIfBound(this);
 	}
 }
