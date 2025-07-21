@@ -8,35 +8,38 @@ DEFINE_LOG_CATEGORY(NotityUILog);
 
 void UNotificationMessageUI::RegistOneMessage(FGameplayTag InType, const FText& InMessage)
 {
-	RegistMessage_Internal(InType, InMessage, FText(), FText());
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), InMessage);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::RegistTwoMessage(FGameplayTag InType, const FText& InMessage, const FText& InMessage_2)
 {
-	RegistMessage_Internal(InType, InMessage, InMessage_2, FText());
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), InMessage, InMessage_2);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::RegistThreeMessage(FGameplayTag InType, const FText& InMessage, const FText& InMessage_2, const FText& InMessage_3)
 {
-	RegistMessage_Internal(InType, InMessage, InMessage_2, InMessage_3);
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), InMessage, InMessage_2, InMessage_3);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::RegistTopCountMessage(FGameplayTag InType, const FString& InFormat, double InCountDown)
 {
-	FNotificationParams NewParam(InType, FDateTime::Now().GetTicks(), FTextFormat::FromString(InFormat), InCountDown);
-	RegistParameter(NewParam);
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), FTextFormat::FromString(InFormat), InCountDown);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::RegistMiddleCountMessage(FGameplayTag InType, const FText& InTopMessage, const FString& InFormat, double InCountDown)
 {
-	FNotificationParams NewParam(InType, FDateTime::Now().GetTicks(), InTopMessage, FTextFormat::FromString(InFormat), InCountDown, FText());
-	RegistParameter(NewParam);
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), InTopMessage, FTextFormat::FromString(InFormat), InCountDown);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::RegistBottomCountMessage(FGameplayTag InType, const FText& InTopMessage, const FText& InMiddleMessage, const FString& InFormat, double InCountDown)
 {
-	FNotificationParams NewParam(InType, FDateTime::Now().GetTicks(), InTopMessage, InMiddleMessage, FTextFormat::FromString(InFormat), InCountDown);
-	RegistParameter(NewParam);
+	FNotificationParams NewParam(InType, FPlatformTime::Seconds(), InTopMessage, InMiddleMessage, FTextFormat::FromString(InFormat), InCountDown);
+	RegistMessageInternal(NewParam);
 }
 
 void UNotificationMessageUI::UnregistMessage(FGameplayTag InTag)
@@ -44,19 +47,8 @@ void UNotificationMessageUI::UnregistMessage(FGameplayTag InTag)
 	UnregistTagSet.Add(InTag);
 }
 
-void UNotificationMessageUI::RegistMessage_Internal(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo, const FText& InMessageThree)
-{
-	FNotificationParams NewParam;
-	NewParam.MessageType = InType;
-	NewParam.RegistTime = FDateTime::Now().GetTicks();
-	NewParam.TopMessage = InMessage;
-	NewParam.MiddleMessage = InMessageTwo;
-	NewParam.BottomMessage = InMessageThree;
 
-	RegistParameter(NewParam);
-}
-
-void UNotificationMessageUI::RegistParameter(const FNotificationParams& InParam)
+void UNotificationMessageUI::RegistMessageInternal(const FNotificationParams& InParam)
 {
 	if (CurrentQueueSize >= MaximumQueueSize)
 	{
@@ -124,10 +116,11 @@ void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 
 	if (nullptr != Message)
 	{
-		CurrentDuration = FDateTime::Now().GetTicks() + FTimespan::FromSeconds(Duration).GetTicks();
-		double CurrentCountDown = InParam.CountDown - FTimespan(FDateTime::Now().GetTicks() - InParam.RegistTime).GetTotalSeconds();
+		CurrentDuration = FPlatformTime::Seconds() + Duration;
+		double CurrentCountDown = CurrentParam.CountDown - (FPlatformTime::Seconds() - CurrentParam.RegistTime);
 		CurrentShowingCountDown = FMath::CeilToInt64(CurrentCountDown);
 		Message->SetMessageText(CurrentParam.CountTextType, FText::Format(CurrentParam.Format, CurrentShowingCountDown));
+
 
 
 		switch (CurrentParam.CountTextType)
@@ -174,14 +167,12 @@ void UNotificationMessageUI::SetMessage(const FNotificationParams& InParam)
 
 	if (bAnimating)
 	{
-		CurrentDuration += FTimespan::FromSeconds(FadeIn->GetEndTime()).GetTicks();
+		CurrentDuration += FadeIn->GetEndTime();
 		PlayAnimationForward(FadeIn);
 	}
 
-	else
-	{
-		OnEnededFadeInAnimation();
-	}
+	FTSTicker::RemoveTicker(TickDelegateHandle);
+	TickDelegateHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UNotificationMessageUI::OnTicking), TickDelay);
 }
 
 bool UNotificationMessageUI::GetIconType(const FGameplayTag& InMessageType, OUT TSoftObjectPtr<UObject>* OutImageSource)
@@ -201,15 +192,10 @@ void UNotificationMessageUI::OnEndedFadeOutAnimation()
 	NextMessage();
 }
 
-void UNotificationMessageUI::OnEnededFadeInAnimation()
-{
-	FTSTicker::RemoveTicker(TickDelegateHandle);
-	TickDelegateHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UNotificationMessageUI::OnTicking), TickDelay);
-}
 
 bool UNotificationMessageUI::OnTicking(float InDeltaTime)
 {
-	if (CurrentDuration <= FDateTime::Now().GetTicks())
+	if (CurrentDuration <= FPlatformTime::Seconds())
 	{
 		if (true == bAnimating)
 		{
@@ -226,7 +212,7 @@ bool UNotificationMessageUI::OnTicking(float InDeltaTime)
 
 	else
 	{
-		double NowCalculatedCountDown = CurrentParam.CountDown - FTimespan(FDateTime::Now().GetTicks() - CurrentParam.RegistTime).GetTotalSeconds();
+		double NowCalculatedCountDown = CurrentParam.CountDown - (FPlatformTime::Seconds() - CurrentParam.RegistTime);
 		int64 NowCalculatedCountDownInt = FMath::CeilToInt64(NowCalculatedCountDown);
 
 		if (NowCalculatedCountDownInt <= 0)
@@ -259,13 +245,6 @@ void UNotificationMessageUI::NativeConstruct()
 
 	if (true == bAnimating)
 	{
-		if (ensure(FadeIn))
-		{
-			FadeInAnimationEvent.Clear();
-			FadeInAnimationEvent.BindDynamic(this, &UNotificationMessageUI::OnEnededFadeInAnimation);
-			BindToAnimationFinished(FadeIn, FadeInAnimationEvent);
-		}
-
 		if (ensure(FadeOut))
 		{
 			FadeOutAnimationEvent.Clear();
@@ -291,11 +270,6 @@ void UNotificationMessageUI::NativeDestruct()
 		FadeOutAnimationEvent.Clear();
 	}
 
-	if (nullptr != FadeIn && FadeInAnimationEvent.IsBound())
-	{
-		UnbindAllFromAnimationFinished(FadeIn);
-		FadeInAnimationEvent.Clear();
-	}
 
 	ParamQueue.Empty();
 

@@ -37,7 +37,7 @@ public:
 		TopMessage = FText::Format(InFormat, InCountDownSec);
 	}
 
-	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FTextFormat& InFormat, double InCountDownSec, const FText& InMessage_2) :
+	FNotificationParams(const FGameplayTag& InType, double InRegistTime, const FText& InMessage, const FTextFormat& InFormat, double InCountDownSec, const FText& InMessage_2 = FText()) :
 		MessageType(InType), RegistTime(InRegistTime), TopMessage(InMessage), BottomMessage(InMessage_2), CountTextType(ETextDirection::Middle), Format(InFormat), CountDown(InCountDownSec)
 	{
 
@@ -56,7 +56,7 @@ public:
 
 public:
 	FGameplayTag MessageType = FGameplayTag();
-	int64 RegistTime = 0;
+	double RegistTime = 0.f;
 	FText TopMessage = FText();
 	FText MiddleMessage = FText();
 	FText BottomMessage = FText();
@@ -126,8 +126,7 @@ private:
 	TMap<FGameplayTag, FNotifyStyleData> CustomStyle;
 
 private:
-	void RegistMessage_Internal(const FGameplayTag& InType, const FText& InMessage, const FText& InMessageTwo, const FText& InMessageThree);
-	void RegistParameter(const FNotificationParams& InParam);
+	void RegistMessageInternal(const FNotificationParams& InParam);
 
 private:
 	void NextMessage();
@@ -151,9 +150,6 @@ protected:
 	UFUNCTION()
 	void OnEndedFadeOutAnimation();
 
-	UFUNCTION()
-	void OnEnededFadeInAnimation();
-
 	bool OnTicking(float InDeltaTime);
 	void OnChangedLoadingState(bool bIsLoading);
 
@@ -169,7 +165,6 @@ protected:
 #endif
 
 private:
-	FWidgetAnimationDynamicEvent FadeInAnimationEvent;
 	FWidgetAnimationDynamicEvent FadeOutAnimationEvent;
 
 	FTSTicker::FDelegateHandle TickDelegateHandle;
@@ -177,8 +172,7 @@ private:
 	TQueue<FNotificationParams> ParamQueue;
 	TSet<FGameplayTag> UnregistTagSet;
 
-	int64 CurrentDuration = 0;
-
+	double CurrentDuration = 0.f;
 
 	FNotificationParams CurrentParam;
 	int64 CurrentShowingCountDown = 0;
