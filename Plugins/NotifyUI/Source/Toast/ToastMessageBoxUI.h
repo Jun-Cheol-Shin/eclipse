@@ -18,10 +18,18 @@ enum class EToastStackType : uint8
 	Down,
 };
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFinishMessageSignature, FGameplayTag, InMessageType);
+
 UCLASS()
 class NOTIFYUI_API UToastMessageBoxUI : public UCommonUserWidget
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintAssignable, meta = (Category = "Toast UI"))
+	FOnFinishMessageSignature OnFinishMessageSignature;
+
 
 private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "1", ClampMax = "5"))
@@ -33,25 +41,32 @@ private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true"))
 	EToastStackType ToastStackType;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true"))
-	EAnimationType ToastAnimationType = EAnimationType::Up;
-
+#if WITH_EDITORONLY_DATA
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "1", ClampMax = "10"))
 	int PreviewEntryCount = 0;
-
-private:
-	UPROPERTY(meta = (BindWidgetOptional, AllowPrivateAccess = "true"))
-	UDynamicEntryBox* ToastBox;
+#endif
 
 protected:
 	virtual void SynchronizeProperties() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& InGeometry, float InDeltaTime) override;
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
 	void RegistToast(FGameplayTag InTag, const FText& InText);
 
 private:
+	void AddToast(const FGameplayTag& InTag, const FText& InText);
+	void RemoveToast();
+
+private:
 	void OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText);
 
+
+private:
+	UPROPERTY(meta = (BindWidgetOptional, AllowPrivateAccess = "true"))
+	UDynamicEntryBox* ToastBox;
+
+	TArray<TPair<FGameplayTag, double>> MessageQueue;
+	TQueue<TPair<FGameplayTag, FText>> WaitingQueue;
 };

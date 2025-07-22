@@ -12,10 +12,8 @@ enum class EToastStackType : uint8;
 UENUM(BlueprintType)
 enum class EAnimationType : uint8
 {
-	Up,
-	Down,
-	Left,
-	Right,
+	FadeIn_Veritcal,
+	FadeIn_Horizontal,
 };
 
 UCLASS()
@@ -26,13 +24,23 @@ class NOTIFYUI_API UToastMessageTextUI : public UCommonNotifyMessageUI
 public:
 	DECLARE_DELEGATE_OneParam(FOnCompleteAnimEndSignature, UToastMessageTextUI*)
 	FOnCompleteAnimEndSignature OnCompleteAnimEndDelegate;
+
+	void Start(const FText& InText, bool bReversed = false);
+	void End();
 	
-	void PlayToastAnimation(EAnimationType InType);
-	void SetStackDirection(EToastStackType InStackType);
+	void SetDirection(bool bReversed = false);
+
+private:
+	void PlayToastAnimation();
+
+private:
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
+	EAnimationType AnimationType;
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void RemoveFromParent() override;
 
 
 private:
@@ -59,7 +67,4 @@ private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	USizeBox* SizeBox;
 
-
-private:
-	float Duration = 5.f;
 };

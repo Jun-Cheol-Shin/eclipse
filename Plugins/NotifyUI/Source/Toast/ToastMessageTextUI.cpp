@@ -5,74 +5,29 @@
 #include "ToastMessageBoxUI.h"
 #include "Components/SizeBox.h"
 
-void UToastMessageTextUI::PlayToastAnimation(EAnimationType InType)
+
+void UToastMessageTextUI::Start(const FText& InText, bool bReversed)
 {
-	switch (InType)
+	SetMessageText(ETextDirection::Top, InText);
+	SetDirection(bReversed);
+	PlayToastAnimation();
+}
+
+void UToastMessageTextUI::End()
+{
+	if (nullptr != FadeOut)
 	{
-	case EAnimationType::Up:
-		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
-		{
-			if (nullptr != Up) PlayAnimationForward(Up);
-		}
-
-		else
-		{
-			if (nullptr != Down) PlayAnimationForward(Down);
-		}
-		break;
-
-	case EAnimationType::Down:
-		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
-		{
-			if (nullptr != Down) PlayAnimationForward(Down);
-		}
-
-		else
-		{
-			if (nullptr != Up) PlayAnimationForward(Up);
-		}
-
-		break;
-
-	case EAnimationType::Left:
-	{
-		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
-		{
-			if (nullptr != Left) PlayAnimationForward(Left);
-		}
-
-		else
-		{
-			if (nullptr != Right) PlayAnimationForward(Right);
-		}
-	}
-		break;
-
-	case EAnimationType::Right:
-	{
-		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
-		{
-			if (nullptr != Right) PlayAnimationForward(Right);
-		}
-
-		else
-		{
-			if (nullptr != Left) PlayAnimationForward(Left);
-		}
-	}
-		break;
-
-	default:
-		break;
+		PlayAnimationForward(FadeOut);
 	}
 }
 
-void UToastMessageTextUI::SetStackDirection(EToastStackType InStackType)
+void UToastMessageTextUI::SetDirection(bool bReversed)
 {
 	if (nullptr != SizeBox)
 	{
-		SizeBox->SetRenderTransformAngle(EToastStackType::Down == InStackType ? 180.f : 0.f);
+		SizeBox->SetRenderTransformAngle(true == bReversed ? 180.f : 0.f);
 	}
+
 }
 
 void UToastMessageTextUI::NativeConstruct()
@@ -97,6 +52,11 @@ void UToastMessageTextUI::NativeDestruct()
 	}
 }
 
+void UToastMessageTextUI::RemoveFromParent()
+{
+	OnCompleteAnimEndDelegate.Unbind();
+}
+
 void UToastMessageTextUI::OnCompleteFadeInAnimation()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
@@ -104,5 +64,40 @@ void UToastMessageTextUI::OnCompleteFadeInAnimation()
 	if (OnCompleteAnimEndDelegate.IsBound())
 	{
 		OnCompleteAnimEndDelegate.ExecuteIfBound(this);
+	}
+}
+
+void UToastMessageTextUI::PlayToastAnimation()
+{
+	switch (AnimationType)
+	{
+	case EAnimationType::FadeIn_Veritcal:
+		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
+		{
+			if (nullptr != Up) PlayAnimationForward(Up);
+		}
+
+		else
+		{
+			if (nullptr != Down) PlayAnimationForward(Down);
+		}
+		break;
+
+	case EAnimationType::FadeIn_Horizontal:
+	{
+		if (FMath::IsNearlyZero(GetRenderTransformAngle()))
+		{
+			if (nullptr != Left) PlayAnimationForward(Left);
+		}
+
+		else
+		{
+			if (nullptr != Right) PlayAnimationForward(Right);
+		}
+	}
+	break;
+
+	default:
+		break;
 	}
 }
