@@ -31,6 +31,28 @@ public:
 	FOnFinishMessageSignature OnFinishMessageSignature;
 
 
+public:
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistToastInt(FGameplayTag InTag, const FString& InFormat, const TArray<int64>& InArguments);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistToastDouble(FGameplayTag InTag, const FString& InFormat, const TArray<double>& InArguments);
+
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistToastFloat(FGameplayTag InTag, const FString& InFormat, const TArray<float>& InArguments);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistToastUInt(FGameplayTag InTag, const FString& InFormat, const TArray<uint8>& InArguments);
+
+	// not merge
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	void RegistToastText(FGameplayTag InTag, const FText& InText);
+
+private:
+	void RegistToastInternal(FGameplayTag InTag, const FTextFormat& InFormat, FFormatOrderedArguments InArguments);
+	void RegistToastInternal(FGameplayTag InTag, const FText& InText);
+
 private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "1", ClampMax = "5"))
 	float ToastDuration = 3.f;
@@ -40,6 +62,12 @@ private:
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true"))
 	EToastStackType ToastStackType;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.2", ClampMax = "0.5"))
+	bool bMerge = true;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.2", ClampMax = "0.5", EditCondition = "true == bMerge", EditConditionHides))
+	float ToastMergeInterval = 0.3f;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", ClampMin = "1", ClampMax = "10"))
@@ -51,22 +79,22 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& InGeometry, float InDeltaTime) override;
 
-public:
-	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	void RegistToast(FGameplayTag InTag, const FText& InText);
 
 private:
-	void AddToast(const FGameplayTag& InTag, const FText& InText);
-	void RemoveToast();
+	void AddToast();
+	void RemoveToast(const FGameplayTag& InTag);
+	void RemoveToastTop();
 
 private:
-	void OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText);
+	void OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText, const FGameplayTag& InMessageType);
 
 
 private:
 	UPROPERTY(meta = (BindWidgetOptional, AllowPrivateAccess = "true"))
 	UDynamicEntryBox* ToastBox;
 
-	TArray<TPair<FGameplayTag, double>> MessageQueue;
-	TQueue<TPair<FGameplayTag, FText>> WaitingQueue;
+	TMap<FGameplayTag, double> MessageQueue;
+	TQueue<FToastMessageData> WaitQueue;
+
+	TPair<FToastMessageData*, double> NeedMergeData = { nullptr, 0.f };
 };

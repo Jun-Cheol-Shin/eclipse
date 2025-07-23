@@ -6,9 +6,11 @@
 #include "Components/SizeBox.h"
 
 
-void UToastMessageTextUI::Start(const FText& InText, bool bReversed)
+void UToastMessageTextUI::Start(const FToastMessageData& InData, bool bReversed)
 {
-	SetMessageText(ETextDirection::Top, InText);
+	MessageData = InData;
+
+	SetMessageText(ETextDirection::Top, FText::Format(InData.Format, InData.Arguments));
 	SetDirection(bReversed);
 	PlayToastAnimation();
 }
@@ -27,7 +29,6 @@ void UToastMessageTextUI::SetDirection(bool bReversed)
 	{
 		SizeBox->SetRenderTransformAngle(true == bReversed ? 180.f : 0.f);
 	}
-
 }
 
 void UToastMessageTextUI::NativeConstruct()
@@ -61,10 +62,7 @@ void UToastMessageTextUI::OnCompleteFadeInAnimation()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
 
-	if (OnCompleteAnimEndDelegate.IsBound())
-	{
-		OnCompleteAnimEndDelegate.ExecuteIfBound(this);
-	}
+	OnCompleteAnimEndDelegate.ExecuteIfBound(this, MessageData.MessageType);
 }
 
 void UToastMessageTextUI::PlayToastAnimation()
