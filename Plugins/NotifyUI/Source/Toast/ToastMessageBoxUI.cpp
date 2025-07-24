@@ -30,6 +30,41 @@ void UToastMessageBoxUI::RegistToastText(FGameplayTag InTag, const FText& InText
 	RegistToastInternal(InTag, InText);
 }
 
+void UToastMessageBoxUI::RegistToastInternal(FGameplayTag InTag, const FTextFormat& InFormat, FFormatOrderedArguments InArguments)
+{
+	if (nullptr == ToastBox) return;
+
+	if (true == bMerge)
+	{
+		FToastMessageData NewData(InTag, InFormat, InArguments);
+		if (false == NeedMergeData.Key.IsValid())
+		{
+			NeedMergeData = { NewData, FPlatformTime::Seconds() + ToastMergeInterval };
+		}
+
+
+		else if (true == NeedMergeData.Key.IsValid() && true == NeedMergeData.Key.IsPossibleMerge(NewData))
+		{
+			// merge...
+			NeedMergeData.Key.Merge(NewData);
+		}
+
+		else if (true == NeedMergeData.Key.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT(" Merge TEXT! "));
+
+			// reset wait data...
+			WaitQueue.Enqueue(NeedMergeData.Key);
+			NeedMergeData = { NewData, FPlatformTime::Seconds() + ToastMergeInterval };
+		}
+	}
+
+	else
+	{
+		RegistToastInternal(InTag, FText::Format(InFormat, InArguments));
+	}
+}
+
 void UToastMessageBoxUI::RegistToastInternal(FGameplayTag InTag, const FText& InText)
 {
 	if (nullptr == ToastBox) return;
@@ -38,7 +73,7 @@ void UToastMessageBoxUI::RegistToastInternal(FGameplayTag InTag, const FText& In
 
 	if (ToastBoxMaximumCount <= ToastBox->GetAllEntries().Num())
 	{
-		RemoveToastTop();
+		RemoveToast(0);
 	}
 
 	else
@@ -48,46 +83,10 @@ void UToastMessageBoxUI::RegistToastInternal(FGameplayTag InTag, const FText& In
 
 }
 
-void UToastMessageBoxUI::RegistToastInternal(FGameplayTag InTag, const FTextFormat& InFormat, FFormatOrderedArguments InArguments)
-{
-	if (nullptr == ToastBox) return;
-
-	FToastMessageData NewData(InTag, InFormat, InArguments);
-
-	if (true == bMerge)
-	{
-		if (nullptr != NeedMergeData.Key && true == NeedMergeData.Key->IsPossibleMerge(NewData))
-		{
-			// merge...
-			NeedMergeData.Key->Merge(NewData);
-		}
-
-		else
-		{
-			// reset wait data...
-			WaitQueue.Enqueue(*NeedMergeData.Key);
-			NeedMergeData = { &NewData, FPlatformTime::Seconds() + ToastMergeInterval };
-		}
-	}
-
-	else
-	{
-		WaitQueue.Enqueue(NewData);
-
-		if (ToastBoxMaximumCount <= ToastBox->GetAllEntries().Num())
-		{
-			RemoveToastTop();
-		}
-
-		else
-		{
-			AddToast();
-		}
-	}
-}
-
 void UToastMessageBoxUI::AddToast()
 {
+	UE_LOG(LogTemp, Warning, TEXT(" Add TEXT! "));
+
 	if (nullptr == WaitQueue.Peek()) return;
 
 	FToastMessageData NewData;
@@ -96,13 +95,14 @@ void UToastMessageBoxUI::AddToast()
 	UToastMessageTextUI* MessageUI = ToastBox->CreateEntry<UToastMessageTextUI>();
 	if (nullptr != MessageUI)
 	{
-		MessageQueue.Emplace(NewData.MessageType, FPlatformTime::Seconds() + ToastDuration);
+		TimeQueue.Emplace(FPlatformTime::Seconds() + ToastDuration, false);
 
 		MessageUI->OnCompleteAnimEndDelegate.BindUObject(this, &UToastMessageBoxUI::OnEndedFadeOutAnimation);
 		MessageUI->Start(NewData, EToastStackType::Down == ToastStackType);
 	}
 }
 
+/*
 void UToastMessageBoxUI::RemoveToast(const FGameplayTag& InTag)
 {
 	if (nullptr == ToastBox) return;
@@ -118,15 +118,15 @@ void UToastMessageBoxUI::RemoveToast(const FGameplayTag& InTag)
 	{
 		(*TextUI)->End();
 	}
-}
+}*/
 
-void UToastMessageBoxUI::RemoveToastTop()
+void UToastMessageBoxUI::RemoveToast(int Index)
 {
 	const TArray<UToastMessageTextUI*>& EntryList = ToastBox->GetTypedEntries<UToastMessageTextUI>();
 
-	if (EntryList.IsValidIndex(0))
+	if (EntryList.IsValidIndex(Index))
 	{
-		UToastMessageTextUI* MessageUI = EntryList[0];
+		UToastMessageTextUI* MessageUI = EntryList[Index];
 
 		if (nullptr != MessageUI)
 		{
@@ -139,14 +139,15 @@ void UToastMessageBoxUI::NativeTick(const FGeometry& InGeometry, float InDeltaTi
 {
 	Super::NativeTick(InGeometry, InDeltaTime);
 
-
-	if (nullptr != NeedMergeData.Key && NeedMergeData.Value <= FPlatformTime::Seconds())
+	if (true ==  NeedMergeData.Key.IsValid() && NeedMergeData.Value <= FPlatformTime::Seconds())
 	{
-		WaitQueue.Enqueue(*NeedMergeData.Key);
-		NeedMergeData = { nullptr, 0.f };
+		UE_LOG(LogTemp, Warning, TEXT(" Not Merge... "));
+
+		WaitQueue.Enqueue(NeedMergeData.Key);
+		NeedMergeData = { FToastMessageData(), 0.f};
 		if (ToastBoxMaximumCount <= ToastBox->GetAllEntries().Num())
 		{
-			RemoveToastTop();
+			RemoveToast(0);
 		}
 
 		else
@@ -155,28 +156,43 @@ void UToastMessageBoxUI::NativeTick(const FGeometry& InGeometry, float InDeltaTi
 		}
 	}
 
-	for (auto& Message : MessageQueue)
+	// 같은 시간에 연속으로 들어왔다면 어떻게 해야 할까?
+	for (int i = 0; i < TimeQueue.Num(); ++i)
 	{
-		if (Message.Value <= FPlatformTime::Seconds())
+		if (TimeQueue[i].Key <= FPlatformTime::Seconds())
 		{
-			RemoveToast(Message.Key);
+			// is expired
+			TimeQueue[i].Value = true;
+			RemoveToast(i);
 		}
 	}
+
+	TimeQueue.RemoveAll([](const TPair<double, bool>& InPair)
+		{
+			return true == InPair.Value;
+		});
+
+	/*
+	* 뒤에서 순회하면 for문 내부에서 제거해도 문제가 안된다?
+	for (int32 Index = A.Num()-1; Index >= 0; --Index)
+	{
+		if (A[Index] == nullptr)
+		{
+			const bool bAllowShrinking = false;
+			A.RemoveAt(Index, 1, bAllowShrinking);
+		}
+	}
+	*/
 }
 
 void UToastMessageBoxUI::OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText, const FGameplayTag& InMessageType)
 {
 	if (nullptr == ToastBox) return;
 
-	if (ensure(MessageQueue.Contains(InMessageType)))
-	{
-		MessageQueue.Remove(InMessageType);
-		ToastBox->RemoveEntry(InMessageText);
+	ToastBox->RemoveEntry(InMessageText);
+	OnFinishMessageSignature.Broadcast(InMessageType);
 
-		OnFinishMessageSignature.Broadcast(InMessageType);
-
-		AddToast();
-	}
+	AddToast();
 }
 
 void UToastMessageBoxUI::SynchronizeProperties()

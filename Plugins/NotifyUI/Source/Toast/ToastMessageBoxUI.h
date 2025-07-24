@@ -18,7 +18,6 @@ enum class EToastStackType : uint8
 	Down,
 };
 
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFinishMessageSignature, FGameplayTag, InMessageType);
 
 UCLASS()
@@ -82,8 +81,8 @@ protected:
 
 private:
 	void AddToast();
-	void RemoveToast(const FGameplayTag& InTag);
-	void RemoveToastTop();
+	//void RemoveToast(const FGameplayTag& InTag);
+	void RemoveToast(int Index);
 
 private:
 	void OnEndedFadeOutAnimation(UToastMessageTextUI* InMessageText, const FGameplayTag& InMessageType);
@@ -93,8 +92,8 @@ private:
 	UPROPERTY(meta = (BindWidgetOptional, AllowPrivateAccess = "true"))
 	UDynamicEntryBox* ToastBox;
 
-	TMap<FGameplayTag, double> MessageQueue;
+	TArray<TPair<double /* Regist Time */, bool /* Is Expired? */>> TimeQueue;
 	TQueue<FToastMessageData> WaitQueue;
 
-	TPair<FToastMessageData*, double> NeedMergeData = { nullptr, 0.f };
+	TPair<FToastMessageData, double> NeedMergeData = { FToastMessageData(), 0.f};
 };

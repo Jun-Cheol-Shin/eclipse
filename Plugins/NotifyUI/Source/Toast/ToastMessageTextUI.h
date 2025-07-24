@@ -81,6 +81,11 @@ public:
 		}
 	}
 
+	bool IsValid() const
+	{
+		return true == MessageType.IsValid() && (false == MessageText.IsEmpty() || false == Format.GetSourceString().IsEmpty());
+	}
+
 public:
 	FGameplayTag MessageType;
 	FText MessageText;
