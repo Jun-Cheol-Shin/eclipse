@@ -173,7 +173,7 @@ void UToastMessageBoxUI::NativeTick(const FGeometry& InGeometry, float InDeltaTi
 		});
 
 	/*
-	* 뒤에서 순회하면 for문 내부에서 제거해도 문제가 안된다?
+	* 뒤에서 순회하면 for문 내부에서 제거해도 문제가 안된다
 	for (int32 Index = A.Num()-1; Index >= 0; --Index)
 	{
 		if (A[Index] == nullptr)
