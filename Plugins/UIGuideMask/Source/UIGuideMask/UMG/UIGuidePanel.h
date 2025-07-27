@@ -3,20 +3,25 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/CanvasPanel.h"
+#include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
 #include "UIGuidePanel.generated.h"
 
-/**
- * 
- */
+class USizeBox;
+class UCanvasPanel;
+
 UCLASS(meta = (DisplayName = "UI Guide Panel", Category = "UI_Guide"))
-class UIGUIDEMASK_API UUIGuidePanel : public UCanvasPanel
+class UIGUIDEMASK_API UUIGuidePanel : public UUserWidget
 {
 	GENERATED_BODY()
 
+
+
 protected:
-	virtual TSharedRef<SWidget> RebuildWidget() override;
+	//virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeConstruct() override;
+
+
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	virtual void SynchronizeProperties() override;
 	
@@ -32,11 +37,6 @@ private:
 #endif
 
 protected:
-	// UPanelWidget
-	//virtual UClass* GetSlotClass() const override;
-	//virtual void OnSlotAdded(UPanelSlot* InSlot) override;
-	//virtual void OnSlotRemoved(UPanelSlot* InSlot) override;
-	// End UPanelWidget
 
 
 #if WITH_EDITORONLY_DATA
@@ -49,5 +49,13 @@ private:
 
 	TArray<FGameplayTag> RegistedTag{};
 #endif
+
+
+private:
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
+	UCanvasPanel* CanvasPanel;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
+	USizeBox* SizeBox;
 	
 };

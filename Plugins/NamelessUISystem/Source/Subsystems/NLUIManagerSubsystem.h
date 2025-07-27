@@ -36,7 +36,12 @@ public:
 	{
 	}
 
-	bool operator==(const ULocalPlayer* OtherLocalPlayer) const { return LocalPlayer == OtherLocalPlayer; }
+	bool operator==(const FRootViewportLayoutInfo& InOther) const { return this->LocalPlayer == InOther.LocalPlayer; }
+
+	friend uint32 GetTypeHash(const FRootViewportLayoutInfo& Other)
+	{
+		return GetTypeHash(Other.LocalPlayer);
+	}
 };
 
 
@@ -187,7 +192,7 @@ private:
 
 private:
 	UPROPERTY(Transient)
-	TMap<FPlatformUserId, FRootViewportLayoutInfo> PlayerViewportGameLayouts;
+	TMap<int32 /*FPlatformUserId*/, FRootViewportLayoutInfo> PlayerViewportGameLayouts;
 
 	UPROPERTY()
 	ULayerWidgetRegistryAsset* RegistryAsset = nullptr;

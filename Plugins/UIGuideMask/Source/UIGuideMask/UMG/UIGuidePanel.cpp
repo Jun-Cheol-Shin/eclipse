@@ -3,21 +3,28 @@
 
 #include "UIGuidePanel.h"
 
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/SizeBox.h"
+
+
 #include "Components/PanelWidget.h"
 #include "../UIGuideMaskable.h"
 #include "../Subsystem/UIGuideMaskSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
 
-TSharedRef<SWidget> UUIGuidePanel::RebuildWidget()
+void UUIGuidePanel::NativeConstruct()
 {
+	Super::NativeConstruct();
+
 	if (false == IsDesignTime())
 	{
 		UGameInstance* GameInstance = GetGameInstance();
-		if (nullptr == GameInstance) return Super::RebuildWidget();
+		if (nullptr == GameInstance) return;
 
 		UUIGuideMaskSubsystem* SubSystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
-		if (nullptr == SubSystem) return Super::RebuildWidget();;
+		if (nullptr == SubSystem) return;
 
 		if (UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>())
 		{
@@ -32,8 +39,6 @@ TSharedRef<SWidget> UUIGuidePanel::RebuildWidget()
 			}
 		}
 	}
-
-	return Super::RebuildWidget();
 }
 
 void UUIGuidePanel::ReleaseSlateResources(bool bReleaseChildren)
@@ -82,6 +87,12 @@ void UUIGuidePanel::SynchronizeProperties()
 			}
 		}
 	}
+
+	if (nullptr != SizeBox)
+	{
+		SizeBox->SetVisibility(bShowDebug ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+
 #endif
 
 }
@@ -135,10 +146,35 @@ void UUIGuidePanel::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 			}
 		}
 
-		if (!ensure(FindWidget)) return;
 
+		if (nullptr == CanvasPanel || nullptr == FindWidget) return;
 
-		// todo
+		TSharedPtr<SWidget> S_Target = FindWidget->GetCachedWidget();
+		TSharedPtr<SWidget> S_Canvas = CanvasPanel->GetCachedWidget();
+
+		if (S_Target && S_Canvas)
+		{
+			FGeometry CanvasGeometry = S_Canvas->GetTickSpaceGeometry();
+			FGeometry TargetGeometry = S_Target->GetTickSpaceGeometry();
+
+			// 2. Target의 TopLeft, BottomRight를 Canvas Panel의 로컬 좌표로 변환
+			FVector2D TargetLocalTopLeft = CanvasGeometry.AbsoluteToLocal(TargetGeometry.LocalToAbsolute(FVector2D::ZeroVector));
+			FVector2D TargetLocalBottomRight = CanvasGeometry.AbsoluteToLocal(TargetGeometry.LocalToAbsolute(TargetGeometry.GetLocalSize()));
+
+			FVector2D TargetLocalSize = TargetLocalBottomRight - TargetLocalTopLeft;
+
+			if (nullptr != SizeBox)
+			{
+				if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(SizeBox->Slot))
+				{
+					PanelSlot->SetAnchors(FAnchors(0, 0, 0, 0));
+					PanelSlot->SetSize(TargetLocalSize);
+					PanelSlot->SetPosition(TargetLocalTopLeft);
+				}
+
+			}
+		}
+
 
 	}
 }
