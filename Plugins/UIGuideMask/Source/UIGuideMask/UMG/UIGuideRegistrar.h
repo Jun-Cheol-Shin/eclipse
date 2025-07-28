@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
-#include "UIGuidePanel.generated.h"
+#include "UIGuideRegistrar.generated.h"
 
 class USizeBox;
 class UCanvasPanel;
 
 UCLASS(meta = (DisplayName = "UI Guide Panel", Category = "UI_Guide"))
-class UIGUIDEMASK_API UUIGuidePanel : public UUserWidget
+class UIGUIDEMASK_API UUIGuideRegistrar : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -57,5 +57,6 @@ private:
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
 	USizeBox* SizeBox;
+
 	
 };

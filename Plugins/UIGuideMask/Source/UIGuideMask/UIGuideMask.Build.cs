@@ -28,6 +28,8 @@ public class UIGuideMask : ModuleRules
 				"Core",
                 "UMG",
                 "GameplayTags",
+                "CommonUI",
+				"CommonInput",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

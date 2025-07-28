@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UIGuidePanel.h"
+#include "UIGuideRegistrar.h"
 
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -14,7 +14,7 @@
 
 #define LOCTEXT_NAMESPACE "UMG"
 
-void UUIGuidePanel::NativeConstruct()
+void UUIGuideRegistrar::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -41,7 +41,7 @@ void UUIGuidePanel::NativeConstruct()
 	}
 }
 
-void UUIGuidePanel::ReleaseSlateResources(bool bReleaseChildren)
+void UUIGuideRegistrar::ReleaseSlateResources(bool bReleaseChildren)
 {
 	if (false == IsDesignTime())
 	{
@@ -69,7 +69,7 @@ void UUIGuidePanel::ReleaseSlateResources(bool bReleaseChildren)
 	Super::ReleaseSlateResources(bReleaseChildren);
 }
 
-void UUIGuidePanel::SynchronizeProperties()
+void UUIGuideRegistrar::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
@@ -99,7 +99,7 @@ void UUIGuidePanel::SynchronizeProperties()
 
 
 #if WITH_EDITOR
-TArray<FName> UUIGuidePanel::GetTagOptions() const
+TArray<FName> UUIGuideRegistrar::GetTagOptions() const
 {
 	TArray<FName> TagNameArray;
 
@@ -111,13 +111,13 @@ TArray<FName> UUIGuidePanel::GetTagOptions() const
 	return TagNameArray;
 }
 
-void UUIGuidePanel::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void UUIGuideRegistrar::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	FName PropertyName = PropertyChangedEvent.GetPropertyName();
 
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuidePanel, TagName))
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuideRegistrar, TagName))
 	{
 		FGameplayTag FindTag;
 
@@ -178,7 +178,7 @@ void UUIGuidePanel::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 
 	}
 }
-const FText UUIGuidePanel::GetPaletteCategory()
+const FText UUIGuideRegistrar::GetPaletteCategory()
 {
 	return LOCTEXT("UIGuideMask", "UIGuideMask");
 }
