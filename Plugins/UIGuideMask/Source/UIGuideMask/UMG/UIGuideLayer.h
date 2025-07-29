@@ -16,16 +16,15 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 
 	friend class UUIGuideRegistrar;
 
+public:
+	void Set(const FGeometry& InBoxGemetry, const UWidget* InWidget);
+
 private:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
 	UCanvasPanel* LayerPanel;
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
 	USizeBox* GuideBoxPanel;
-
-
-
-private:
 
 
 	

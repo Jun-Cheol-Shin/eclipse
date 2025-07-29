@@ -5,9 +5,10 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
+#include "Blueprint/UserWidgetPool.h"
 #include "UIGuideRegistrar.generated.h"
 
-class USizeBox;
+class UOverlay;
 class UCanvasPanel;
 class UUIGuideLayer;
 
@@ -21,17 +22,23 @@ private:
 	UFUNCTION()
 	TArray<FName> GetTagOptions() const;
 
-	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "UI Guide Mask Preview"))
+	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "UI Guide Mask Preview", DisplayName = "Show Debug"))
 	void ShowPreviewDebug();
+
+	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "UI Guide Mask Preview", DisplayName = "Hide Debug"))
+	void HidePreviewDebug();
+
 
 	bool GetTaggedWidget(OUT UWidget** OutWidget);
 
 #endif
 
 protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	virtual const FText GetPaletteCategory() override;
 
 
@@ -42,13 +49,19 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, meta = (Category = "UI Guide Mask Preview", GetOptions = "GetTagOptions", AllowPrivateAccess = "true"))
 	TSoftClassPtr<UUIGuideLayer> PreviewGuideLayer; 
-
-
 	TArray<FGameplayTag> RegistedTag{};
 
+	FUserWidgetPool WidgetPool { };
 
-	UUIGuideLayer* LoadedLayer = nullptr;
 #endif
-
 	
+private:
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UOverlay* GuideOverlay;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UNamedSlot* NamedSlot;
+
+
+
 };

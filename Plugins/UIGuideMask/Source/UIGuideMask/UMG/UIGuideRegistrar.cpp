@@ -4,11 +4,11 @@
 #include "UIGuideRegistrar.h"
 #include "UIGuideLayer.h"
 
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/SizeBox.h"
-
+#include "Components/OverlaySlot.h"
+#include "Components/Overlay.h"
+#include "Components/NamedSlot.h"
 #include "Components/PanelWidget.h"
+
 #include "../UIGuideMaskable.h"
 #include "../Subsystem/UIGuideMaskSubsystem.h"
 
@@ -35,65 +35,66 @@ TArray<FName> UUIGuideRegistrar::GetTagOptions() const
 
 void UUIGuideRegistrar::ShowPreviewDebug()
 {
-	if (!HasAnyFlags(RF_ClassDefaultObject))
+	// 실제 BP 인스턴스(Placed Actor 등)에서만 실행
+	// CDO(BP Asset 에디터)는 무시
+	WidgetPool.ResetPool();
+	WidgetPool.SetWorld(GetWorld());
+
+	if (PreviewGuideLayer.IsValid())
 	{
-		// 실제 BP 인스턴스(Placed Actor 등)에서만 실행
-		// CDO(BP Asset 에디터)는 무시
-
-		if (LoadedLayer)
+		UUIGuideLayer* NewLayer = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
+		if (NewLayer)
 		{
-			/*LoadedLayer->TakeDerivedWidget([](UUserWidget* Widget, TSharedRef<SWidget> Content)
-				{
-					return SNew(SObjectWidget, Widget)[Content];
-				});*/
-		}
-
-
-		else if(PreviewGuideLayer.IsValid())
-		{
-			FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
-			TSharedPtr<FStreamableHandle> StreamingHandle = StreamableManager.RequestAsyncLoad(PreviewGuideLayer.ToSoftObjectPath(), FStreamableDelegate::CreateWeakLambda(this,
-				[this]()
-				{
-					LoadedLayer = CreateWidget<UUIGuideLayer>(this, PreviewGuideLayer.Get());
-
-				}));
-		}
-
-	}
-
-	/*
-		if (nullptr == CanvasPanel || nullptr == FindWidget) return;
-
-		TSharedPtr<SWidget> S_Target = FindWidget->GetCachedWidget();
-		TSharedPtr<SWidget> S_Canvas = CanvasPanel->GetCachedWidget();
-
-		if (S_Target && S_Canvas)
-		{
-			FGeometry CanvasGeometry = S_Canvas->GetTickSpaceGeometry();
-			FGeometry TargetGeometry = S_Target->GetTickSpaceGeometry();
-
-			// 2. Target의 TopLeft, BottomRight를 Canvas Panel의 로컬 좌표로 변환
-			FVector2D TargetLocalTopLeft = CanvasGeometry.AbsoluteToLocal(TargetGeometry.LocalToAbsolute(FVector2D::ZeroVector));
-			FVector2D TargetLocalBottomRight = CanvasGeometry.AbsoluteToLocal(TargetGeometry.LocalToAbsolute(TargetGeometry.GetLocalSize()));
-
-			FVector2D TargetLocalSize = TargetLocalBottomRight - TargetLocalTopLeft;
-
-			if (nullptr != SizeBox)
+			if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(NewLayer))
 			{
-				if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(SizeBox->Slot))
-				{
-					PanelSlot->SetAnchors(FAnchors(0, 0, 0, 0));
-					PanelSlot->SetSize(TargetLocalSize);
-					PanelSlot->SetPosition(TargetLocalTopLeft);
-				}
+				OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
+				OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
+			}
+			// set
 
+			UWidget* TaggedWidget = nullptr;
+			if (true == GetTaggedWidget(&TaggedWidget))
+			{
+
+				NewLayer->Set(NamedSlot->GetTickSpaceGeometry(), TaggedWidget);
 			}
 		}
-		*/
+	}
 
 
+	else if (PreviewGuideLayer.ToSoftObjectPath().IsValid())
+	{
+		FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+		TSharedPtr<FStreamableHandle> StreamingHandle = StreamableManager.RequestAsyncLoad(PreviewGuideLayer.ToSoftObjectPath(), FStreamableDelegate::CreateWeakLambda(this,
+			[this]()
+			{
+				UUIGuideLayer* NewLayer = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
+				if (NewLayer)
+				{
+					if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(NewLayer))
+					{
+						OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
+						OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
+					}
 
+					// set
+
+					UWidget* TaggedWidget = nullptr;
+					if (true == GetTaggedWidget(&TaggedWidget))
+					{
+						NewLayer->Set(NamedSlot->GetTickSpaceGeometry(), TaggedWidget);
+					}
+				}
+
+			}));
+	}
+
+}
+
+void UUIGuideRegistrar::HidePreviewDebug()
+{
+	GuideOverlay->RemoveChildAt(1);
+	WidgetPool.ReleaseAll();
 }
 
 bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
@@ -129,6 +130,15 @@ bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 
 #endif
 
+
+TSharedRef<SWidget> UUIGuideRegistrar::RebuildWidget()
+{
+#if WITH_EDITOR
+	WidgetPool.SetWorld(GetWorld());
+#endif
+
+	return Super::RebuildWidget();
+}
 
 void UUIGuideRegistrar::NativeConstruct()
 {
@@ -204,6 +214,20 @@ void UUIGuideRegistrar::SynchronizeProperties()
 		}
 	}
 #endif
+
+}
+
+void UUIGuideRegistrar::ReleaseSlateResources(bool bReleaseChildren)
+{
+#if WITH_EDITOR
+
+	PreviewGuideLayer.Reset();
+	WidgetPool.ReleaseAll();
+
+#endif
+
+
+	Super::ReleaseSlateResources(bReleaseChildren);
 }
 const FText UUIGuideRegistrar::GetPaletteCategory()
 {
