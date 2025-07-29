@@ -9,34 +9,30 @@
 
 class USizeBox;
 class UCanvasPanel;
+class UUIGuideLayer;
 
-UCLASS(meta = (DisplayName = "UI Guide Panel", Category = "UI_Guide"))
+UCLASS(meta = (DisplayName = "UI Guide Registrar", Category = "UI_Guide"))
 class UIGUIDEMASK_API UUIGuideRegistrar : public UUserWidget
 {
 	GENERATED_BODY()
 
-
-
-protected:
-	//virtual TSharedRef<SWidget> RebuildWidget() override;
-	virtual void NativeConstruct() override;
-
-
-	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
-	virtual void SynchronizeProperties() override;
-	
-
-#if WITH_EDITOR
 private:
+#if WITH_EDITOR
 	UFUNCTION()
 	TArray<FName> GetTagOptions() const;
 
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-	virtual const FText GetPaletteCategory() override;
+	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "UI Guide Mask Preview"))
+	void ShowPreviewDebug();
+
+	bool GetTaggedWidget(OUT UWidget** OutWidget);
 
 #endif
 
 protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	virtual void SynchronizeProperties() override;
+	virtual const FText GetPaletteCategory() override;
 
 
 #if WITH_EDITORONLY_DATA
@@ -44,19 +40,15 @@ private:
 	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", GetOptions = "GetTagOptions", AllowPrivateAccess = "true"))
 	FName TagName;
 
-	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", AllowPrivateAccess = "true"))
-	bool bShowDebug = false;
+	UPROPERTY(EditDefaultsOnly, meta = (Category = "UI Guide Mask Preview", GetOptions = "GetTagOptions", AllowPrivateAccess = "true"))
+	TSoftClassPtr<UUIGuideLayer> PreviewGuideLayer; 
+
 
 	TArray<FGameplayTag> RegistedTag{};
+
+
+	UUIGuideLayer* LoadedLayer = nullptr;
 #endif
-
-
-private:
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
-	UCanvasPanel* CanvasPanel;
-
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
-	USizeBox* SizeBox;
 
 	
 };
