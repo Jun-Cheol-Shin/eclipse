@@ -17,7 +17,8 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 	friend class UUIGuideRegistrar;
 
 public:
-	void Set(const FGeometry& InBoxGemetry, const UWidget* InWidget);
+	void Set(const UWidget* InWidget);
+	void Reset();
 
 private:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))

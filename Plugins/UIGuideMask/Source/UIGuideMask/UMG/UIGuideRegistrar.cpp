@@ -35,28 +35,25 @@ TArray<FName> UUIGuideRegistrar::GetTagOptions() const
 
 void UUIGuideRegistrar::ShowPreviewDebug()
 {
-	// 실제 BP 인스턴스(Placed Actor 등)에서만 실행
-	// CDO(BP Asset 에디터)는 무시
-	WidgetPool.ResetPool();
-	WidgetPool.SetWorld(GetWorld());
+	HidePreviewDebug();
 
 	if (PreviewGuideLayer.IsValid())
 	{
-		UUIGuideLayer* NewLayer = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
-		if (NewLayer)
+		UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
+		if (PreviewGuideLayerWidget)
 		{
-			if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(NewLayer))
+			if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
 			{
 				OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
 				OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
 			}
-			// set
 
+			// set
 			UWidget* TaggedWidget = nullptr;
 			if (true == GetTaggedWidget(&TaggedWidget))
 			{
 
-				NewLayer->Set(NamedSlot->GetTickSpaceGeometry(), TaggedWidget);
+				PreviewGuideLayerWidget->Set(TaggedWidget);
 			}
 		}
 	}
@@ -68,10 +65,14 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 		TSharedPtr<FStreamableHandle> StreamingHandle = StreamableManager.RequestAsyncLoad(PreviewGuideLayer.ToSoftObjectPath(), FStreamableDelegate::CreateWeakLambda(this,
 			[this]()
 			{
-				UUIGuideLayer* NewLayer = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
-				if (NewLayer)
+				UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
+				if (PreviewGuideLayerWidget)
 				{
-					if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(NewLayer))
+					UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>();
+					if (nullptr == OwnerUserWidget) return;
+
+
+					if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
 					{
 						OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
 						OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
@@ -82,7 +83,7 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 					UWidget* TaggedWidget = nullptr;
 					if (true == GetTaggedWidget(&TaggedWidget))
 					{
-						NewLayer->Set(NamedSlot->GetTickSpaceGeometry(), TaggedWidget);
+						PreviewGuideLayerWidget->Set(TaggedWidget);
 					}
 				}
 
@@ -93,7 +94,12 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 
 void UUIGuideRegistrar::HidePreviewDebug()
 {
-	GuideOverlay->RemoveChildAt(1);
+	for (int i = 1; i < GuideOverlay->GetChildrenCount(); ++i)
+	{
+		UWidget* Child = GuideOverlay->GetChildAt(i);
+		if (Child) Child->RemoveFromParent();
+	}
+
 	WidgetPool.ReleaseAll();
 }
 
@@ -223,7 +229,6 @@ void UUIGuideRegistrar::ReleaseSlateResources(bool bReleaseChildren)
 
 	PreviewGuideLayer.Reset();
 	WidgetPool.ReleaseAll();
-
 #endif
 
 
