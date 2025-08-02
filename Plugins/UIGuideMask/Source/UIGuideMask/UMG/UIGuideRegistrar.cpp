@@ -21,6 +21,7 @@
 
 
 #if WITH_EDITOR
+
 TArray<FName> UUIGuideRegistrar::GetTagOptions() const
 {
 	TArray<FName> TagNameArray;
@@ -37,25 +38,11 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 {
 	HidePreviewDebug();
 
+	ForceLayoutPrepass();
+
 	if (PreviewGuideLayer.IsValid())
 	{
-		UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
-		if (PreviewGuideLayerWidget)
-		{
-			if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
-			{
-				OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
-				OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
-			}
-
-			// set
-			UWidget* TaggedWidget = nullptr;
-			if (true == GetTaggedWidget(&TaggedWidget))
-			{
-
-				PreviewGuideLayerWidget->Set(TaggedWidget);
-			}
-		}
+		CreatePreviewLayer();
 	}
 
 
@@ -65,36 +52,17 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 		TSharedPtr<FStreamableHandle> StreamingHandle = StreamableManager.RequestAsyncLoad(PreviewGuideLayer.ToSoftObjectPath(), FStreamableDelegate::CreateWeakLambda(this,
 			[this]()
 			{
-				UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
-				if (PreviewGuideLayerWidget)
-				{
-					UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>();
-					if (nullptr == OwnerUserWidget) return;
-
-
-					if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
-					{
-						OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
-						OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
-					}
-
-					// set
-
-					UWidget* TaggedWidget = nullptr;
-					if (true == GetTaggedWidget(&TaggedWidget))
-					{
-						PreviewGuideLayerWidget->Set(TaggedWidget);
-					}
-				}
+				CreatePreviewLayer();
 
 			}));
 	}
 
-}
+	if (false == bShowTooltip) return;
 
+}
 void UUIGuideRegistrar::HidePreviewDebug()
 {
-	for (int i = 1; i < GuideOverlay->GetChildrenCount(); ++i)
+	for (int i = GuideOverlay->GetChildrenCount() - 1; i >= 2 ; --i)
 	{
 		UWidget* Child = GuideOverlay->GetChildAt(i);
 		if (Child) Child->RemoveFromParent();
@@ -103,29 +71,51 @@ void UUIGuideRegistrar::HidePreviewDebug()
 	WidgetPool.ReleaseAll();
 }
 
+void UUIGuideRegistrar::CreatePreviewLayer()
+{
+	UWidget* TaggedWidget = nullptr;
+	if (false == GetTaggedWidget(&TaggedWidget))
+	{
+		return;
+	}
+
+	UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
+	if (PreviewGuideLayerWidget)
+	{
+		FGameplayTag SelectedTag = GetTag(TagName);
+
+		FGuideMessageParameters Parameter;
+		if (bShowTooltip && TextParameters.Contains(SelectedTag))
+		{
+			Parameter =TextParameters[SelectedTag];
+		}
+
+		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
+		{
+			OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
+			OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
+		}
+
+		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), TaggedWidget, Parameter);
+
+	}
+}
+
 bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 {
 	UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>();
 	if (nullptr == OwnerUserWidget || this == OwnerUserWidget) return false;
 
-	FGameplayTag FindTag;
-
-	for (auto& Tag : RegistedTag)
-	{
-		if (Tag.GetTagName().IsEqual(TagName))
-		{
-			FindTag = Tag;
-			break;
-		}
-	}
 
 	if (true == OwnerUserWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
 	{
 		TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(OwnerUserWidget);
 
-		if (Map.Contains(FindTag))
+		FGameplayTag SelectedTag = GetTag(TagName);
+
+		if (Map.Contains(SelectedTag))
 		{
-			*OutWidget = Map[FindTag];
+			*OutWidget = Map[SelectedTag];
 
 			return true;
 		}
@@ -133,18 +123,20 @@ bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 
 	return false;
 }
-
-#endif
-
-
-TSharedRef<SWidget> UUIGuideRegistrar::RebuildWidget()
+FGameplayTag UUIGuideRegistrar::GetTag(const FName& InTagName)
 {
-#if WITH_EDITOR
-	WidgetPool.SetWorld(GetWorld());
+	for (auto& Tag : RegistedTag)
+	{
+		if (Tag.GetTagName().IsEqual(InTagName))
+		{
+			return Tag;
+		}
+	}
+
+	return FGameplayTag();
+}
 #endif
 
-	return Super::RebuildWidget();
-}
 
 void UUIGuideRegistrar::NativeConstruct()
 {
@@ -166,7 +158,7 @@ void UUIGuideRegistrar::NativeConstruct()
 
 				for (auto& [Tag, Widget] : Map)
 				{
-					//SubSystem->SetGuideWidget(Tag, Widget);
+					SubSystem->RegistGuideWidget(Tag, Widget);
 				}
 			}
 		}
@@ -190,7 +182,7 @@ void UUIGuideRegistrar::NativeDestruct()
 
 				for (auto& [Tag, Widget] : Map)
 				{
-					//SubSystem->SetGuideWidget(Tag, Widget);
+					SubSystem->UnregistGuideWidget(Tag);
 				}
 			}
 		}
@@ -222,7 +214,6 @@ void UUIGuideRegistrar::SynchronizeProperties()
 #endif
 
 }
-
 void UUIGuideRegistrar::ReleaseSlateResources(bool bReleaseChildren)
 {
 #if WITH_EDITOR
@@ -238,3 +229,35 @@ const FText UUIGuideRegistrar::GetPaletteCategory()
 {
 	return LOCTEXT("UIGuideMask", "UIGuideMask");
 }
+TSharedRef<SWidget> UUIGuideRegistrar::RebuildWidget()
+{
+#if WITH_EDITOR
+
+	WidgetPool.SetWorld(GetWorld());
+
+#endif
+
+	return Super::RebuildWidget();
+}
+
+
+#if WITH_EDITOR
+void UUIGuideRegistrar::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	FName PropertyName = (PropertyChangedEvent.Property != nullptr)
+		? PropertyChangedEvent.Property->GetFName()
+		: NAME_None;
+
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuideRegistrar, bShowTooltip))
+	{
+		ShowPreviewDebug();
+	}
+
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuideRegistrar, TagName))
+	{
+		ShowPreviewDebug();
+	}
+}
+#endif

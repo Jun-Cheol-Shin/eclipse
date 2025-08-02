@@ -15,8 +15,8 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
-public:
-	TWeakObjectPtr<UWidget> FindGuideWidget() const;
+	friend class UUIGuideRegistrar;
+
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
@@ -26,6 +26,14 @@ protected:
 
 	/** Implement this for deinitialization of instances of the system */
 	virtual void Deinitialize() override;
+
+
+private:
+	void RegistGuideWidget(FGameplayTag InTag, const UWidget* InWidget) { Widgets.Emplace(InTag, InWidget); }
+	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }
 	
+
+private:
+	TMap<FGameplayTag, const UWidget*> Widgets;
 	
 };

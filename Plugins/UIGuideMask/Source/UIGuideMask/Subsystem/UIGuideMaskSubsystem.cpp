@@ -3,14 +3,6 @@
 
 #include "UIGuideMaskSubsystem.h"
 
-TWeakObjectPtr<UWidget> UUIGuideMaskSubsystem::FindGuideWidget() const
-{
-
-
-
-	return TWeakObjectPtr<UWidget>();
-}
-
 bool UUIGuideMaskSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 	if (!CastChecked<UGameInstance>(Outer)->IsDedicatedServerInstance())

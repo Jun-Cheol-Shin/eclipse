@@ -32,3 +32,4 @@ protected:
 	virtual bool IsEqual(const FString& InWidgetName) { return false; };
 	virtual bool IsEqual(FGameplayTag InTag) { return false; };
 };
+

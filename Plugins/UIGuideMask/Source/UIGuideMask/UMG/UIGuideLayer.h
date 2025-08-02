@@ -4,10 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
+#include "UIGuideTooltip.h"
 #include "UIGuideLayer.generated.h"
 
 class UCanvasPanel;
 class USizeBox;
+class UUIGuideTooltip;
+class UImage;
 
 UCLASS()
 class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
@@ -17,18 +20,33 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 	friend class UUIGuideRegistrar;
 
 public:
-	void Set(const UWidget* InWidget);
-	void Reset();
+	void Set(const FGeometry& InGeometry, const UWidget* InWidget, const FGuideMessageParameters& InMessageParam = FGuideMessageParameters());
+
 
 private:
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
+	ETooltipPosition TooltipPosition;
+
+private:
+	void OnResizedViewport(FViewport* InViewport, uint32 InMessage);
+
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+
+private:
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	UCanvasPanel* LayerPanel;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget, AllowPrivateAccess = "true"))
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UImage* BlackScreen;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	USizeBox* GuideBoxPanel;
 
-
-	
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess= "true"))
+	UUIGuideTooltip* GuideTooltip;	
 
 	
 };
