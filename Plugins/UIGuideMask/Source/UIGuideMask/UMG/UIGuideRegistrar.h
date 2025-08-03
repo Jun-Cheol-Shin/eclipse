@@ -6,8 +6,10 @@
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
 #include "Blueprint/UserWidgetPool.h"
-#include "UIGuideTooltip.h"
+#include "UIGuideLayer.h"
 #include "UIGuideRegistrar.generated.h"
+
+
 
 class UOverlay;
 class UCanvasPanel;
@@ -42,13 +44,10 @@ private:
 
 
 	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", GetOptions = "GetTagOptions", AllowPrivateAccess = "true"))
-	FName TagName;
+	FName PreviewWidgetTag;
 
-	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", AllowPrivateAccess = "true", DisplayPriority = "Tag Name"))
-	bool bShowTooltip = false;
-
-	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", AllowPrivateAccess = "true", EditCondition = "true == bShowTooltip", EditConditionHides))
-	TMap<FGameplayTag, FGuideMessageParameters> TextParameters;
+	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", AllowPrivateAccess = "true"))
+	TMap<FGameplayTag, FGuideParameter> TextParameters;
 
 
 	TArray<FGameplayTag> RegistedTag{};
@@ -56,9 +55,6 @@ private:
 #endif
 
 protected:
-#if WITH_EDITOR
-	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
-#endif
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;

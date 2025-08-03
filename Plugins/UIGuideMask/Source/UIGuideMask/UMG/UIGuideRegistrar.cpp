@@ -57,8 +57,6 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 			}));
 	}
 
-	if (false == bShowTooltip) return;
-
 }
 void UUIGuideRegistrar::HidePreviewDebug()
 {
@@ -82,12 +80,12 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 	UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
 	if (PreviewGuideLayerWidget)
 	{
-		FGameplayTag SelectedTag = GetTag(TagName);
+		FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
 
-		FGuideMessageParameters Parameter;
-		if (bShowTooltip && TextParameters.Contains(SelectedTag))
+		FGuideParameter Parameter;
+		if (TextParameters.Contains(SelectedTag))
 		{
-			Parameter =TextParameters[SelectedTag];
+			Parameter = TextParameters[SelectedTag];
 		}
 
 		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
@@ -111,7 +109,7 @@ bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 	{
 		TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(OwnerUserWidget);
 
-		FGameplayTag SelectedTag = GetTag(TagName);
+		FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
 
 		if (Map.Contains(SelectedTag))
 		{
@@ -162,6 +160,16 @@ void UUIGuideRegistrar::NativeConstruct()
 				}
 			}
 		}
+
+		UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
+		if (OverlaySlot)
+		{
+			UWidget* NamedSlotWidget = NamedSlot->GetChildAt(0);
+			UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(NamedSlotWidget);
+
+			OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
+			OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
+		}
 	}
 }
 void UUIGuideRegistrar::NativeDestruct()
@@ -196,6 +204,17 @@ void UUIGuideRegistrar::NativeDestruct()
 void UUIGuideRegistrar::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
+
+	UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
+	if (OverlaySlot)
+	{
+		UWidget* NamedSlotWidget = NamedSlot->GetChildAt(0);
+		UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(NamedSlotWidget);
+
+		OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
+		OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
+	}
+
 
 #if WITH_EDITOR
 	if (UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>())
@@ -239,25 +258,3 @@ TSharedRef<SWidget> UUIGuideRegistrar::RebuildWidget()
 
 	return Super::RebuildWidget();
 }
-
-
-#if WITH_EDITOR
-void UUIGuideRegistrar::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	FName PropertyName = (PropertyChangedEvent.Property != nullptr)
-		? PropertyChangedEvent.Property->GetFName()
-		: NAME_None;
-
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuideRegistrar, bShowTooltip))
-	{
-		ShowPreviewDebug();
-	}
-
-	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UUIGuideRegistrar, TagName))
-	{
-		ShowPreviewDebug();
-	}
-}
-#endif

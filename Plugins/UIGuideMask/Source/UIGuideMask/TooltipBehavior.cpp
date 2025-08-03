@@ -91,12 +91,8 @@ void ITooltipBehavior::GetPosition(OUT FVector2D& OutLocation, ETooltipPosition 
 
 FVector2D UUIGuideFunctionLibrary::GetWidgetLocalSize(const FGeometry& InScreen, const FGeometry& InTarget)
 {
-	//FGeometry CanvasGeometry = InGeometry;// S_Canvas->GetTickSpaceGeometry();
-	//FGeometry TargetGeometry = S_Target->GetTickSpaceGeometry();
-
-	
 	FVector2D TargetLocalBottomRight = InScreen.AbsoluteToLocal(InTarget.LocalToAbsolute(InTarget.GetLocalSize()));
-	FVector2D TargetLocalTopLeft = InScreen.AbsoluteToLocal(InTarget.LocalToAbsolute(InTarget.GetLocalPositionAtCoordinates(FVector2D(0,0))));
+	FVector2D TargetLocalTopLeft = InScreen.AbsoluteToLocal(InTarget.GetAbsolutePosition());
 
 	return TargetLocalBottomRight - TargetLocalTopLeft;
 }
