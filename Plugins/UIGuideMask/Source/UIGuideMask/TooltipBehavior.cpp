@@ -3,6 +3,8 @@
 
 #include "TooltipBehavior.h"
 
+#include "../UIGuideMask/Subsystem/UIGuideMaskSubsystem.h"
+
 
 // Add default functionality here for any ITooltipBehavior functions that are not pure virtual.
 
@@ -96,3 +98,14 @@ FVector2D UUIGuideFunctionLibrary::GetWidgetLocalSize(const FGeometry& InScreen,
 
 	return TargetLocalBottomRight - TargetLocalTopLeft;
 }
+
+
+void UUIGuideFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->ShowGuide(InInstance->GetFirstLocalPlayerController(), InTag);
+	}
+}
+

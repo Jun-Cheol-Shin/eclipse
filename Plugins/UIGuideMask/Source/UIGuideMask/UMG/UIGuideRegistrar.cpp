@@ -156,7 +156,18 @@ void UUIGuideRegistrar::NativeConstruct()
 
 				for (auto& [Tag, Widget] : Map)
 				{
-					SubSystem->RegistGuideWidget(Tag, Widget);
+					FGuideData NewData;
+					NewData.GameplayTag = Tag;
+					NewData.TargetWidget = Widget;
+
+					FGuideParameter NewParameter;
+					if (true == TextParameters.Contains(Tag))
+					{
+						NewParameter = TextParameters[Tag];
+					}
+
+					NewData.GuideParameters = NewParameter;
+					SubSystem->RegistGuideWidget(NewData);
 				}
 			}
 		}

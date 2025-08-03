@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "GameplayTagContainer.h"
 #include "TooltipBehavior.generated.h"
 
 UENUM(BlueprintType)
@@ -39,6 +40,7 @@ class UIGUIDEMASK_API ITooltipBehavior
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 protected:
 	void GetPosition(OUT FVector2D& OutLocation, ETooltipPosition InPosition, const FVector2D& InScreen, const FVector2D& InPivotPosition, const FVector2D& InPivotSize, const FVector2D& InTooltipSize) const;
+	
 };
 
 
@@ -50,6 +52,8 @@ class UUIGuideFunctionLibrary : public UBlueprintFunctionLibrary
 
 public:
 	UUIGuideFunctionLibrary() {}
+
+	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
 
 	static FVector2D GetWidgetLocalSize(const FGeometry& InScreen, const FGeometry& InTarget);
 };

@@ -5,11 +5,14 @@
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
 #include "UIGuideTooltip.h"
+#include "UIGuideMaskBox.h"
 #include "UIGuideLayer.generated.h"
+
+
+class UUIGuideTooltip;
 
 class UCanvasPanel;
 class USizeBox;
-class UUIGuideTooltip;
 class UImage;
 
 class UMaterialInstanceDynamic;
@@ -29,7 +32,14 @@ public:
 	bool bUseAnimation = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D Offset = FVector2D();
+	FVector2D Padding = FVector2D();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bUseGuideAction = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "true == bUseGuideAction", EditConditionHides))
+	EGuideActionType ActionType = EGuideActionType::Click;
+
 };
 
 USTRUCT(BlueprintType)
@@ -105,5 +115,8 @@ private:
 
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess= "true"))
 	UUIGuideTooltip* GuideTooltip;	
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UUIGuideMaskBox* GuideMaskBox;
 
 };
