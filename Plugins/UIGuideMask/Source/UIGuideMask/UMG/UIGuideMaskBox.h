@@ -24,12 +24,18 @@ class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
-
+public:
 	DECLARE_DELEGATE(FOnPreActionSignature)
 	FOnPreActionSignature OnPreAction;
 	DECLARE_DELEGATE(FOnPostActionSignature)
 	FOnPostActionSignature OnPostAction;
 
+private:
+	UPROPERTY(EditDefaultsOnly, Transient, meta = (AllowPrivateAccess = "true"))
+	EGuideActionType ActionType = EGuideActionType::Click;
+
+	UPROPERTY(EditDefaultsOnly, Transient, meta = (AllowPrivateAccess = "true", ClampMin = "10", ClampMax = "100"))
+	float DragFeedbackValue = 100.f;
 	
 public:
 	void SetBox(EGuideActionType InActionType, UWidget* InWidget);
@@ -42,6 +48,8 @@ private:
 	void OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 protected:
+	virtual void NativeConstruct() override;
+
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -56,8 +64,6 @@ private:
 
 private:
 	FVector2D TouchStartPos = FVector2D();
-
-	EGuideActionType ActionType = EGuideActionType::Click;
 	TWeakObjectPtr<UWidget> HighlightWidget = nullptr;
 	EButtonClickMethod::Type CachedClickMethod = EButtonClickMethod::DownAndUp;
 	EButtonTouchMethod::Type CachedTouchMethod = EButtonTouchMethod::DownAndUp;

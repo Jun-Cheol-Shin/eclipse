@@ -16,61 +16,77 @@ void UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointer
 {
 	TouchStartPos = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
 
-	if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
+	if (HighlightWidget.IsValid())
 	{
-		CachedClickMethod = ButtonWidget->GetClickMethod();
-		CachedTouchMethod = ButtonWidget->GetTouchMethod();
-
-		ButtonWidget->SetClickMethod(EButtonClickMethod::PreciseClick);
-		ButtonWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
-
-		TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
-		if (ensure(&ButtonSlateWidget))
+		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
 		{
-			ButtonSlateWidget.Get().OnMouseButtonDown(InGeometry, InEvent);
+			CachedClickMethod = ButtonWidget->GetClickMethod();
+			CachedTouchMethod = ButtonWidget->GetTouchMethod();
+
+			ButtonWidget->SetClickMethod(EButtonClickMethod::PreciseClick);
+			ButtonWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
+
+			if (HighlightWidget.IsValid())
+			{
+				TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
+				if (ensure(&ButtonSlateWidget))
+				{
+					ButtonSlateWidget.Get().OnMouseButtonDown(InGeometry, InEvent);
+				}
+			}
 		}
-	}
 
-	else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
-	{
-		CachedClickMethod = CheckBoxWidget->GetClickMethod();
-		CachedTouchMethod = CheckBoxWidget->GetTouchMethod();
-
-		CheckBoxWidget->SetClickMethod(EButtonClickMethod::PreciseClick);
-		CheckBoxWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
-
-		TSharedRef<SWidget> CheckBoxSlateWidget = CheckBoxWidget->TakeWidget();
-		if (ensure(&CheckBoxSlateWidget))
+		else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
 		{
-			CheckBoxSlateWidget.Get().OnMouseButtonDown(InGeometry,
-				CreateMouseLikePointerEventFromTouch(InEvent));
+			CachedClickMethod = CheckBoxWidget->GetClickMethod();
+			CachedTouchMethod = CheckBoxWidget->GetTouchMethod();
+
+			CheckBoxWidget->SetClickMethod(EButtonClickMethod::PreciseClick);
+			CheckBoxWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
+
+			TSharedRef<SWidget> CheckBoxSlateWidget = CheckBoxWidget->TakeWidget();
+			if (ensure(&CheckBoxSlateWidget))
+			{
+				CheckBoxSlateWidget.Get().OnMouseButtonDown(InGeometry,
+					CreateMouseLikePointerEventFromTouch(InEvent));
+			}
 		}
-	}
 
-	else
-	{
-		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
-		if (ensure(&SlateWidget))
+		else
 		{
-			SlateWidget->OnMouseButtonDown(InGeometry, InEvent);
+			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+			if (ensure(&SlateWidget))
+			{
+				SlateWidget->OnMouseButtonDown(InGeometry, InEvent);
+			}
 		}
 	}
 }
 
 void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	if (false == HighlightWidget.IsValid()) return;
+	//if (false == HighlightWidget.IsValid()) return;
 
 	FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
+	FVector2D MoveVec = CurrentPosition - TouchStartPos;
 
 	switch (ActionType)
 	{
 	case EGuideActionType::Drag:
 	{
-		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
-		if (ensure(&SlateWidget))
+		if (HighlightWidget.IsValid())
 		{
-			SlateWidget->OnMouseMove(InGeometry, InEvent);
+			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+			if (ensure(&SlateWidget))
+			{
+				SlateWidget->OnMouseMove(InGeometry, InEvent);
+			}
+		}
+
+		if (100.f <= MoveVec.Size())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
+			OnEndedClick(InGeometry, InEvent);
 		}
 	}
 		break;
@@ -79,14 +95,29 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 	case EGuideActionType::Swipe_Left:
 	case EGuideActionType::Swipe_Right:
 	{
-
-		if (true == IsCorrectSwipe(CurrentPosition - TouchStartPos))
+		if (true == IsCorrectSwipe(MoveVec))
 		{
-			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
-			if (ensure(&SlateWidget))
+			UE_LOG(LogTemp, Warning, TEXT("Success Swipe!"));
+
+			if (HighlightWidget.IsValid())
 			{
-				SlateWidget->OnMouseMove(InGeometry, InEvent);
+				TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+				if (ensure(&SlateWidget))
+				{
+					SlateWidget->OnMouseMove(InGeometry, InEvent);
+				}
 			}
+
+			if (100.f <= MoveVec.Size())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
+				OnEndedClick(InGeometry, InEvent);
+			}
+		}
+
+		else
+		{
+			TouchStartPos = FVector2D::Zero();
 		}
 	}
 		break;
@@ -94,53 +125,49 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 		break;
 	}
 
-
-	// TODO: 드래그를 정해줄 기준값 필요
-	float DragValue = FMath::Abs(FVector2D::Distance(CurrentPosition, TouchStartPos));
-
-	if (10.f <= DragValue)
-	{
-		OnEndedAction(InGeometry, InEvent);
-	}
 }
 
 void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	OnPreAction.ExecuteIfBound();
+	UE_LOG(LogTemp, Warning, TEXT("Pre Action"));
 
-	if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
+	if (HighlightWidget.IsValid())
 	{
-		TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
-		if (ensure(&ButtonSlateWidget))
+		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
 		{
-			ButtonSlateWidget.Get().OnMouseButtonUp(InGeometry, InEvent);
+			TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
+			if (ensure(&ButtonSlateWidget))
+			{
+				ButtonSlateWidget.Get().OnMouseButtonUp(InGeometry, InEvent);
+			}
+
+			ButtonWidget->SetClickMethod(CachedClickMethod);
+			ButtonWidget->SetTouchMethod(CachedTouchMethod);
 		}
 
-		ButtonWidget->SetClickMethod(CachedClickMethod);
-		ButtonWidget->SetTouchMethod(CachedTouchMethod);
-	}
-
-	else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
-	{
-		TSharedRef<SWidget> CheckBoxSlateWidget = CheckBoxWidget->TakeWidget();
-		if (ensure(&CheckBoxSlateWidget))
+		else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
 		{
-			CheckBoxSlateWidget.Get().OnMouseButtonUp(InGeometry,
-				CreateMouseLikePointerEventFromTouch(InEvent));
+			TSharedRef<SWidget> CheckBoxSlateWidget = CheckBoxWidget->TakeWidget();
+			if (ensure(&CheckBoxSlateWidget))
+			{
+				CheckBoxSlateWidget.Get().OnMouseButtonUp(InGeometry,
+					CreateMouseLikePointerEventFromTouch(InEvent));
+			}
+
+
+			CheckBoxWidget->SetClickMethod(CachedClickMethod);
+			CheckBoxWidget->SetTouchMethod(CachedTouchMethod);
+
 		}
 
-
-		CheckBoxWidget->SetClickMethod(CachedClickMethod);
-		CheckBoxWidget->SetTouchMethod(CachedTouchMethod);
-
-	}
-
-	else
-	{
-		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
-		if (ensure(&SlateWidget))
+		else
 		{
-			SlateWidget->OnMouseButtonUp(InGeometry, InEvent);
+			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+			if (ensure(&SlateWidget))
+			{
+				SlateWidget->OnMouseButtonUp(InGeometry, InEvent);
+			}
 		}
 	}
 
@@ -149,14 +176,59 @@ void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEv
 
 void UUIGuideMaskBox::OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Action End"));
 	OnPostAction.ExecuteIfBound();
 
-	HighlightWidget.Reset();
 	TouchStartPos = FVector2D::Zero();
+	HighlightWidget.Reset();
 }
 
 bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 {
+	float XValue = FMath::Abs(InMoveVec.X);
+	float YValue = FMath::Abs(InMoveVec.Y);
+
+
+	switch (ActionType)
+	{
+	case EGuideActionType::Swipe_Up:
+	{
+		if (XValue <= YValue && InMoveVec.Y < 0)
+		{
+			return true;
+		}
+	}
+		break;
+	case EGuideActionType::Swipe_Down:
+	{
+		if (XValue <= YValue && InMoveVec.Y > 0)
+		{
+			return true;
+		}
+	}
+		break;
+	case EGuideActionType::Swipe_Left:
+	{
+		if (XValue >= YValue && InMoveVec.X < 0)
+		{
+			return true;
+		}
+	}
+		break;
+	case EGuideActionType::Swipe_Right:
+	{
+		if (XValue >= YValue && InMoveVec.X > 0)
+		{
+			return true;
+		}
+	}
+		break;
+	default:
+		break;
+	}
+
+
+
 
 	return false;
 }
@@ -171,14 +243,44 @@ FReply UUIGuideMaskBox::NativeOnMouseButtonDown(const FGeometry& InGeometry, con
 
 FReply UUIGuideMaskBox::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	OnMoved(InGeometry, InMouseEvent);
+	if (true == TouchStartPos.IsZero())
+	{
+		return FReply::Unhandled();
+	}
+
+	switch (ActionType)
+	{
+	case EGuideActionType::Drag:
+	case EGuideActionType::Swipe_Up:
+	case EGuideActionType::Swipe_Down:
+	case EGuideActionType::Swipe_Left:
+	case EGuideActionType::Swipe_Right:
+	{
+		OnMoved(InGeometry, InMouseEvent);
+	}
+		break;
+	default:
+		break;
+	}
 
 	return FReply::Handled();
 }
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	OnEndedClick(InGeometry, InMouseEvent);
+	TouchStartPos = FVector2D::Zero();
+
+	switch (ActionType)
+	{
+	case EGuideActionType::Click: 
+	{
+		OnEndedClick(InGeometry, InMouseEvent);
+	}
+		break;
+	default:
+		break;
+	}
+
 
 	return FReply::Handled();
 }
@@ -194,4 +296,11 @@ FPointerEvent UUIGuideMaskBox::CreateMouseLikePointerEventFromTouch(const FPoint
 		InTouchEvent.GetWheelDelta(),
 		InTouchEvent.GetModifierKeys()
 	);
+}
+
+void UUIGuideMaskBox::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetConsumePointerInput(true);
 }
