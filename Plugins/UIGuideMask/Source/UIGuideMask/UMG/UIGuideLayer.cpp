@@ -27,6 +27,7 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 
 	FGuideMessageParameters MessageParam = InParam.MessageParameter;
 	FGuideLayerParameters LayerParam = InParam.LayerParameter;
+	FGuideBoxActionParameters ActionParam = InParam.AcitonParameter;
 	
 	FVector2D TargetLocalSize = UUIGuideFunctionLibrary::GetWidgetLocalSize(InGeometry, InWidget->GetTickSpaceGeometry());
 	FVector2D TargetLocalPosition = InGeometry.AbsoluteToLocal(InWidget->GetTickSpaceGeometry().AbsolutePosition);
@@ -104,10 +105,10 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 
 	if (nullptr != GuideMaskBox && nullptr != GuideBoxPanel)
 	{
-		if (LayerParam.bUseGuideAction)
+		if (InParam.bUseAction)
 		{
 			GuideBoxPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			GuideMaskBox->SetBox(LayerParam.ActionType, InWidget);
+			GuideMaskBox->SetBox(InWidget, ActionParam);
 		}
 
 		else

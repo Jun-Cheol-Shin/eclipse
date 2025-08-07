@@ -47,7 +47,7 @@ private:
 	FName PreviewWidgetTag;
 
 	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", AllowPrivateAccess = "true"))
-	TMap<FGameplayTag, FGuideParameter> TextParameters;
+	TMap<FGameplayTag, FGuideParameter> GuideOption;
 
 
 	TArray<FGameplayTag> RegistedTag{};

@@ -2,14 +2,54 @@
 
 
 #include "UIGuideMaskBox.h"
+
 #include "Components/Button.h"
 #include "Components/CheckBox.h"
 
+#include "Blueprint/WidgetLayoutLibrary.h"
 
-void UUIGuideMaskBox::SetBox(EGuideActionType InActionType, UWidget* InWidget)
+
+
+void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams)
 {
-	ActionType = InActionType;
 	HighlightWidget = InWidget;
+
+	ActionType = InParams.ActionType;
+	DragThreshold = InParams.DragThreshold;
+	ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
+
+	CorrectedDragThreshold = DragThreshold * ActionDPIScale;
+}
+
+void UUIGuideMaskBox::OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/)
+{
+	if (nullptr == InViewport || nullptr == InViewport->GetClient()) return;
+
+	ActionDPIScale = InViewport->GetClient()->GetDPIScale();
+	CorrectedDragThreshold = DragThreshold * ActionDPIScale;
+}
+
+void UUIGuideMaskBox::OnChangedVisibility(ESlateVisibility InVisiblity)
+{
+	switch (InVisiblity)
+	{
+	case ESlateVisibility::Visible:	
+	case ESlateVisibility::HitTestInvisible:
+	case ESlateVisibility::SelfHitTestInvisible:
+	{
+		FViewport::ViewportResizedEvent.AddUObject(this, &UUIGuideMaskBox::OnResizedViewport);
+	}
+		break;
+	case ESlateVisibility::Collapsed:
+	case ESlateVisibility::Hidden:
+	{
+		FViewport::ViewportResizedEvent.RemoveAll(this);
+	}
+		break;
+
+	default:
+		break;
+	}
 }
 
 void UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
@@ -67,6 +107,8 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 {
 	//if (false == HighlightWidget.IsValid()) return;
 
+	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
+
 	FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
 	FVector2D MoveVec = CurrentPosition - TouchStartPos;
 
@@ -83,7 +125,7 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 			}
 		}
 
-		if (100.f <= MoveVec.Size())
+		if (CorrectedDragThreshold <= MoveVec.Size())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
 			OnEndedClick(InGeometry, InEvent);
@@ -108,7 +150,7 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 				}
 			}
 
-			if (100.f <= MoveVec.Size())
+			if (CorrectedDragThreshold <= MoveVec.Size())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
 				OnEndedClick(InGeometry, InEvent);
@@ -303,4 +345,17 @@ void UUIGuideMaskBox::NativeConstruct()
 	Super::NativeConstruct();
 
 	SetConsumePointerInput(true);
+
+	OnNativeVisibilityChanged.RemoveAll(this);
+	OnNativeVisibilityChanged.AddUObject(this, &UUIGuideMaskBox::OnChangedVisibility);
+
+	//FViewport::ViewportResizedEvent.AddUObject(this, &U::OnViewportResized);
+	//FSlateApplication::Get().GetGameViewport();
+}
+
+void UUIGuideMaskBox::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	OnNativeVisibilityChanged.RemoveAll(this);
 }

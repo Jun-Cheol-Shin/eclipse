@@ -83,9 +83,9 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 		FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
 
 		FGuideParameter Parameter;
-		if (TextParameters.Contains(SelectedTag))
+		if (GuideOption.Contains(SelectedTag))
 		{
-			Parameter = TextParameters[SelectedTag];
+			Parameter = GuideOption[SelectedTag];
 		}
 
 		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
@@ -161,9 +161,9 @@ void UUIGuideRegistrar::NativeConstruct()
 					NewData.TargetWidget = Widget;
 
 					FGuideParameter NewParameter;
-					if (true == TextParameters.Contains(Tag))
+					if (true == GuideOption.Contains(Tag))
 					{
-						NewParameter = TextParameters[Tag];
+						NewParameter = GuideOption[Tag];
 					}
 
 					NewData.GuideParameters = NewParameter;

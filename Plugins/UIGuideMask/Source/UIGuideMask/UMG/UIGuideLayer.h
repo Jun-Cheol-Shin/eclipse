@@ -34,12 +34,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector2D Padding = FVector2D();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bUseGuideAction = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "true == bUseGuideAction", EditConditionHides))
-	EGuideActionType ActionType = EGuideActionType::Click;
-
 };
 
 USTRUCT(BlueprintType)
@@ -53,6 +47,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGuideMessageParameters MessageParameter{};
+
+	UPROPERTY(EditAnywhere, meta = (InlineEditConditionToggle))
+	bool bUseAction = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "true == bUseAction"))
+	FGuideBoxActionParameters AcitonParameter {};
 };
 
 

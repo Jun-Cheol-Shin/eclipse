@@ -18,6 +18,20 @@ enum class EGuideActionType : uint8
 	Swipe_Right,
 };
 
+USTRUCT(BlueprintType)
+struct FGuideBoxActionParameters
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EGuideActionType ActionType = EGuideActionType::Click;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType", EditConditionHides))
+	float DragThreshold = 0.f;
+
+};
+
 
 UCLASS()
 class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
@@ -35,20 +49,26 @@ private:
 	EGuideActionType ActionType = EGuideActionType::Click;
 
 	UPROPERTY(EditDefaultsOnly, Transient, meta = (AllowPrivateAccess = "true", ClampMin = "10", ClampMax = "100"))
-	float DragFeedbackValue = 100.f;
+	float DragThreshold = 100.f;
+
+	float ActionDPIScale = 0.f;
+	float CorrectedDragThreshold = 0.f;
 	
 public:
-	void SetBox(EGuideActionType InActionType, UWidget* InWidget);
+	void SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams);
 	
 private:
+	void OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/);
+	void OnChangedVisibility(ESlateVisibility InVisiblity);
+
 	void OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
 	void OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
