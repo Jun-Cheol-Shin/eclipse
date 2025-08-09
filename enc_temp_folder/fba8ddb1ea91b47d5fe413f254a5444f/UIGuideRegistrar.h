@@ -54,7 +54,6 @@ private:
 	TMap<FGameplayTag, FGuideParameter> GuideOption;
 
 
-
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;

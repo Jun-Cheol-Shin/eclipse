@@ -70,6 +70,11 @@ public:
 	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam = FGuideParameter());
 
 private:
+	void SetGuideLayer(const FGuideLayerParameters& InLayerParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize);
+	void SetGuideTooltip(const FGuideMessageParameters& InMessageParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize);
+	void SetGuideBox(const FGuideBoxActionParameters& InActionParam, bool bInUseAction, UWidget* InWidget);
+
+private:
 #if WITH_EDITOR
 	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "Preview", DisplayName = "Show Debug"))
 	void ShowPreviewDebug();
@@ -83,6 +88,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 private:
+// BP Variables
 	UPROPERTY(EditDefaultsOnly, meta = (Category = "Preview", AllowPrivateAccess = "true"))
 	ETooltipPosition TooltipPosition;
 
@@ -99,11 +105,7 @@ private:
 	FVector2D HighlightSize;
 
 
-
-	UPROPERTY()
-	UMaterialInstanceDynamic* MaterialInstance = nullptr;
-
-private:
+// Binded Widget Varaible
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	UCanvasPanel* LayerPanel;
 
@@ -119,4 +121,9 @@ private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	UUIGuideMaskBox* GuideMaskBox;
 
+
+private:
+	// Class Variables
+	UPROPERTY()
+	UMaterialInstanceDynamic* MaterialInstance = nullptr;
 };

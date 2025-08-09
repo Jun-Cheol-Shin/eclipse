@@ -29,15 +29,12 @@ protected:
 	virtual TMap<FGameplayTag, UWidget*> OnGetMaskableWidget_Implementation() const;
 
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guide Maskable")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "Check List Item")
 	bool IsCorrectListItem(UObject* InItemClass) const;
-	//virtual bool IsCorrectListItem_Implementation(UObject* InItemClass) const;
+	virtual bool IsCorrectListItem_Implementation(UObject* InItemClass) const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guide Maskable")
-	bool IsCorrectEntryBoxWidget(UUserWidget* InWidget) const;
-	//virtual bool IsCorrectWidget_Implementation(UUserWidget* InWidget) const;
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guide Maskable")
-	bool IsCorrectWidget(UWidget* InWidget) const;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "Check Widget")
+	bool IsCorrectWidget(UUserWidget* InWidget) const;
+	virtual bool IsCorrectWidget_Implementation(UUserWidget* InWidget) const;
 };
 

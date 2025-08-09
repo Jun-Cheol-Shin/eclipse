@@ -11,14 +11,12 @@ TMap<FGameplayTag, UWidget*> IUIGuideMaskable::OnGetMaskableWidget_Implementatio
     return TMap<FGameplayTag, UWidget*>();
 }
 
+bool IUIGuideMaskable::IsCorrectListItem_Implementation(UObject* InItemClass) const
+{
+    return false;
+}
 
-//bool IUIGuideMaskable::IsCorrectListItem_Implementation(UObject* InItemClass) const
-//{
-  //  return false;
-//}
-
-
-//bool IUIGuideMaskable::IsCorrectWidget_Implementation(UUserWidget* InWidget) const
-//{
-//    return false;
-//}
+bool IUIGuideMaskable::IsCorrectWidget_Implementation(UUserWidget* InWidget) const
+{
+    return false;
+}

@@ -29,6 +29,7 @@ UCLASS(Config = GuideSubsystem)
 class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+
 	
 public:
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
@@ -44,7 +45,6 @@ private:
 
 private:
 	void CreateLayer(APlayerController* InController);
-	void OnViewportResized(FViewport* Viewport, uint32 Unused);
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
@@ -61,8 +61,6 @@ private:
 
 	// 비동기 로드가 아직 안된 위젯 대기 큐
 	TQueue<FGameplayTag> WaitQueue;
-
-	FGameplayTag CurrentGuidedTag = FGameplayTag();
 	
 private:
 	UPROPERTY()

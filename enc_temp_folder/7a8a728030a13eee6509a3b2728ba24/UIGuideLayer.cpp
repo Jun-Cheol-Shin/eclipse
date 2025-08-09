@@ -13,6 +13,11 @@
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 
+void UUIGuideLayer::OnResizedViewport(FViewport* InViewport, uint32 InMessage)
+{
+	// todo
+}
+
 void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
 {
 	if (nullptr == LayerPanel || nullptr == InWidget) return;
@@ -161,6 +166,10 @@ void UUIGuideLayer::NativeConstruct()
 	Super::NativeConstruct();
 
 	MaterialInstance = BlackScreen->GetDynamicMaterial();
+	if (ensure(MaterialInstance))
+	{
+		FViewport::ViewportResizedEvent.AddUObject(this, &UUIGuideLayer::OnResizedViewport);
+	}
 
 	if (nullptr != LayerPanel)
 	{
@@ -189,9 +198,10 @@ void UUIGuideLayer::NativeConstruct()
 
 	SetConsumePointerInput(true);
 }
-	
+
 void UUIGuideLayer::NativeDestruct()
 {
+	FViewport::ViewportResizedEvent.RemoveAll(this);
 	MaterialInstance = nullptr;
 
 	Super::NativeDestruct();

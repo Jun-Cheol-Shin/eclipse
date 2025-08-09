@@ -5,19 +5,6 @@
 #include "../UMG/UIGuideLayer.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 
-
-void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
-{
-	if (nullptr != GuideLayer)
-	{
-		if (false == CurrentGuidedTag.GetTagName().IsNone() && Widgets.Contains(CurrentGuidedTag))
-		{
-			FGeometry ViewportGeo = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
-			GuideLayer->Set(ViewportGeo, Widgets[CurrentGuidedTag].TargetWidget, Widgets[CurrentGuidedTag].GuideParameters);
-		}
-	}
-}
-
 void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGameplayTag& InTag)
 {
 	bool bSuccessCreated = false;
@@ -37,7 +24,6 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 
 		if (Widgets.Contains(InTag))
 		{
-			CurrentGuidedTag = InTag;
 			GuideLayer->Set(ViewportGeo, Widgets[InTag].TargetWidget, Widgets[InTag].GuideParameters);
 		}
 	}
@@ -85,9 +71,6 @@ void UUIGuideMaskSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	//if (LayerClass.ToSoftObjectPath().IsValid()) return;
 	//TSubclassOf<UUIGuideLayer> LayerSubClass = LayerClass.LoadSynchronous();
-
-	FViewport::ViewportResizedEvent.AddUObject(this, &UUIGuideMaskSubsystem::OnViewportResized);
-
 }
 
 void UUIGuideMaskSubsystem::Deinitialize()

@@ -55,9 +55,10 @@ public:
 	UUIGuideFunctionLibrary() {}
 
 	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
+	static bool IsOverriddenInBlueprint(const UClass* InClass, const FName& InFuncName);
+
+	static FVector2D GetWidgetLocalSize(const FGeometry& InScreen, const FGeometry& InTarget);
 
 	// ListView, DynamicEntryBox, WrapBox...
 	static UWidget* GetWidget(UUserWidget* InOuterWidget, FGameplayTag InTag);
-
-	static FVector2D GetWidgetLocalSize(const FGeometry& InScreen, const FGeometry& InTarget);
 };

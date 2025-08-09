@@ -4,6 +4,8 @@
 #include "UIGuideRegistrar.h"
 #include "UIGuideLayer.h"
 
+#include "Components/ListView.h"
+#include "Components/TextBlock.h"
 #include "Components/OverlaySlot.h"
 #include "Components/Overlay.h"
 #include "Components/NamedSlot.h"
@@ -60,7 +62,7 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 }
 void UUIGuideRegistrar::HidePreviewDebug()
 {
-	for (int i = GuideOverlay->GetChildrenCount() - 1; i >= 2 ; --i)
+	for (int i = GuideOverlay->GetChildrenCount() - 1; i >= 1 ; --i)
 	{
 		UWidget* Child = GuideOverlay->GetChildAt(i);
 		if (Child) Child->RemoveFromParent();
@@ -95,28 +97,22 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 		}
 
 		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), TaggedWidget, Parameter);
-
 	}
 }
 
 bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 {
 	UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>();
+
 	if (nullptr == OwnerUserWidget || this == OwnerUserWidget) return false;
 
+	FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
+	UWidget* FoundWidget = UUIGuideFunctionLibrary::GetWidget(OwnerUserWidget, SelectedTag);
 
-	if (true == OwnerUserWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
+	if (FoundWidget)
 	{
-		TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(OwnerUserWidget);
-
-		FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
-
-		if (Map.Contains(SelectedTag))
-		{
-			*OutWidget = Map[SelectedTag];
-
-			return true;
-		}
+		*OutWidget = FoundWidget;
+		return true;
 	}
 
 	return false;
@@ -215,6 +211,27 @@ void UUIGuideRegistrar::NativeDestruct()
 void UUIGuideRegistrar::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
+
+	if (NamedSlot->GetChildrenCount() <= 0)
+	{
+		FString ParentWidgetName = GetNameSafe(this);
+
+		if (UUserWidget* OuterWidget = GetTypedOuter<UUserWidget>())
+		{
+			ParentWidgetName = GetNameSafe(OuterWidget);
+		}
+
+		UTextBlock* TextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		TextBlock->SetText(FText::FromString(FString::Printf(TEXT("Change the screen mode of %s to fill screen mode."), *ParentWidgetName)));
+		TextBlock->SetColorAndOpacity(FLinearColor::Gray);
+
+		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(TextBlock))
+		{
+			OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
+			OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Top);
+		}
+	}
+
 
 	UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
 	if (OverlaySlot)

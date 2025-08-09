@@ -5,8 +5,6 @@
 
 #include "../UIGuideMask/UIGuideMaskable.h"
 #include "Blueprint/UserWidget.h"
-
-#include "Components/WrapBox.h"
 #include "Components/ListView.h"
 #include "Components/DynamicEntryBox.h"
 
@@ -119,19 +117,22 @@ UWidget* UUIGuideFunctionLibrary::GetWidget(UUserWidget* InOuterWidget, FGamepla
 
 	if (UListView* ListView = Cast<UListView>(TaggedWidget))
 	{
-		const TArray<UObject*>& ListItems = ListView->GetListItems();
+		const TArray<UObject*> ListItems = ListView->GetListItems();
 		UUserWidget* FindEntry = nullptr;
 
 #if WITH_EDITOR
 		if (true == InOuterWidget->IsDesignTime())
 		{
-			if (true == ListItems.IsEmpty())
+			if (true == IsOverriddenInBlueprint(InOuterWidget->GetClass(), FName(TEXT("IsCorrectListItem"))))
 			{
-				return TaggedWidget;
-			}
+				if (true == ListItems.IsEmpty())
+				{
+					return TaggedWidget;
+				}
 
-			FindEntry = ListView->GetEntryWidgetFromItem(ListItems[0]);
-			return nullptr == FindEntry ? TaggedWidget : FindEntry;
+				FindEntry = ListView->GetEntryWidgetFromItem(ListItems[0]);
+				return nullptr == FindEntry ? TaggedWidget : FindEntry;
+			}
 		}
 #endif
 		else
@@ -149,57 +150,7 @@ UWidget* UUIGuideFunctionLibrary::GetWidget(UUserWidget* InOuterWidget, FGamepla
 		return nullptr == FindEntry ? TaggedWidget : FindEntry;
 	}
 
-	else if (UDynamicEntryBox* EntryBox = Cast<UDynamicEntryBox>(TaggedWidget))
-	{
-		const TArray<UUserWidget*>& Entries = EntryBox->GetAllEntries();
-
-#if WITH_EDITOR
-		if (true == InOuterWidget->IsDesignTime())
-		{
-			if (true == Entries.IsEmpty())
-			{
-				return TaggedWidget;
-			}
-			return nullptr == Entries[0] ? TaggedWidget : Entries[0];
-		}
-#endif
-		else
-		{
-			UUserWidget* const* FoundEntry = Entries.FindByPredicate([&InOuterWidget](UUserWidget* InWidget)
-				{
-					return IUIGuideMaskable::Execute_IsCorrectEntryBoxWidget(InOuterWidget, InWidget);
-				});
-
-
-			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : TaggedWidget;
-		}
-	}
-
-	else if (UWrapBox* WrapBox = Cast<UWrapBox>(TaggedWidget))
-	{
-		const TArray<UWidget*>& Entries = WrapBox->GetAllChildren();
-
-#if WITH_EDITOR
-		if (true == InOuterWidget->IsDesignTime())
-		{
-			if (true == Entries.IsEmpty())
-			{
-				return TaggedWidget;
-			}
-			return nullptr == Entries[0] ? TaggedWidget : Entries[0];
-		}
-#endif
-		else
-		{
-			UWidget* const* FoundEntry = Entries.FindByPredicate([&InOuterWidget](UWidget* InWidget)
-				{
-					return IUIGuideMaskable::Execute_IsCorrectWidget(InOuterWidget, InWidget);
-				});
-
-
-			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : TaggedWidget;
-		}
-	}
+	//else if(UDynamicEntryBox* EntryBox = )
 
 
 	return TaggedWidget;
@@ -213,3 +164,22 @@ void UUIGuideFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstance, F
 		GuideSubSystem->ShowGuide(InInstance->GetFirstLocalPlayerController(), InTag);
 	}
 }
+
+bool UUIGuideFunctionLibrary::IsOverriddenInBlueprint(const UClass* InClass, const FName& InFuncName)
+{
+	if (nullptr == InClass) return false;
+
+	const UFunction* Func = InClass->FindFunctionByName(InFuncName);
+	if (nullptr == Func) return false;
+
+	for (const UFunction* It = Func; It; It = It->GetSuperFunction())
+	{
+		const UClass* Owner = It->GetOwnerClass();
+		if (Owner && Owner->HasAnyClassFlags(CLASS_CompiledFromBlueprint))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
