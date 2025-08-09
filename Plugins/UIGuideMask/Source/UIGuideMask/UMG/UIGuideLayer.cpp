@@ -24,11 +24,18 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 	FGuideBoxActionParameters ActionParam = InParam.AcitonParameter;
 
 	InWidget->ForceLayoutPrepass();
-	FVector2D TargetLocalPosition = InGeometry.AbsoluteToLocal(InWidget->GetTickSpaceGeometry().AbsolutePosition);
-	FVector2D TargetLocalSize = UUIGuideFunctionLibrary::GetWidgetLocalSize(InGeometry, InWidget->GetTickSpaceGeometry());
 
+	// Get target location
+	FVector2D TargetLocalPosition = InGeometry.AbsoluteToLocal(InWidget->GetTickSpaceGeometry().AbsolutePosition);
 	FVector2D TargetLocation = InGeometry.GetLocalPositionAtCoordinates(FVector2D(0, 0)) + TargetLocalPosition;
+
+	// Get screen size
 	FVector2D ScreenSize = InGeometry.GetLocalPositionAtCoordinates(FVector2D(0.5, 0.5)) * 2.f;
+
+	// Get target size
+	FVector2D TargetLocalBottomRight = InGeometry.AbsoluteToLocal(InWidget->GetTickSpaceGeometry().LocalToAbsolute(InWidget->GetTickSpaceGeometry().GetLocalSize()));
+	FVector2D TargetLocalTopLeft = InGeometry.AbsoluteToLocal(InWidget->GetTickSpaceGeometry().GetAbsolutePosition());
+	FVector2D TargetLocalSize = TargetLocalBottomRight - TargetLocalTopLeft;
 
 
 	SetGuideLayer(LayerParam, ScreenSize, TargetLocation, TargetLocalSize);

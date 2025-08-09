@@ -11,8 +11,9 @@
 #include "Components/NamedSlot.h"
 #include "Components/PanelWidget.h"
 
-#include "../UIGuideMaskable.h"
+#include "../Interface/UIGuideMaskable.h"
 #include "../Subsystem/UIGuideMaskSubsystem.h"
+#include "../UIGuideMaskFunctionLibrary.h"
 
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
@@ -107,7 +108,15 @@ bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 	if (nullptr == OwnerUserWidget || this == OwnerUserWidget) return false;
 
 	FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
-	UWidget* FoundWidget = UUIGuideFunctionLibrary::GetWidget(OwnerUserWidget, SelectedTag);
+	UWidget* FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(OwnerUserWidget, SelectedTag);
+
+	while (nullptr != FoundWidget)
+	{
+		if (FoundWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
+		{
+			FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(Cast<UUserWidget>(FoundWidget), SelectedTag);
+		}
+	}
 
 	if (FoundWidget)
 	{

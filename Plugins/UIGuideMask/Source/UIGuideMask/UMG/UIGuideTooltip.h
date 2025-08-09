@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-#include "../TooltipBehavior.h"
+#include "../Interface/TooltipBehavior.h"
 #include "UIGuideTooltip.generated.h"
 
 
