@@ -7,13 +7,23 @@
 #include "../UIGuideMask/Subsystem/UIGuideMaskSubsystem.h"
 #include "Blueprint/UserWidget.h"
 
-
+#include "Components/ContentWidget.h"
+#include "Components/TreeView.h"
 #include "Components/WrapBox.h"
 #include "Components/ListView.h"
 #include "Components/DynamicEntryBox.h"
 
 
-UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UUserWidget* InOuterWidget, FGameplayTag InTag)
+void UUIGuideMaskFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->ShowGuide(InInstance->GetFirstLocalPlayerController(), InTag);
+	}
+}
+
+UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGameplayTag InTag)
 {
 	if (nullptr == InOuterWidget) return nullptr;
 	else if (false == InOuterWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass())) return nullptr;
@@ -24,7 +34,58 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UUserWidget* InOuterWidget, FGam
 
 	UWidget* TaggedWidget = Map[InTag];
 
-	if (UListView* ListView = Cast<UListView>(TaggedWidget))
+	if (UTreeView* TreeView = Cast<UTreeView>(TaggedWidget))
+	{
+		const TArray<UObject*>& ListItems = TreeView->GetListItems();
+		UUserWidget* FindEntry = nullptr;
+
+#if WITH_EDITOR
+		if (true == InOuterWidget->IsDesignTime())
+		{
+			if (true == ListItems.IsEmpty())
+			{
+				return TaggedWidget;
+			}
+
+			FindEntry = TreeView->GetEntryWidgetFromItem(ListItems[0]);
+			return nullptr == FindEntry ? TaggedWidget : FindEntry;
+		}
+#endif
+		else
+		{
+			UObject* FindItem = nullptr;
+			for (auto& Item : ListItems)
+			{
+				if (nullptr != FindItem) break;
+
+				if (true == IUIGuideMaskable::Execute_IsCorrectListItem(InOuterWidget, Item))
+				{
+					FindItem = Item;
+				}
+
+				else
+				{
+					TArray<UObject*> ChildItems;
+					IUIGuideMaskable::Execute_OnGetChildren(InOuterWidget, Item, OUT ChildItems);
+
+					for (auto& ChildItem : ChildItems)
+					{
+						if (true == IUIGuideMaskable::Execute_IsCorrectListItem(InOuterWidget, ChildItem))
+						{
+							FindItem = ChildItem;
+						}
+					}
+				}
+			}
+
+
+			FindEntry = TreeView->GetEntryWidgetFromItem(FindItem);
+		}
+
+		return nullptr == FindEntry ? TaggedWidget : FindEntry;
+	}
+
+	else if (UListView* ListView = Cast<UListView>(TaggedWidget))
 	{
 		const TArray<UObject*>& ListItems = ListView->GetListItems();
 		UUserWidget* FindEntry = nullptr;
@@ -109,14 +170,31 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UUserWidget* InOuterWidget, FGam
 	}
 
 
+
 	return TaggedWidget;
 }
 
-void UUIGuideMaskFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag)
+void UUIGuideMaskFunctionLibrary::ForEachWidgetRecursive(UWidget* Root, TFunctionRef<void(UWidget*)> Visit)
 {
-	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
-	if (ensure(GuideSubSystem))
+	if (!Root) return;
+
+
+	Visit(Root);
+
+	if (auto* Panel = Cast<UPanelWidget>(Root))
 	{
-		GuideSubSystem->ShowGuide(InInstance->GetFirstLocalPlayerController(), InTag);
+		const int32 Count = Panel->GetChildrenCount();
+		for (int32 i = 0; i < Count; ++i)
+		{
+			ForEachWidgetRecursive(Panel->GetChildAt(i), Visit);
+		}
+	}
+	else if (auto* Content = Cast<UContentWidget>(Root))
+	{
+		ForEachWidgetRecursive(Content->GetContent(), Visit);
+	}
+	else if (auto* AsUser = Cast<UUserWidget>(Root))
+	{
+		ForEachWidgetRecursive(AsUser->GetRootWidget(), Visit);
 	}
 }

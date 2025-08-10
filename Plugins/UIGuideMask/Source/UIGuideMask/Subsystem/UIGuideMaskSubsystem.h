@@ -20,8 +20,12 @@ struct FGuideData
 
 public:
 	FGameplayTag GameplayTag = FGameplayTag();
-	UWidget* TargetWidget = nullptr;
 	FGuideParameter GuideParameters {};
+
+	TWeakObjectPtr<UWidget> OuterWidget = nullptr;
+	TWeakObjectPtr<UWidget> TargetWidget = nullptr;
+
+	bool bComplete = false;
 };
 
 
@@ -35,9 +39,15 @@ public:
 
 private:
 	void ShowGuide(const FGameplayTag& InTag);
+	void CompleteGuide();
 
 private:
 	friend class UUIGuideRegistrar;
+	friend class UUIGuideLayer;
+	
+	void OnStartGuide(UWidget* InGuideWidget);
+	void OnCompletePreAction(UWidget* InGuideWidget);
+	void OnCompletePostAction(UWidget* InGuideWidget);
 
 	void RegistGuideWidget(const FGuideData& InData);
 	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }
@@ -58,11 +68,11 @@ protected:
 
 private:
 	TMap<FGameplayTag, FGuideData> Widgets;
+	FGameplayTag CurrentGuidedTag = FGameplayTag();
+
 
 	// 비동기 로드가 아직 안된 위젯 대기 큐
 	TQueue<FGameplayTag> WaitQueue;
-
-	FGameplayTag CurrentGuidedTag = FGameplayTag();
 	
 private:
 	UPROPERTY()

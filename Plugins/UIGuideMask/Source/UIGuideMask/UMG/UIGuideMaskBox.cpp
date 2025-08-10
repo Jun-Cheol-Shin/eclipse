@@ -171,11 +171,12 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 
 void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	OnPreAction.ExecuteIfBound();
 	UE_LOG(LogTemp, Warning, TEXT("Pre Action"));
 
 	if (HighlightWidget.IsValid())
 	{
+		OnPreAction.ExecuteIfBound(HighlightWidget.Get());
+
 		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
 		{
 			TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
@@ -219,7 +220,8 @@ void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEv
 void UUIGuideMaskBox::OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Action End"));
-	OnPostAction.ExecuteIfBound();
+
+	OnPostAction.ExecuteIfBound(HighlightWidget.Get());
 
 	TouchStartPos = FVector2D::Zero();
 	HighlightWidget.Reset();

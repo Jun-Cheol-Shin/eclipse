@@ -13,6 +13,30 @@
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 
+#include "../Subsystem/UIGuideMaskSubsystem.h"
+
+void UUIGuideLayer::OnPreAction(UWidget* InWidget)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	if (nullptr == GameInstance) return;
+
+	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(Subsystem)) return;
+
+	Subsystem->OnCompletePreAction(InWidget);
+}
+
+void UUIGuideLayer::OnPostAction(UWidget* InWidget)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	if (nullptr == GameInstance) return;
+
+	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(Subsystem)) return;
+
+	Subsystem->OnCompletePostAction(InWidget);
+}
+
 void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
 {
 	if (nullptr == LayerPanel || nullptr == InWidget) return;
@@ -41,6 +65,14 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 	SetGuideLayer(LayerParam, ScreenSize, TargetLocation, TargetLocalSize);
 	SetGuideTooltip(MessageParam, ScreenSize, TargetLocation, TargetLocalSize);
 	SetGuideBox(ActionParam, InParam.bUseAction, InWidget);
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (nullptr == GameInstance) return;
+
+	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(Subsystem)) return;
+
+	Subsystem->OnStartGuide(InWidget);
 }
 
 
@@ -192,6 +224,8 @@ void UUIGuideLayer::NativeConstruct()
 	if (nullptr != GuideMaskBox)
 	{
 		GuideMaskBox->SetVisibility(ESlateVisibility::Visible);
+		GuideMaskBox->OnPreAction.BindUObject(this, &UUIGuideLayer::OnPreAction);
+		GuideMaskBox->OnPostAction.BindUObject(this, &UUIGuideLayer::OnPostAction);
 	}
 
 	SetConsumePointerInput(true);

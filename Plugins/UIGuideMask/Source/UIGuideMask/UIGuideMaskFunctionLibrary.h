@@ -24,6 +24,8 @@ public:
 	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
 
 	// ListView, DynamicEntryBox, WrapBox...
-	static UWidget* GetWidget(UUserWidget* InOuterWidget, FGameplayTag InTag);
+	static UWidget* GetWidget(UWidget* InOuterWidget, FGameplayTag InTag);
+
+	static void ForEachWidgetRecursive(UWidget* Root, TFunctionRef<void(UWidget*)> Visit);
 	
 };

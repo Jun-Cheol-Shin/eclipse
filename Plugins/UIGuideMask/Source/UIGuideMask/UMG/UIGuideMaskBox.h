@@ -18,6 +18,14 @@ enum class EGuideActionType : uint8
 	Swipe_Right,
 };
 
+UENUM(BlueprintType)
+enum class EActionCompletionPolicy : uint8
+{
+	Immediate,			  // Layer에서 터치/클릭 인식 즉시 완료 (팁/다음으로)
+	OnTargetHandled,      // 타겟 위젯의 ‘성공 시그널’을 확인한 뒤 완료 (버튼 클릭 등)
+	OnPredicate			  // 임의 조건(프레딕트) 충족 시 완료 (확장됨, 선택됨, 텍스트 유효 등)
+};
+
 USTRUCT(BlueprintType)
 struct FGuideBoxActionParameters
 {
@@ -30,6 +38,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType", EditConditionHides))
 	float DragThreshold = 0.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EActionCompletionPolicy ActionPolicy = EActionCompletionPolicy::Immediate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,
+		meta = (EditCondition = "EActionCompletionPolicy::OnPredicateSatisfied == ActionPolicy", EditConditionHides,
+			ClampMin = "0.1", ClampMax = "2"))
+	float PredicateTime = 1.f;
 };
 
 
@@ -39,9 +54,9 @@ class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	DECLARE_DELEGATE(FOnPreActionSignature)
+	DECLARE_DELEGATE_OneParam(FOnPreActionSignature, UWidget*)
 	FOnPreActionSignature OnPreAction;
-	DECLARE_DELEGATE(FOnPostActionSignature)
+	DECLARE_DELEGATE_OneParam(FOnPostActionSignature, UWidget*)
 	FOnPostActionSignature OnPostAction;
 
 private:

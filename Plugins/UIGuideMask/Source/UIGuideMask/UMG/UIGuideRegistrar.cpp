@@ -22,17 +22,30 @@
 #define LOCTEXT_NAMESPACE "UMG"
 
 
+FGuideParameter UUIGuideRegistrar::GetOption(const FGameplayTag& InTag) const
+{
+	if (GuideOption.Contains(InTag))
+	{
+		return GuideOption[InTag];
+	}
+
+	return FGuideParameter();
+}
+
 
 #if WITH_EDITOR
 
 TArray<FName> UUIGuideRegistrar::GetTagOptions() const
 {
+	TArray<FGameplayTag> TagList;
+	RegistedTagList.GenerateKeyArray(OUT TagList);
+
 	TArray<FName> TagNameArray;
 
-	for (int i = 0; i < RegistedTag.Num(); ++i)
-	{
-		TagNameArray.Add(RegistedTag[i].GetTagName());
-	}
+	Algo::Transform(TagList, TagNameArray, [](const FGameplayTag& InTag) -> FName
+		{
+			return InTag.GetTagName();
+		});
 
 	return TagNameArray;
 }
@@ -80,6 +93,7 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 		return;
 	}
 
+
 	UUIGuideLayer* PreviewGuideLayerWidget = WidgetPool.GetOrCreateInstance<UUIGuideLayer>(PreviewGuideLayer.Get());
 	if (PreviewGuideLayerWidget)
 	{
@@ -89,6 +103,25 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 		if (GuideOption.Contains(SelectedTag))
 		{
 			Parameter = GuideOption[SelectedTag];
+		}
+
+		else
+		{
+			UUserWidget* UserWidget = TaggedWidget->GetTypedOuter<UUserWidget>();
+			if (UserWidget && UserWidget->WidgetTree)
+			{
+				TArray<UWidget*> Children;
+				UserWidget->WidgetTree->GetAllWidgets(OUT Children);
+
+				for (auto& Child : Children)
+				{
+					if (UUIGuideRegistrar* Registrar = Cast<UUIGuideRegistrar>(Child))
+					{
+						Parameter = Registrar->GetOption(SelectedTag);
+						break;
+					}
+				}
+			}
 		}
 
 		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
@@ -103,18 +136,22 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 
 bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 {
-	UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>();
-
-	if (nullptr == OwnerUserWidget || this == OwnerUserWidget) return false;
-
 	FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
-	UWidget* FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(OwnerUserWidget, SelectedTag);
+	if (false == RegistedTagList.Contains(SelectedTag)) return false;
+
+	UWidget* OuterWidget = RegistedTagList[SelectedTag];
+	UWidget* FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(OuterWidget, SelectedTag);
 
 	while (nullptr != FoundWidget)
 	{
 		if (FoundWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
 		{
 			FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(Cast<UUserWidget>(FoundWidget), SelectedTag);
+		}
+
+		else
+		{
+			break;
 		}
 	}
 
@@ -128,7 +165,10 @@ bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
 }
 FGameplayTag UUIGuideRegistrar::GetTag(const FName& InTagName)
 {
-	for (auto& Tag : RegistedTag)
+	TArray<FGameplayTag> TagList;
+	RegistedTagList.GenerateKeyArray(OUT TagList);
+
+	for (auto& Tag : TagList)
 	{
 		if (Tag.GetTagName().IsEqual(InTagName))
 		{
@@ -164,6 +204,7 @@ void UUIGuideRegistrar::NativeConstruct()
 					FGuideData NewData;
 					NewData.GameplayTag = Tag;
 					NewData.TargetWidget = Widget;
+					NewData.OuterWidget = OwnerUserWidget;
 
 					FGuideParameter NewParameter;
 					if (true == GuideOption.Contains(Tag))
@@ -186,6 +227,11 @@ void UUIGuideRegistrar::NativeConstruct()
 			OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
 			OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
 		}
+
+
+		RegistedTagList.Reset();
+		WidgetPool.ReleaseAll();
+
 	}
 }
 void UUIGuideRegistrar::NativeDestruct()
@@ -254,19 +300,43 @@ void UUIGuideRegistrar::SynchronizeProperties()
 
 
 #if WITH_EDITOR
+
+	RegistedTagList.Reset();
+
 	if (UUserWidget* OwnerUserWidget = GetTypedOuter<UUserWidget>())
 	{
 		if (OwnerUserWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
 		{
 			TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(OwnerUserWidget);
 
-			RegistedTag.Reset();
 			for (auto& [Tag, Widget] : Map)
 			{
-				RegistedTag.Add(Tag);
+				RegistedTagList.Emplace(Tag, OwnerUserWidget);
 			}
 		}
 	}
+
+	for (auto& Child : NamedSlot->GetAllChildren())
+	{
+		UUIGuideMaskFunctionLibrary::ForEachWidgetRecursive(Child, [&](UWidget* InRoot)
+			{
+				check(InRoot);
+				if (InRoot->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
+				{
+					TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(InRoot);
+
+					for (auto& [Tag, Widget] : Map)
+					{
+						RegistedTagList.Add(Tag, InRoot);
+					}
+
+					UE_LOG(LogTemp, Log, TEXT("Found: %s (%s)"), *GetNameSafe(InRoot), *InRoot->GetClass()->GetName());
+
+				}
+			});
+	}
+
+
 #endif
 
 }

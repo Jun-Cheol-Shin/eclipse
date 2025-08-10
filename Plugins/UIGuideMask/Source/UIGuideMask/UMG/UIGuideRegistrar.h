@@ -20,6 +20,9 @@ class UIGUIDEMASK_API UUIGuideRegistrar : public UUserWidget
 {
 	GENERATED_BODY()
 
+public:
+	FGuideParameter GetOption(const FGameplayTag& InTag) const;
+
 private:
 #if WITH_EDITOR
 	UFUNCTION()
@@ -36,6 +39,7 @@ private:
 	// Helper
 	bool GetTaggedWidget(OUT UWidget** OutWidget);
 	FGameplayTag GetTag(const FName& InTagName);
+
 #endif
 
 #if WITH_EDITORONLY_DATA
@@ -45,7 +49,7 @@ private:
 	UPROPERTY(EditInstanceOnly, meta = (Category = "UI Guide Mask Preview", GetOptions = "GetTagOptions", AllowPrivateAccess = "true"))
 	FName PreviewWidgetTag;
 
-	TArray<FGameplayTag> RegistedTag{};
+	TMap<FGameplayTag, UWidget* /* OuterWidget */> RegistedTagList;
 	FUserWidgetPool WidgetPool{ };
 #endif
 
