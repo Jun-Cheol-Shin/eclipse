@@ -25,7 +25,6 @@ public:
 	TWeakObjectPtr<UWidget> OuterWidget = nullptr;
 	TWeakObjectPtr<UWidget> TargetWidget = nullptr;
 
-	bool bComplete = false;
 };
 
 
@@ -36,6 +35,7 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 	
 public:
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
+	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
 
 private:
 	void ShowGuide(const FGameplayTag& InTag);
@@ -70,6 +70,7 @@ private:
 	TMap<FGameplayTag, FGuideData> Widgets;
 	FGameplayTag CurrentGuidedTag = FGameplayTag();
 
+	TQueue<FGameplayTag> Steps;
 
 	// 비동기 로드가 아직 안된 위젯 대기 큐
 	TQueue<FGameplayTag> WaitQueue;

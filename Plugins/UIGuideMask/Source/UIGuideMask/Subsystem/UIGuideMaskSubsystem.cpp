@@ -155,18 +155,51 @@ void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused
 
 void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGameplayTag& InTag)
 {
-	bool bSuccessCreated = false;
 	if (nullptr == GuideLayer)
 	{
 		CreateLayer(InController);
 	}
 
-	ShowGuide(InTag);
+	if (nullptr != GuideLayer)
+	{
+		// Play Animation..
+		// Add Viewport...
+
+
+
+		ShowGuide(InTag);
+		Steps.Pop();
+	}
+}
+
+void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags)
+{
+	for (int i = 0; i < InTags.Num(); ++i)
+	{
+		Steps.Enqueue(InTags[i]);
+	}
+
+
+
+
+	if (FGameplayTag* FirstTag = Steps.Peek())
+	{
+		if (nullptr != GuideLayer)
+		{
+			// Play Animation.. (FadeIn)
+			// Add Viewport...
+
+
+
+			ShowGuide(*FirstTag);
+			Steps.Pop();
+		}
+	}
 }
 
 void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 {
-	if (nullptr != GuideLayer)
+	if (ensure(GuideLayer))
 	{
 		FGeometry ViewportGeo = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
 
@@ -180,12 +213,21 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 
 void UUIGuideMaskSubsystem::CompleteGuide()
 {
-	if (ensure(Widgets.Contains(CurrentGuidedTag)))
+	if (FGameplayTag* NextTag = Steps.Peek())
 	{
-		Widgets.Remove(CurrentGuidedTag);
+		ShowGuide(*NextTag);
+		Steps.Pop();
 	}
 
-	CurrentGuidedTag = FGameplayTag::EmptyTag;
+	else
+	{
+		CurrentGuidedTag = FGameplayTag::EmptyTag;
+
+		// Hide Layer		(FadeOut)
+		// Remove Viewport
+
+
+	}
 }
 
 void UUIGuideMaskSubsystem::CreateLayer(APlayerController* InController)

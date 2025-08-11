@@ -80,7 +80,7 @@ protected:
 
 	virtual void NativeOnCompletionPredicate(FGameplayTag InGameplayTag) const;
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Evaluate Completion Predicate")
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Called Completion Predicate")
 	void OnCompletionPredicate(FGameplayTag InGameplayTag) const;
 
 
