@@ -77,23 +77,5 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Get Treeview Childrens")
 	void OnGetChildren(UObject* InParentItem, TArray<UObject*>& OutChildren) const;
 
-
-	virtual void NativeOnCompletionPredicate(FGameplayTag InGameplayTag) const;
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Called Completion Predicate")
-	void OnCompletionPredicate(FGameplayTag InGameplayTag) const;
-
-
-
-	virtual bool NativeOnEvaluateCompletionPredicate(FGameplayTag InGameplayTag) const;
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Evaluate Completion Predicate")
-	bool OnEvaluateCompletionPredicate(FGameplayTag InGameplayTag) const;
-
-
-	virtual void NativeOnFailedPredicate(FGameplayTag InGameplayTag) const;
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Guide Maskable", DisplayName = "On Failed Predicate")
-	void OnFailedPredicate(FGameplayTag InGameplayTag) const;
 };
 

@@ -67,9 +67,6 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 	friend class UUIGuideRegistrar;
 
 private:
-	// Before Action
-	void OnPreAction(UWidget* InWidget);
-
 	// After Action
 	void OnPostAction(UWidget* InWidget);
 

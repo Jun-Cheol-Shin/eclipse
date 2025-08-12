@@ -46,8 +46,7 @@ private:
 	friend class UUIGuideLayer;
 	
 	void OnStartGuide(UWidget* InGuideWidget);
-	void OnCompletePreAction(UWidget* InGuideWidget);
-	void OnCompletePostAction(UWidget* InGuideWidget);
+	void OnCompleteAction(UWidget* InGuideWidget);
 
 	void RegistGuideWidget(const FGuideData& InData);
 	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }

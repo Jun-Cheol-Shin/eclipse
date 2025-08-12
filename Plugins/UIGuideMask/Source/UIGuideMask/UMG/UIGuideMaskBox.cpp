@@ -175,8 +175,6 @@ void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEv
 
 	if (HighlightWidget.IsValid())
 	{
-		OnPreAction.ExecuteIfBound(HighlightWidget.Get());
-
 		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
 		{
 			TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();

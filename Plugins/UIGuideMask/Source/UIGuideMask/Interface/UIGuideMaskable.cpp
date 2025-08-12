@@ -45,18 +45,3 @@ void IUIGuideMaskable::NativeOnGetChildren(UObject* InParentItem, TArray<UObject
 {
 	return Execute_OnGetChildren(Cast<UObject>(this), InParentItem, OutChildren);
 }
-
-void IUIGuideMaskable::NativeOnCompletionPredicate(FGameplayTag InGameplayTag) const
-{
-	Execute_OnCompletionPredicate(Cast<UObject>(this), InGameplayTag);
-}
-
-bool IUIGuideMaskable::NativeOnEvaluateCompletionPredicate(FGameplayTag InGameplayTag) const
-{
-	return Execute_OnEvaluateCompletionPredicate(Cast<UObject>(this), InGameplayTag);
-}
-
-void IUIGuideMaskable::NativeOnFailedPredicate(FGameplayTag InGameplayTag) const
-{
-	return Execute_OnFailedPredicate(Cast<UObject>(this), InGameplayTag);
-}

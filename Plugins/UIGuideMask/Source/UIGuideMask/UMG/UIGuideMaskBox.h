@@ -34,19 +34,10 @@ struct FGuideBoxActionParameters
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EGuideActionType ActionType = EGuideActionType::Click;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType", EditConditionHides))
 	float DragThreshold = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EActionCompletionPolicy ActionPolicy = EActionCompletionPolicy::Immediate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,
-		meta = (EditCondition = "EActionCompletionPolicy::OnPredicateSatisfied == ActionPolicy", EditConditionHides,
-			ClampMin = "0.1", ClampMax = "2"))
-	float PredicateTime = 1.f;
 };
-
 
 UCLASS()
 class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
@@ -54,8 +45,6 @@ class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	DECLARE_DELEGATE_OneParam(FOnPreActionSignature, UWidget*)
-	FOnPreActionSignature OnPreAction;
 	DECLARE_DELEGATE_OneParam(FOnPostActionSignature, UWidget*)
 	FOnPostActionSignature OnPostAction;
 

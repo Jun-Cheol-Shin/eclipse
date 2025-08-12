@@ -21,7 +21,7 @@ void UUIGuideMaskSubsystem::OnStartGuide(UWidget* InGuideWidget)
 	}
 }
 
-void UUIGuideMaskSubsystem::OnCompletePreAction(UWidget* InGuideWidget)
+void UUIGuideMaskSubsystem::OnCompleteAction(UWidget* InGuideWidget)
 {
 	if (!ensure(CurrentGuidedTag.GetTagName().IsNone())) return;
 	else if (!ensure(Widgets.Contains(CurrentGuidedTag))) return;
@@ -31,48 +31,19 @@ void UUIGuideMaskSubsystem::OnCompletePreAction(UWidget* InGuideWidget)
 
 	FGuideBoxActionParameters ActionParam = Widgets[CurrentGuidedTag].GuideParameters.AcitonParameter;
 
-	switch (ActionParam.ActionPolicy)
+	if (IUIGuideMaskable* MaskableWidget = Cast<IUIGuideMaskable>(OuterWidget.Get()))
 	{
-	case EActionCompletionPolicy::Immediate:
-	{
-		if (IUIGuideMaskable* MaskableWidget = Cast<IUIGuideMaskable>(OuterWidget.Get()))
-		{
-			MaskableWidget->NativeOnCompleteAction(CurrentGuidedTag, InGuideWidget);
-		}
-
-		CompleteGuide();
-	}
-		break;
-
-
-	default:
-	case EActionCompletionPolicy::OnTargetHandled:
-	case EActionCompletionPolicy::OnPredicate:
-		break;
+		MaskableWidget->NativeOnCompleteAction(CurrentGuidedTag, InGuideWidget);
 	}
 
-}
+	CompleteGuide();
 
-void UUIGuideMaskSubsystem::OnCompletePostAction(UWidget* InGuideWidget)
-{
-	if (!ensure(CurrentGuidedTag.GetTagName().IsNone())) return;
-	else if (!ensure(Widgets.Contains(CurrentGuidedTag))) return;
 
-	TWeakObjectPtr<UWidget> OuterWidget = Widgets[CurrentGuidedTag].OuterWidget;
-	if (false == OuterWidget.IsValid()) return;
-
-	FGuideBoxActionParameters ActionParam = Widgets[CurrentGuidedTag].GuideParameters.AcitonParameter;
-
-	switch (ActionParam.ActionPolicy)
+	/*switch (ActionParam.ActionPolicy)
 	{
 	case EActionCompletionPolicy::OnTargetHandled:
 	{
-		if (IUIGuideMaskable* MaskableWidget = Cast<IUIGuideMaskable>(OuterWidget.Get()))
-		{
-			MaskableWidget->NativeOnCompleteAction(CurrentGuidedTag, InGuideWidget);
-		}
-
-		CompleteGuide();
+		
 	}
 	break;
 
@@ -137,7 +108,7 @@ void UUIGuideMaskSubsystem::OnCompletePostAction(UWidget* InGuideWidget)
 	default:
 	case EActionCompletionPolicy::Immediate:
 		break;
-	}
+	}*/
 
 }
 
@@ -166,9 +137,8 @@ void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGa
 		// Add Viewport...
 
 
-
+		GuideLayer->AddToPlayerScreen(INT_MAX);
 		ShowGuide(InTag);
-		Steps.Pop();
 	}
 }
 
@@ -179,21 +149,26 @@ void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, cons
 		Steps.Enqueue(InTags[i]);
 	}
 
+	FGameplayTag* FirstTag = Steps.Peek();
 
 
-
-	if (FGameplayTag* FirstTag = Steps.Peek())
+	if (nullptr != FirstTag)
 	{
+		// Play Animation.. (FadeIn)
+		// Add Viewport...
+
 		if (nullptr != GuideLayer)
 		{
-			// Play Animation.. (FadeIn)
-			// Add Viewport...
-
-
-
+			GuideLayer->AddToPlayerScreen(INT_MAX);
 			ShowGuide(*FirstTag);
-			Steps.Pop();
 		}
+
+		Steps.Pop();
+	}
+
+	else if (nullptr != GuideLayer && GuideLayer->IsInViewport())
+	{
+		GuideLayer->RemoveFromParent();
 	}
 }
 
@@ -223,9 +198,10 @@ void UUIGuideMaskSubsystem::CompleteGuide()
 	{
 		CurrentGuidedTag = FGameplayTag::EmptyTag;
 
-		// Hide Layer		(FadeOut)
-		// Remove Viewport
-
+		if (nullptr != GuideLayer && GuideLayer->IsInViewport())
+		{
+			GuideLayer->RemoveFromParent();
+		}
 
 	}
 }

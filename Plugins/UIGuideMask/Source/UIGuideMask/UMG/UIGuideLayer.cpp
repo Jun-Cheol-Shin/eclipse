@@ -15,17 +15,6 @@
 
 #include "../Subsystem/UIGuideMaskSubsystem.h"
 
-void UUIGuideLayer::OnPreAction(UWidget* InWidget)
-{
-	UGameInstance* GameInstance = GetGameInstance();
-	if (nullptr == GameInstance) return;
-
-	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
-	if (ensure(Subsystem)) return;
-
-	Subsystem->OnCompletePreAction(InWidget);
-}
-
 void UUIGuideLayer::OnPostAction(UWidget* InWidget)
 {
 	UGameInstance* GameInstance = GetGameInstance();
@@ -34,7 +23,7 @@ void UUIGuideLayer::OnPostAction(UWidget* InWidget)
 	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
 	if (ensure(Subsystem)) return;
 
-	Subsystem->OnCompletePostAction(InWidget);
+	Subsystem->OnCompleteAction(InWidget);
 }
 
 void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
@@ -224,7 +213,6 @@ void UUIGuideLayer::NativeConstruct()
 	if (nullptr != GuideMaskBox)
 	{
 		GuideMaskBox->SetVisibility(ESlateVisibility::Visible);
-		GuideMaskBox->OnPreAction.BindUObject(this, &UUIGuideLayer::OnPreAction);
 		GuideMaskBox->OnPostAction.BindUObject(this, &UUIGuideLayer::OnPostAction);
 	}
 
