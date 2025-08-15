@@ -23,7 +23,7 @@ void UUIGuideMaskFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstanc
 	}
 }
 
-UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGameplayTag InTag)
+UWidget* UUIGuideMaskFunctionLibrary::GetTagWidget(UWidget* InOuterWidget, FGameplayTag InTag)
 {
 	if (nullptr == InOuterWidget) return nullptr;
 	else if (false == InOuterWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass())) return nullptr;
@@ -34,7 +34,18 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 
 	UWidget* TaggedWidget = Map[InTag];
 
-	if (UTreeView* TreeView = Cast<UTreeView>(TaggedWidget))
+	if (true == IsContainerWidget(TaggedWidget))
+	{
+		TaggedWidget = GetEntry(InOuterWidget, TaggedWidget);
+	}
+	
+
+	return TaggedWidget;
+}
+
+UWidget* UUIGuideMaskFunctionLibrary::GetEntry(UWidget* InOuterWidget, UWidget* InTagetWidget)
+{
+	if (UTreeView* TreeView = Cast<UTreeView>(InTagetWidget))
 	{
 		const TArray<UObject*>& ListItems = TreeView->GetListItems();
 		UUserWidget* FindEntry = nullptr;
@@ -44,11 +55,11 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 		{
 			if (true == ListItems.IsEmpty())
 			{
-				return TaggedWidget;
+				return InTagetWidget;
 			}
 
 			FindEntry = TreeView->GetEntryWidgetFromItem(ListItems[0]);
-			return nullptr == FindEntry ? TaggedWidget : FindEntry;
+			return nullptr == FindEntry ? InTagetWidget : FindEntry;
 		}
 #endif
 		else
@@ -82,10 +93,10 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 			FindEntry = TreeView->GetEntryWidgetFromItem(FindItem);
 		}
 
-		return nullptr == FindEntry ? TaggedWidget : FindEntry;
+		return nullptr == FindEntry ? InTagetWidget : FindEntry;
 	}
 
-	else if (UListView* ListView = Cast<UListView>(TaggedWidget))
+	else if (UListView* ListView = Cast<UListView>(InTagetWidget))
 	{
 		const TArray<UObject*>& ListItems = ListView->GetListItems();
 		UUserWidget* FindEntry = nullptr;
@@ -95,11 +106,11 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 		{
 			if (true == ListItems.IsEmpty())
 			{
-				return TaggedWidget;
+				return InTagetWidget;
 			}
 
 			FindEntry = ListView->GetEntryWidgetFromItem(ListItems[0]);
-			return nullptr == FindEntry ? TaggedWidget : FindEntry;
+			return nullptr == FindEntry ? InTagetWidget : FindEntry;
 		}
 #endif
 		else
@@ -109,15 +120,15 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 					return IUIGuideMaskable::Execute_IsCorrectListItem(InOuterWidget, InItem);
 				});
 
-			if (nullptr == FoundItem || nullptr == *FoundItem) return TaggedWidget;
+			if (nullptr == FoundItem || nullptr == *FoundItem) return InTagetWidget;
 
 			FindEntry = ListView->GetEntryWidgetFromItem(*FoundItem);
 		}
 
-		return nullptr == FindEntry ? TaggedWidget : FindEntry;
+		return nullptr == FindEntry ? InTagetWidget : FindEntry;
 	}
 
-	else if (UDynamicEntryBox* EntryBox = Cast<UDynamicEntryBox>(TaggedWidget))
+	else if (UDynamicEntryBox* EntryBox = Cast<UDynamicEntryBox>(InTagetWidget))
 	{
 		const TArray<UUserWidget*>& Entries = EntryBox->GetAllEntries();
 
@@ -126,9 +137,9 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 		{
 			if (true == Entries.IsEmpty())
 			{
-				return TaggedWidget;
+				return InTagetWidget;
 			}
-			return nullptr == Entries[0] ? TaggedWidget : Entries[0];
+			return nullptr == Entries[0] ? InTagetWidget : Entries[0];
 		}
 #endif
 		else
@@ -139,11 +150,11 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 				});
 
 
-			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : TaggedWidget;
+			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : InTagetWidget;
 		}
 	}
 
-	else if (UWrapBox* WrapBox = Cast<UWrapBox>(TaggedWidget))
+	else if (UWrapBox* WrapBox = Cast<UWrapBox>(InTagetWidget))
 	{
 		const TArray<UWidget*>& Entries = WrapBox->GetAllChildren();
 
@@ -152,9 +163,9 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 		{
 			if (true == Entries.IsEmpty())
 			{
-				return TaggedWidget;
+				return InTagetWidget;
 			}
-			return nullptr == Entries[0] ? TaggedWidget : Entries[0];
+			return nullptr == Entries[0] ? InTagetWidget : Entries[0];
 		}
 #endif
 		else
@@ -165,13 +176,16 @@ UWidget* UUIGuideMaskFunctionLibrary::GetWidget(UWidget* InOuterWidget, FGamepla
 				});
 
 
-			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : TaggedWidget;
+			return nullptr != FoundEntry && nullptr != *FoundEntry ? *FoundEntry : InTagetWidget;
 		}
 	}
 
+	return InTagetWidget;
+}
 
-
-	return TaggedWidget;
+bool UUIGuideMaskFunctionLibrary::IsContainerWidget(UWidget* InTargetWidget)
+{
+	return Cast<UTreeView>(InTargetWidget) || Cast<UListView>(InTargetWidget) || Cast<UDynamicEntryBox>(InTargetWidget) || Cast<UWrapBox>(InTargetWidget);
 }
 
 void UUIGuideMaskFunctionLibrary::ForEachWidgetRecursive(UWidget* Root, TFunctionRef<void(UWidget*)> Visit)

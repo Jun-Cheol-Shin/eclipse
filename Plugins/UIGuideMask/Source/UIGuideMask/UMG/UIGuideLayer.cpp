@@ -15,15 +15,15 @@
 
 #include "../Subsystem/UIGuideMaskSubsystem.h"
 
-void UUIGuideLayer::OnPostAction(UWidget* InWidget)
+void UUIGuideLayer::OnPostAction()
 {
 	UGameInstance* GameInstance = GetGameInstance();
 	if (nullptr == GameInstance) return;
 
 	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
-	if (ensure(Subsystem)) return;
+	if (!ensure(Subsystem)) return;
 
-	Subsystem->OnCompleteAction(InWidget);
+	Subsystem->OnCompleteAction();
 }
 
 void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
@@ -59,9 +59,9 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 	if (nullptr == GameInstance) return;
 
 	UUIGuideMaskSubsystem* Subsystem = GameInstance->GetSubsystem<UUIGuideMaskSubsystem>();
-	if (ensure(Subsystem)) return;
+	if (!ensure(Subsystem)) return;
 
-	Subsystem->OnStartGuide(InWidget);
+	Subsystem->OnStartGuide();
 }
 
 
@@ -142,15 +142,16 @@ void UUIGuideLayer::SetGuideBox(const FGuideBoxActionParameters& InActionParam, 
 {
 	if (nullptr != GuideMaskBox && nullptr != GuideBoxPanel)
 	{
+		GuideMaskBox->SetBox(InWidget, InActionParam);
+
 		if (bInUseAction)
 		{
-			GuideBoxPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			GuideMaskBox->SetBox(InWidget, InActionParam);
+			GuideBoxPanel->SetVisibility(ESlateVisibility::Visible);
 		}
 
 		else
 		{
-			GuideBoxPanel->SetVisibility(ESlateVisibility::Collapsed);
+			GuideBoxPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 	}
 
@@ -167,10 +168,10 @@ void UUIGuideLayer::SetMaterialTransform(const FVector2D& InViewportSize, const 
 		WidgetSize += InOffset;
 	}
 
-	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
+	//float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
 
-	FVector2D WidgetCenter_Pixel = WidgetLeftTop * DPIScale;
-	FVector2D WidgetSize_Pixel = WidgetSize * 0.5f * DPIScale;
+	FVector2D WidgetCenter_Pixel = WidgetLeftTop;
+	FVector2D WidgetSize_Pixel = WidgetSize * 0.5f;
 
 	// UV 변환
 	FVector2D CenterUV = WidgetCenter_Pixel / InViewportSize;
@@ -224,6 +225,26 @@ void UUIGuideLayer::NativeDestruct()
 	MaterialInstance = nullptr;
 
 	Super::NativeDestruct();
+}
+
+FReply UUIGuideLayer::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+{
+	if (nullptr != GuideBoxPanel && ESlateVisibility::HitTestInvisible == GuideBoxPanel->GetVisibility())
+	{
+		GuideMaskBox->ForceComplete();
+	}
+
+	return Super::NativeOnMouseButtonUp(InGeometry, InEvent);
+}
+
+FReply UUIGuideLayer::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+{
+	if (nullptr != GuideBoxPanel && ESlateVisibility::HitTestInvisible == GuideBoxPanel->GetVisibility())
+	{
+		GuideMaskBox->ForceComplete();
+	}
+
+	return Super::NativeOnTouchEnded(InGeometry, InEvent);
 }
 
 

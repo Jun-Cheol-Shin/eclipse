@@ -21,10 +21,18 @@ public:
 	UUIGuideMaskFunctionLibrary() {}
 
 	// Access Guide SubSystem
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
 	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
 
+
+
+
+
 	// ListView, DynamicEntryBox, WrapBox...
-	static UWidget* GetWidget(UWidget* InOuterWidget, FGameplayTag InTag);
+	static UWidget* GetTagWidget(UWidget* InOuterWidget, FGameplayTag InTag);
+	static UWidget* GetEntry(UWidget* InOuterWidget, UWidget* InTagetWidget);
+	static bool IsContainerWidget(UWidget* InTargetWidget);
+
 
 	static void ForEachWidgetRecursive(UWidget* Root, TFunctionRef<void(UWidget*)> Visit);
 	

@@ -10,6 +10,14 @@
 
 
 
+void UUIGuideMaskBox::ForceComplete()
+{
+	OnPostAction.ExecuteIfBound();
+
+	TouchStartPos = FVector2D::Zero();
+	HighlightWidget.Reset();
+}
+
 void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams)
 {
 	HighlightWidget = InWidget;
@@ -189,6 +197,9 @@ void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEv
 
 		else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
 		{
+			CheckBoxWidget->SetClickMethod(EButtonClickMethod::MouseUp);
+			CheckBoxWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
+
 			TSharedRef<SWidget> CheckBoxSlateWidget = CheckBoxWidget->TakeWidget();
 			if (ensure(&CheckBoxSlateWidget))
 			{
@@ -219,10 +230,12 @@ void UUIGuideMaskBox::OnEndedAction(const FGeometry& InGeometry, const FPointerE
 {
 	UE_LOG(LogTemp, Warning, TEXT("Action End"));
 
-	OnPostAction.ExecuteIfBound(HighlightWidget.Get());
 
 	TouchStartPos = FVector2D::Zero();
 	HighlightWidget.Reset();
+
+	OnPostAction.ExecuteIfBound();
+
 }
 
 bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
@@ -319,6 +332,57 @@ FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const
 		OnEndedClick(InGeometry, InMouseEvent);
 	}
 		break;
+	default:
+		break;
+	}
+
+
+	return FReply::Handled();
+}
+
+FReply UUIGuideMaskBox::NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	OnStartedClick(InGeometry, InGestureEvent);
+
+	return FReply::Handled();
+}
+
+FReply UUIGuideMaskBox::NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	if (true == TouchStartPos.IsZero())
+	{
+		return FReply::Unhandled();
+	}
+
+	switch (ActionType)
+	{
+	case EGuideActionType::Drag:
+	case EGuideActionType::Swipe_Up:
+	case EGuideActionType::Swipe_Down:
+	case EGuideActionType::Swipe_Left:
+	case EGuideActionType::Swipe_Right:
+	{
+		OnMoved(InGeometry, InGestureEvent);
+	}
+	break;
+	default:
+		break;
+	}
+
+	return FReply::Handled();
+}
+
+FReply UUIGuideMaskBox::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
+{
+	TouchStartPos = FVector2D::Zero();
+
+	switch (ActionType)
+	{
+	case EGuideActionType::Click:
+	{
+		OnEndedClick(InGeometry, InGestureEvent);
+	}
+	break;
 	default:
 		break;
 	}

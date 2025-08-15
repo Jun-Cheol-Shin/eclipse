@@ -37,7 +37,7 @@ private:
 	void CreatePreviewLayer();
 
 	// Helper
-	bool GetTaggedWidget(OUT UWidget** OutWidget);
+	bool GetPreviewWidget(OUT UWidget** OutWidget);
 	FGameplayTag GetTag(const FName& InTagName);
 
 #endif

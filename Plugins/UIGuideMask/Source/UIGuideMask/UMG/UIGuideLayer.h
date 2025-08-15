@@ -68,7 +68,7 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 
 private:
 	// After Action
-	void OnPostAction(UWidget* InWidget);
+	void OnPostAction();
 
 public:
 	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam = FGuideParameter());
@@ -90,6 +90,9 @@ private:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
+	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 
 private:
 // BP Variables

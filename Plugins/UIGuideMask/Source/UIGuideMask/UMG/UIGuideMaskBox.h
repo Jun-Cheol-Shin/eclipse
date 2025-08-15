@@ -45,7 +45,7 @@ class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	DECLARE_DELEGATE_OneParam(FOnPostActionSignature, UWidget*)
+	DECLARE_DELEGATE(FOnPostActionSignature)
 	FOnPostActionSignature OnPostAction;
 
 private:
@@ -59,6 +59,7 @@ private:
 	float CorrectedDragThreshold = 0.f;
 	
 public:
+	void ForceComplete();
 	void SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams);
 	
 private:
@@ -78,9 +79,9 @@ protected:
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
-	//virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	//virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
-	//virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	
 private:
 	bool IsCorrectSwipe(const FVector2D& InMoveVec);

@@ -28,12 +28,16 @@ public:
 };
 
 
-UCLASS(Config = GuideSubsystem)
+UCLASS(Config = UIGuideMask)
 class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
 public:
+	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
+	bool GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag);
+
+
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
 	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
 
@@ -45,8 +49,8 @@ private:
 	friend class UUIGuideRegistrar;
 	friend class UUIGuideLayer;
 	
-	void OnStartGuide(UWidget* InGuideWidget);
-	void OnCompleteAction(UWidget* InGuideWidget);
+	void OnStartGuide();
+	void OnCompleteAction();
 
 	void RegistGuideWidget(const FGuideData& InData);
 	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }

@@ -87,8 +87,8 @@ void UUIGuideRegistrar::HidePreviewDebug()
 
 void UUIGuideRegistrar::CreatePreviewLayer()
 {
-	UWidget* TaggedWidget = nullptr;
-	if (false == GetTaggedWidget(&TaggedWidget))
+	UWidget* PreviewWidget = nullptr;
+	if (false == GetPreviewWidget(&PreviewWidget))
 	{
 		return;
 	}
@@ -107,7 +107,7 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 
 		else
 		{
-			UUserWidget* UserWidget = TaggedWidget->GetTypedOuter<UUserWidget>();
+			UUserWidget* UserWidget = PreviewWidget->GetTypedOuter<UUserWidget>();
 			if (UserWidget && UserWidget->WidgetTree)
 			{
 				TArray<UWidget*> Children;
@@ -130,23 +130,23 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 			OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
 		}
 
-		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), TaggedWidget, Parameter);
+		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), PreviewWidget, Parameter);
 	}
 }
 
-bool UUIGuideRegistrar::GetTaggedWidget(OUT UWidget** OutWidget)
+bool UUIGuideRegistrar::GetPreviewWidget(OUT UWidget** OutWidget)
 {
 	FGameplayTag SelectedTag = GetTag(PreviewWidgetTag);
 	if (false == RegistedTagList.Contains(SelectedTag)) return false;
 
 	UWidget* OuterWidget = RegistedTagList[SelectedTag];
-	UWidget* FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(OuterWidget, SelectedTag);
+	UWidget* FoundWidget = UUIGuideMaskFunctionLibrary::GetTagWidget(OuterWidget, SelectedTag);
 
 	while (nullptr != FoundWidget)
 	{
 		if (FoundWidget->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
 		{
-			FoundWidget = UUIGuideMaskFunctionLibrary::GetWidget(Cast<UUserWidget>(FoundWidget), SelectedTag);
+			FoundWidget = UUIGuideMaskFunctionLibrary::GetTagWidget(Cast<UUserWidget>(FoundWidget), SelectedTag);
 		}
 
 		else
