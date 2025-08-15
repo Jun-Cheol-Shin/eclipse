@@ -66,9 +66,9 @@ private:
 	void OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/);
 	void OnChangedVisibility(ESlateVisibility InVisiblity);
 
-	void OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	void OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 protected:
@@ -82,6 +82,10 @@ protected:
 	virtual FReply NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
+
+
+	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
 	
 private:
 	bool IsCorrectSwipe(const FVector2D& InMoveVec);

@@ -12,10 +12,10 @@
 
 void UUIGuideMaskBox::ForceComplete()
 {
-	OnPostAction.ExecuteIfBound();
-
 	TouchStartPos = FVector2D::Zero();
 	HighlightWidget.Reset();
+
+	OnPostAction.ExecuteIfBound();
 }
 
 void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams)
@@ -60,8 +60,10 @@ void UUIGuideMaskBox::OnChangedVisibility(ESlateVisibility InVisiblity)
 	}
 }
 
-void UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
+	if (false == InGeometry.IsUnderLocation(InEvent.GetScreenSpacePosition())) return FReply::Unhandled();
+
 	TouchStartPos = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
 
 	if (HighlightWidget.IsValid())
@@ -106,15 +108,18 @@ void UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointer
 			if (ensure(&SlateWidget))
 			{
 				SlateWidget->OnMouseButtonDown(InGeometry, InEvent);
+				SlateWidget->OnTouchStarted(InGeometry, InEvent);
 			}
 		}
+
+		return FReply::Handled();
 	}
+
+	return FReply::Unhandled();
 }
 
 void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	//if (false == HighlightWidget.IsValid()) return;
-
 	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
 
 	FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
@@ -130,6 +135,7 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 			if (ensure(&SlateWidget))
 			{
 				SlateWidget->OnMouseMove(InGeometry, InEvent);
+				SlateWidget->OnTouchMoved(InGeometry, InEvent);
 			}
 		}
 
@@ -155,6 +161,7 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 				if (ensure(&SlateWidget))
 				{
 					SlateWidget->OnMouseMove(InGeometry, InEvent);
+					SlateWidget->OnTouchMoved(InGeometry, InEvent);
 				}
 			}
 
@@ -177,14 +184,20 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 
 }
 
-void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+FReply UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Pre Action"));
+
+	//FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
+	if (false == InGeometry.IsUnderLocation(InEvent.GetScreenSpacePosition())) return FReply::Unhandled();
 
 	if (HighlightWidget.IsValid())
 	{
 		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
 		{
+			ButtonWidget->SetClickMethod(EButtonClickMethod::MouseUp);
+			ButtonWidget->SetTouchMethod(EButtonTouchMethod::PreciseTap);
+
 			TSharedRef<SWidget> ButtonSlateWidget = ButtonWidget->TakeWidget();
 			if (ensure(&ButtonSlateWidget))
 			{
@@ -219,17 +232,22 @@ void UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEv
 			if (ensure(&SlateWidget))
 			{
 				SlateWidget->OnMouseButtonUp(InGeometry, InEvent);
+				SlateWidget->OnTouchEnded(InGeometry, InEvent);
 			}
 		}
+
+		OnEndedAction(InGeometry, InEvent);
+		return FReply::Handled();
 	}
 
-	OnEndedAction(InGeometry, InEvent);
+	return FReply::Unhandled();
 }
 
 void UUIGuideMaskBox::OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Action End"));
 
+	NativeOnMouseLeave(InEvent);
 
 	TouchStartPos = FVector2D::Zero();
 	HighlightWidget.Reset();
@@ -291,9 +309,7 @@ bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	OnStartedClick(InGeometry, InMouseEvent);
-
-	return FReply::Handled();
+	return OnStartedClick(InGeometry, InMouseEvent);
 }
 
 FReply UUIGuideMaskBox::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -323,13 +339,11 @@ FReply UUIGuideMaskBox::NativeOnMouseMove(const FGeometry& InGeometry, const FPo
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	TouchStartPos = FVector2D::Zero();
-
 	switch (ActionType)
 	{
 	case EGuideActionType::Click: 
 	{
-		OnEndedClick(InGeometry, InMouseEvent);
+		return OnEndedClick(InGeometry, InMouseEvent);
 	}
 		break;
 	default:
@@ -342,9 +356,7 @@ FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const
 
 FReply UUIGuideMaskBox::NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
 {
-	OnStartedClick(InGeometry, InGestureEvent);
-
-	return FReply::Handled();
+	return OnStartedClick(InGeometry, InGestureEvent);
 }
 
 FReply UUIGuideMaskBox::NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
@@ -374,13 +386,11 @@ FReply UUIGuideMaskBox::NativeOnTouchMoved(const FGeometry& InGeometry, const FP
 
 FReply UUIGuideMaskBox::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
 {
-	TouchStartPos = FVector2D::Zero();
-
 	switch (ActionType)
 	{
 	case EGuideActionType::Click:
 	{
-		OnEndedClick(InGeometry, InGestureEvent);
+		return OnEndedClick(InGeometry, InGestureEvent);
 	}
 	break;
 	default:
@@ -388,7 +398,31 @@ FReply UUIGuideMaskBox::NativeOnTouchEnded(const FGeometry& InGeometry, const FP
 	}
 
 
-	return FReply::Handled();
+	return FReply::Unhandled();
+}
+
+void UUIGuideMaskBox::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (HighlightWidget.IsValid())
+	{
+		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+		if (ensure(&SlateWidget))
+		{
+			SlateWidget.Get().OnMouseEnter(InGeometry, InMouseEvent);
+		}
+	}
+}
+
+void UUIGuideMaskBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
+{
+	if (HighlightWidget.IsValid())
+	{
+		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+		if (ensure(&SlateWidget))
+		{
+			SlateWidget.Get().OnMouseLeave(InMouseEvent);
+		}
+	}
 }
 
 FPointerEvent UUIGuideMaskBox::CreateMouseLikePointerEventFromTouch(const FPointerEvent& InTouchEvent)

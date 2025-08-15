@@ -12,6 +12,45 @@
 class UWidget;
 class UUIGuideLayer;
 class APlayerController;
+class SWidget;
+
+USTRUCT()
+struct FInputModeSnapshot
+{
+	GENERATED_BODY()
+
+public:
+	bool bIsSet = false;
+
+	bool bShowMouseCursor = false;
+	bool bEnableClickEvents = false;
+	bool bEnableMouseOverEvents = false;
+
+	TWeakPtr<SWidget> FocusWidget = nullptr;
+
+	EMouseLockMode LockMode = EMouseLockMode::DoNotLock;
+	EMouseCaptureMode CaptureMode = EMouseCaptureMode::NoCapture;
+
+
+public:
+	void Reset()
+	{
+		bIsSet = false;
+		FocusWidget.Reset();
+
+		bShowMouseCursor = false;
+		bEnableClickEvents = false;
+		bEnableMouseOverEvents = false;
+
+		LockMode = EMouseLockMode::DoNotLock;
+		CaptureMode = EMouseCaptureMode::NoCapture;
+	}
+
+	bool IsSnapped() const { return bIsSet; }
+};
+
+
+
 
 USTRUCT(BlueprintType)
 struct FGuideData
@@ -32,12 +71,10 @@ UCLASS(Config = UIGuideMask)
 class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
-	
+
 public:
 	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
 	bool GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag);
-
-
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
 	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
 
@@ -48,7 +85,7 @@ private:
 private:
 	friend class UUIGuideRegistrar;
 	friend class UUIGuideLayer;
-	
+
 	void OnStartGuide();
 	void OnCompleteAction();
 
@@ -56,6 +93,11 @@ private:
 	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }
 
 private:
+	void SnapshotInputMode(APlayerController* InController);
+	void LoadInputMode(APlayerController* InController);
+	void SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus, bool bUseKeyboardFocus = false);
+
+
 	void CreateLayer(APlayerController* InController);
 	void OnViewportResized(FViewport* Viewport, uint32 Unused);
 
@@ -67,7 +109,7 @@ protected:
 
 	/** Implement this for deinitialization of instances of the system */
 	virtual void Deinitialize() override;
-	
+
 
 private:
 	TMap<FGameplayTag, FGuideData> Widgets;
@@ -77,6 +119,8 @@ private:
 
 	// 비동기 로드가 아직 안된 위젯 대기 큐
 	TQueue<FGameplayTag> WaitQueue;
+
+	FInputModeSnapshot InputModeSnapshot {};
 	
 private:
 	UPROPERTY()

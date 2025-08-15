@@ -6,6 +6,7 @@
 #include "../UIGuideMaskFunctionLibrary.h"
 #include "../Interface/UIGuideMaskable.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 
 void UUIGuideMaskSubsystem::OnStartGuide()
 {
@@ -57,10 +58,14 @@ void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused
 {
 	if (nullptr != GuideLayer)
 	{
-		if (false == CurrentGuidedTag.GetTagName().IsNone() && Widgets.Contains(CurrentGuidedTag))
+		if (CurrentGuidedTag.GetTagName().IsNone())
 		{
-			FGeometry ViewportGeo = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
-			GuideLayer->Set(ViewportGeo, Widgets[CurrentGuidedTag].TargetWidget.Get(), Widgets[CurrentGuidedTag].GuideParameters);
+			CompleteGuide();
+		}
+
+		else
+		{
+			ShowGuide(CurrentGuidedTag);
 		}
 	}
 }
@@ -72,10 +77,20 @@ void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGa
 		CreateLayer(InController);
 	}
 
-	if (nullptr != GuideLayer)
+	if (false == Steps.IsEmpty())
 	{
-		// Play Animation..
+		Steps.Enqueue(InTag);
+	}
 
+	else if (nullptr != GuideLayer)
+	{
+		UGameInstance* GameInstance = GetGameInstance();
+		if (GameInstance && false == InputModeSnapshot.IsSnapped())
+		{
+			SnapshotInputMode(GetGameInstance()->GetFirstLocalPlayerController());
+		}
+
+		// Play Animation..
 		GuideLayer->AddToViewport(12000);
 		ShowGuide(InTag);
 	}
@@ -88,20 +103,24 @@ void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, cons
 		Steps.Enqueue(InTags[i]);
 	}
 
-	FGameplayTag* FirstTag = Steps.Peek();
 
-
-	if (nullptr != FirstTag)
+	if (false == Steps.IsEmpty())
 	{
-		// Play Animation.. (FadeIn)
-
-		if (nullptr != GuideLayer)
+		UGameInstance* GameInstance = GetGameInstance();
+		if (GameInstance && false == InputModeSnapshot.IsSnapped())
 		{
-			GuideLayer->AddToViewport(12000);
-			ShowGuide(*FirstTag);
+			SnapshotInputMode(GetGameInstance()->GetFirstLocalPlayerController());
 		}
 
-		Steps.Pop();
+		FGameplayTag NewTag;
+		Steps.Dequeue(OUT NewTag);
+
+		if (nullptr != GuideLayer)
+		{		
+			// Play Animation.. (FadeIn)
+			GuideLayer->AddToViewport(12000);
+			ShowGuide(NewTag);
+		}
 	}
 
 	else if (nullptr != GuideLayer && GuideLayer->IsInViewport())
@@ -116,7 +135,6 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 	{
 		FGeometry ViewportGeo = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
 
-
 		if (Widgets.Contains(InTag) && ensure(Widgets[InTag].TargetWidget.IsValid()))
 		{
 			UWidget* TargetWidget = Widgets[InTag].TargetWidget.Get();
@@ -127,6 +145,10 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 				TargetWidget = UUIGuideMaskFunctionLibrary::GetEntry(OuterWidget, TargetWidget);
 			}
 
+			if (true == Widgets[InTag].GuideParameters.bUseAction)
+			{
+				SetGuideInputMode(GetGameInstance()->GetFirstLocalPlayerController(), TargetWidget->TakeWidget());
+			}
 
 			CurrentGuidedTag = InTag;
 			GuideLayer->Set(ViewportGeo, TargetWidget, Widgets[InTag].GuideParameters);
@@ -136,10 +158,11 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 
 void UUIGuideMaskSubsystem::CompleteGuide()
 {
-	if (FGameplayTag* NextTag = Steps.Peek())
+	if (false == Steps.IsEmpty())
 	{
-		ShowGuide(*NextTag);
-		Steps.Pop();
+		FGameplayTag NewTag;
+		Steps.Dequeue(OUT NewTag);
+		ShowGuide(NewTag);
 	}
 
 	else
@@ -152,6 +175,10 @@ void UUIGuideMaskSubsystem::CompleteGuide()
 			GuideLayer->RemoveFromParent();
 		}
 
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			LoadInputMode(GetGameInstance()->GetFirstLocalPlayerController());
+		}
 	}
 }
 
@@ -179,6 +206,107 @@ void UUIGuideMaskSubsystem::RegistGuideWidget(const FGuideData& InData)
 	}
 
 	WaitQueue.Pop();
+}
+
+void UUIGuideMaskSubsystem::SnapshotInputMode(APlayerController* InController)
+{
+	if (!ensure(InController)) return;
+
+	InputModeSnapshot.Reset();
+	InputModeSnapshot.bShowMouseCursor = InController->bShowMouseCursor;
+	InputModeSnapshot.bEnableClickEvents = InController->bEnableClickEvents;
+	InputModeSnapshot.bEnableMouseOverEvents = InController->bEnableMouseOverEvents;
+
+	UGameViewportClient* GameviewportClient = nullptr;
+	if (ULocalPlayer* LocalPlayer = InController->GetLocalPlayer())
+	{
+		GameviewportClient = LocalPlayer->ViewportClient;
+	}
+
+	if (nullptr != GameviewportClient)
+	{
+		InputModeSnapshot.CaptureMode = GameviewportClient->GetMouseCaptureMode();
+		InputModeSnapshot.LockMode = GameviewportClient->GetMouseLockMode();
+	}
+
+	TSharedPtr<SWidget> Focused = FSlateApplication::Get().GetKeyboardFocusedWidget();
+	// (게임패드/유저 포커스 기준)
+	if (!Focused.IsValid())
+	{
+		Focused = FSlateApplication::Get().GetUserFocusedWidget(/*UserIndex=*/0);
+	}
+
+	if (nullptr != Focused)
+	{
+		InputModeSnapshot.FocusWidget = Focused.ToWeakPtr();
+	}
+
+}
+
+void UUIGuideMaskSubsystem::LoadInputMode(APlayerController* InController)
+{
+	if (!ensure(InController)) return;
+
+	InController->SetShowMouseCursor(InputModeSnapshot.bShowMouseCursor);
+	InController->bEnableClickEvents = InputModeSnapshot.bEnableClickEvents;
+	InController->bEnableMouseOverEvents = InputModeSnapshot.bEnableMouseOverEvents;
+
+	UGameViewportClient* GameViewportClient = nullptr;
+	if (InController)
+	{
+		if (ULocalPlayer* LocalPlayer = InController->GetLocalPlayer())
+		{
+			GameViewportClient = LocalPlayer->ViewportClient;
+		}
+	}
+
+	if (nullptr != GameViewportClient)
+	{
+		GameViewportClient->SetMouseCaptureMode(InputModeSnapshot.CaptureMode);
+		GameViewportClient->SetMouseLockMode(InputModeSnapshot.LockMode);
+	}
+
+	if (InputModeSnapshot.FocusWidget.IsValid())
+	{
+		FSlateApplication::Get().SetKeyboardFocus(InputModeSnapshot.FocusWidget.Pin(), EFocusCause::SetDirectly);
+	}
+
+	InputModeSnapshot.Reset();
+}
+
+void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus, bool bUseKeyboardFocus)
+{
+	if (!ensure(InController)) return;
+
+	FInputModeGameAndUI Mode;
+
+	UGameViewportClient* GameViewportClient = nullptr;
+	if (InController)
+	{
+		if (ULocalPlayer* LocalPlayer = InController->GetLocalPlayer())
+		{
+			GameViewportClient = LocalPlayer->ViewportClient;
+		}
+	}
+
+	if (nullptr != GameViewportClient)
+	{
+		GameViewportClient->SetMouseCaptureMode(EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
+		GameViewportClient->SetMouseLockMode(EMouseLockMode::LockAlways);
+	}
+
+	if (true == bUseKeyboardFocus && InWidgetToFocus.IsValid())
+	{
+		Mode.SetWidgetToFocus(InWidgetToFocus);
+	}
+
+	Mode.SetHideCursorDuringCapture(false);
+
+	InController->SetInputMode(Mode);
+	InController->bShowMouseCursor = true;
+	InController->bEnableClickEvents = true;
+	InController->bEnableMouseOverEvents = true;
+
 }
 
 bool UUIGuideMaskSubsystem::ShouldCreateSubsystem(UObject* Outer) const

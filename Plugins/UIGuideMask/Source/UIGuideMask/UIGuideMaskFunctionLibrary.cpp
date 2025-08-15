@@ -23,6 +23,15 @@ void UUIGuideMaskFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstanc
 	}
 }
 
+void UUIGuideMaskFunctionLibrary::ShowGuideWidgetSteps(const UGameInstance* InInstance, const TArray<FGameplayTag>& InTagList)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->ShowGuideSteps(InInstance->GetFirstLocalPlayerController(), InTagList);
+	}
+}
+
 UWidget* UUIGuideMaskFunctionLibrary::GetTagWidget(UWidget* InOuterWidget, FGameplayTag InTag)
 {
 	if (nullptr == InOuterWidget) return nullptr;

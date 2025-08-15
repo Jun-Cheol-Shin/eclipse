@@ -3,6 +3,7 @@
 
 #include "ShowGuideReadyAsyncAction.h"
 #include "UIGuideMaskFunctionLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Subsystem/UIGuideMaskSubsystem.h"
 
 UShowGuideReadyAsyncAction* UShowGuideReadyAsyncAction::ShowGuide(const UObject* InWorldContextObject, FGameplayTag InTag, FGuidePredicateSignature InPredicateCondition, float InTimeout, float InInterval)
@@ -38,21 +39,26 @@ void UShowGuideReadyAsyncAction::Activate()
 	Subsystem->GetOuterWidget(&OuterWidget, GuideTag);
 	Subsystem->GetTargetWidget(&TargetWidget, GuideTag);
 
-	Target = TargetWidget;
-	Outer = OuterWidget;
-
-	if (false == Target.IsValid() || false == Outer.IsValid())
+	if (nullptr == TargetWidget || nullptr == OuterWidget)
 	{
 		return;
 	}
 
-	if (PredicateDelegate.IsBound() && PredicateDelegate.Execute(Outer.Get(), Target.Get()))
+	if (true == UUIGuideMaskFunctionLibrary::IsContainerWidget(Target.Get()))
+	{
+		EntryWidget = UUIGuideMaskFunctionLibrary::GetEntry(OuterWidget, TargetWidget);
+	}
+
+	if (PredicateDelegate.IsBound() && PredicateDelegate.Execute(OuterWidget, TargetWidget))
 	{
 		OnGuideStart();
 	}
 
 	else
 	{
+		Target = TargetWidget;
+		Outer = OuterWidget;
+
 		StartTime = FPlatformTime::Seconds();
 
 		FTSTicker::GetCoreTicker().RemoveTicker(TickerHandle);
@@ -77,13 +83,41 @@ bool UShowGuideReadyAsyncAction::Tick(float DeltaSeconds)
 		return false;
 	}
 
+	if (EntryWidget.IsValid())
+	{
+		EntryWidget->ForceLayoutPrepass();
+
+		TSharedRef<SWidget> SlateWidget = EntryWidget.Get()->TakeWidget();
+		if (true == SlateWidget->NeedsPrepass())
+		{
+			return true;
+		}
+
+		const FGeometry TargetGeometry = EntryWidget->GetTickSpaceGeometry();
+		const bool bSizeOK = (TargetGeometry.GetLocalSize().X > 0.f && TargetGeometry.GetLocalSize().Y > 0.f);
+
+		const FGeometry ViewportGeometry = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
+		const FSlateRect View(ViewportGeometry.GetAbsolutePosition(), ViewportGeometry.LocalToAbsolute(ViewportGeometry.GetLocalSize()));
+		const FSlateRect Rect(TargetGeometry.GetAbsolutePosition(), TargetGeometry.LocalToAbsolute(TargetGeometry.GetLocalSize()));
+		const bool bVisible = FSlateRect::DoRectanglesIntersect(View, Rect);
+
+		if (false == bSizeOK || false == bVisible)
+		{ 
+			return true;
+		}
+	}
+
+	if (false == PredicateDelegate.IsBound())
+	{
+		OnGuideStart();
+		return false;
+	}
 
 	else if (PredicateDelegate.IsBound() && PredicateDelegate.Execute(Outer.Get(), Target.Get()))
 	{
 		OnGuideStart();
 		return false;
 	}
-
 
 	return true;
 }
@@ -95,10 +129,14 @@ void UShowGuideReadyAsyncAction::OnGuideStart()
 		return;
 	}
 
-	UUIGuideMaskFunctionLibrary::ShowGuideWidget(GetWorld()->GetGameInstance(), GuideTag);
-	OnStarted.Broadcast(GuideTag);
+	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			UUIGuideMaskFunctionLibrary::ShowGuideWidget(GetWorld()->GetGameInstance(), GuideTag);
+			OnStarted.Broadcast(GuideTag);
 
-	Clear();
+			Clear();
+		}));
+
 }
 
 void UShowGuideReadyAsyncAction::OnGuideCancel()

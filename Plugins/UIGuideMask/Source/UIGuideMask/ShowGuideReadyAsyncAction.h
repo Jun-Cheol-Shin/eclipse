@@ -53,6 +53,7 @@ private:
 
 	TWeakObjectPtr<UWidget> Target = nullptr;
 	TWeakObjectPtr<UWidget> Outer = nullptr;
+	TWeakObjectPtr<UWidget> EntryWidget = nullptr;
 
 	TWeakObjectPtr<UWorld> ContextWorld = nullptr;
 

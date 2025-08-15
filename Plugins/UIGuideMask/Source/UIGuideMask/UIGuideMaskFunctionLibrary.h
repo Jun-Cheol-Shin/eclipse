@@ -24,7 +24,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
 	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
 
-
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
+	static void ShowGuideWidgetSteps(const UGameInstance* InInstance, const TArray<FGameplayTag>& InTagList);
 
 
 
