@@ -81,6 +81,7 @@ void UUIGuideLayer::SetGuideLayer(const FGuideLayerParameters& InLayerParam, con
 	{
 		MaterialInstance->SetScalarParameterValue(TEXT("Opacity"), Opacity);
 		MaterialInstance->SetScalarParameterValue(TEXT("Shape"), true == InLayerParam.bUseHighlightCircleShape ? 1.f : 0.f);
+		MaterialInstance->SetScalarParameterValue(TEXT("Animate"), true == InLayerParam.bUseAnimation ? 1.f : 0.f);
 	}
 
 
