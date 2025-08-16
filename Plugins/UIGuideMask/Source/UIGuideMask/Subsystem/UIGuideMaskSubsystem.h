@@ -73,14 +73,19 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	void PauseGuide(APlayerController* InController);
+	void ResumeGuide(APlayerController* InController);
+
 	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
 	bool GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag);
+
+
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
 	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
 
 private:
 	void ShowGuide(const FGameplayTag& InTag);
-	void CompleteGuide();
+	void CompleteGuide(bool bReleaseQueue = true);
 
 private:
 	friend class UUIGuideRegistrar;

@@ -20,7 +20,13 @@ class UIGUIDEMASK_API UUIGuideMaskFunctionLibrary : public UBlueprintFunctionLib
 public:
 	UUIGuideMaskFunctionLibrary() {}
 
-	// Access Guide SubSystem
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
+	static void PauseGuide(const UGameInstance* InInstance);
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
+	static void ResumeGuide(const UGameInstance* InInstance);
+
+
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
 	static void ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag);
 

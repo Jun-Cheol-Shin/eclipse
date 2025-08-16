@@ -14,6 +14,24 @@
 #include "Components/DynamicEntryBox.h"
 
 
+void UUIGuideMaskFunctionLibrary::PauseGuide(const UGameInstance* InInstance)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->PauseGuide(InInstance->GetFirstLocalPlayerController());
+	}
+}
+
+void UUIGuideMaskFunctionLibrary::ResumeGuide(const UGameInstance* InInstance)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->ResumeGuide(InInstance->GetFirstLocalPlayerController());
+	}
+}
+
 void UUIGuideMaskFunctionLibrary::ShowGuideWidget(const UGameInstance* InInstance, FGameplayTag InTag)
 {
 	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();

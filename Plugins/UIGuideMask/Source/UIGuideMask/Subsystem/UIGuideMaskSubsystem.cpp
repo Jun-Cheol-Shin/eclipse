@@ -8,9 +8,59 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
+void UUIGuideMaskSubsystem::PauseGuide(APlayerController* InController)
+{
+	TQueue<FGameplayTag> TempQueue;
+
+	if (CurrentGuidedTag.IsValid())
+	{
+		TempQueue.Enqueue(MoveTemp(CurrentGuidedTag));
+	}
+
+	FGameplayTag Tag;
+	while (Steps.Dequeue(Tag))
+	{
+		TempQueue.Enqueue(MoveTemp(Tag));
+	}
+
+	Steps.Empty();
+	Tag = FGameplayTag::EmptyTag;
+	CurrentGuidedTag = FGameplayTag::EmptyTag;
+
+
+	while (TempQueue.Dequeue(Tag))
+	{
+		Steps.Enqueue(Tag);
+	}
+
+	if (nullptr != GuideLayer && GuideLayer->IsInViewport())
+	{
+		GuideLayer->RemoveFromParent();
+	}
+
+	LoadInputMode(InController);
+}
+
+void UUIGuideMaskSubsystem::ResumeGuide(APlayerController* InController)
+{
+	if (!ensure(GuideLayer)) return;
+
+	if (true == Steps.Dequeue(CurrentGuidedTag))
+	{
+		if (false == InputModeSnapshot.IsSnapped())
+		{
+			SnapshotInputMode(InController);
+		}
+
+		GuideLayer->AddToViewport(12000);
+		ShowGuide(CurrentGuidedTag);
+	}
+}
+
+
 void UUIGuideMaskSubsystem::OnStartGuide()
 {
-	if (true == CurrentGuidedTag.GetTagName().IsNone()) return;
+	if (!ensure(CurrentGuidedTag.IsValid())) return;
 	else if (false == Widgets.Contains(CurrentGuidedTag)) return;
 
 	TWeakObjectPtr<UWidget> OuterWidget = Widgets[CurrentGuidedTag].OuterWidget;
@@ -30,7 +80,7 @@ void UUIGuideMaskSubsystem::OnStartGuide()
 
 void UUIGuideMaskSubsystem::OnCompleteAction()
 {
-	if (true == CurrentGuidedTag.GetTagName().IsNone()) return;
+	if (!ensure(CurrentGuidedTag.IsValid())) return;
 	else if (!ensure(Widgets.Contains(CurrentGuidedTag))) return;
 
 	TWeakObjectPtr<UWidget> OuterWidget = Widgets[CurrentGuidedTag].OuterWidget;
@@ -58,7 +108,7 @@ void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused
 {
 	if (nullptr != GuideLayer)
 	{
-		if (CurrentGuidedTag.GetTagName().IsNone())
+		if (false == CurrentGuidedTag.IsValid())
 		{
 			CompleteGuide();
 		}
@@ -84,10 +134,9 @@ void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGa
 
 	else if (nullptr != GuideLayer)
 	{
-		UGameInstance* GameInstance = GetGameInstance();
-		if (GameInstance && false == InputModeSnapshot.IsSnapped())
+		if (false == InputModeSnapshot.IsSnapped())
 		{
-			SnapshotInputMode(GetGameInstance()->GetFirstLocalPlayerController());
+			SnapshotInputMode(InController);
 		}
 
 		// Play Animation..
@@ -104,22 +153,18 @@ void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, cons
 	}
 
 
-	if (false == Steps.IsEmpty())
+	if (true == Steps.Dequeue(OUT CurrentGuidedTag))
 	{
-		UGameInstance* GameInstance = GetGameInstance();
-		if (GameInstance && false == InputModeSnapshot.IsSnapped())
+		if (false == InputModeSnapshot.IsSnapped())
 		{
-			SnapshotInputMode(GetGameInstance()->GetFirstLocalPlayerController());
+			SnapshotInputMode(InController);
 		}
-
-		FGameplayTag NewTag;
-		Steps.Dequeue(OUT NewTag);
 
 		if (nullptr != GuideLayer)
 		{		
 			// Play Animation.. (FadeIn)
 			GuideLayer->AddToViewport(12000);
-			ShowGuide(NewTag);
+			ShowGuide(CurrentGuidedTag);
 		}
 	}
 
@@ -150,13 +195,13 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 				SetGuideInputMode(GetGameInstance()->GetFirstLocalPlayerController(), TargetWidget->TakeWidget());
 			}
 
-			CurrentGuidedTag = InTag;
+			//CurrentGuidedTag = InTag;
 			GuideLayer->Set(ViewportGeo, TargetWidget, Widgets[InTag].GuideParameters);
 		}
 	}
 }
 
-void UUIGuideMaskSubsystem::CompleteGuide()
+void UUIGuideMaskSubsystem::CompleteGuide(bool bReleaseQueue)
 {
 	if (false == Steps.IsEmpty())
 	{
@@ -167,7 +212,11 @@ void UUIGuideMaskSubsystem::CompleteGuide()
 
 	else
 	{
-		Steps.Empty();
+		if (bReleaseQueue)
+		{
+			Steps.Empty();
+		}
+
 		CurrentGuidedTag = FGameplayTag::EmptyTag;
 
 		if (nullptr != GuideLayer && GuideLayer->IsInViewport())
