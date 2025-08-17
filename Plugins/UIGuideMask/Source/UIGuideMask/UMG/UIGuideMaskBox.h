@@ -16,6 +16,8 @@ enum class EGuideActionType : uint8
 	Swipe_Down,
 	Swipe_Left,
 	Swipe_Right,
+
+	KeyEvent,
 };
 
 UENUM(BlueprintType)
@@ -35,8 +37,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EGuideActionType ActionType = EGuideActionType::Click;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType && EGuideActionType::KeyEvent != ActionType", EditConditionHides))
 	float DragThreshold = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::KeyEvent == ActionType", EditConditionHides))
+	FKey ActivationKey = FKey();
 };
 
 UCLASS()
@@ -67,9 +72,12 @@ private:
 	void OnChangedVisibility(ESlateVisibility InVisiblity);
 
 	FReply OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	void OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	void OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	void OnEndedAction(const FPointerEvent& InEvent = FPointerEvent());
+
+	FReply OnStartedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent);
+	FReply OnEndedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -83,6 +91,9 @@ protected:
 	virtual FReply NativeOnTouchMoved(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent) override;
 
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 
 	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
@@ -92,6 +103,7 @@ private:
 	FPointerEvent CreateMouseLikePointerEventFromTouch(const FPointerEvent& InTouchEvent);
 
 private:
+	FKey ActivationKey = FKey();
 	FVector2D TouchStartPos = FVector2D();
 	TWeakObjectPtr<UWidget> HighlightWidget = nullptr;
 	EButtonClickMethod::Type CachedClickMethod = EButtonClickMethod::DownAndUp;

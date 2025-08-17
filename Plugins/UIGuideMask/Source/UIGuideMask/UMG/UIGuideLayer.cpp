@@ -26,6 +26,16 @@ void UUIGuideLayer::OnPostAction()
 	Subsystem->OnCompleteAction();
 }
 
+const TSharedPtr<SWidget> UUIGuideLayer::GetBoxWidget() const
+{
+	if (nullptr != GuideMaskBox)
+	{
+		return GuideMaskBox->TakeWidget();
+	}
+
+	return nullptr;
+}
+
 void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
 {
 	if (nullptr == LayerPanel || nullptr == InWidget) return;

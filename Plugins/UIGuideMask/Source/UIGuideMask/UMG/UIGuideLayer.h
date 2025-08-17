@@ -65,10 +65,12 @@ class UIGUIDEMASK_API UUIGuideLayer : public UCommonUserWidget
 	GENERATED_BODY()
 
 	friend class UUIGuideRegistrar;
+	friend class UUIGuideMaskSubsystem;
 
 private:
 	// After Action
 	void OnPostAction();
+	const TSharedPtr<SWidget> GetBoxWidget() const;
 
 public:
 	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam = FGuideParameter());

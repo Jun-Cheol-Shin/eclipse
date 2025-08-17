@@ -25,6 +25,7 @@ void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters&
 	ActionType = InParams.ActionType;
 	DragThreshold = InParams.DragThreshold;
 	ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
+	ActivationKey = InParams.ActivationKey;
 
 	CorrectedDragThreshold = DragThreshold * ActionDPIScale;
 }
@@ -59,7 +60,6 @@ void UUIGuideMaskBox::OnChangedVisibility(ESlateVisibility InVisiblity)
 		break;
 	}
 }
-
 FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	if (false == InGeometry.IsUnderLocation(InEvent.GetScreenSpacePosition())) return FReply::Unhandled();
@@ -107,8 +107,15 @@ FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPoint
 			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 			if (ensure(&SlateWidget))
 			{
-				SlateWidget->OnMouseButtonDown(InGeometry, InEvent);
-				SlateWidget->OnTouchStarted(InGeometry, InEvent);
+				if (InEvent.IsTouchEvent())
+				{
+					SlateWidget->OnTouchStarted(InGeometry, InEvent);
+				}
+
+				else
+				{
+					SlateWidget->OnMouseButtonDown(InGeometry, InEvent);
+				}
 			}
 		}
 
@@ -117,8 +124,7 @@ FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPoint
 
 	return FReply::Unhandled();
 }
-
-void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+FReply UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
 
@@ -182,8 +188,8 @@ void UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& 
 		break;
 	}
 
+	return FReply::Handled();
 }
-
 FReply UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Pre Action"));
@@ -231,30 +237,70 @@ FReply UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointer
 			TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 			if (ensure(&SlateWidget))
 			{
-				SlateWidget->OnMouseButtonUp(InGeometry, InEvent);
-				SlateWidget->OnTouchEnded(InGeometry, InEvent);
+				if (InEvent.IsTouchEvent())
+				{
+					SlateWidget->OnTouchEnded(InGeometry, InEvent);
+				}
+				
+				else
+				{
+					SlateWidget->OnMouseButtonUp(InGeometry, InEvent);
+				}
 			}
 		}
 
-		OnEndedAction(InGeometry, InEvent);
+		OnEndedAction(InEvent);
 		return FReply::Handled();
 	}
 
 	return FReply::Unhandled();
 }
 
-void UUIGuideMaskBox::OnEndedAction(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+FReply UUIGuideMaskBox::OnStartedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent)
+{
+	if (EGuideActionType::KeyEvent != ActionType) return FReply::Unhandled();
+
+	TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+	if (ensure(&SlateWidget))
+	{
+		SlateWidget->OnKeyDown(InGeometry, InEvent);
+	}
+
+	return FReply::Handled();
+}
+
+FReply UUIGuideMaskBox::OnEndedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent)
+{
+	if (EGuideActionType::KeyEvent != ActionType) return FReply::Unhandled();
+
+	TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
+	if (ensure(&SlateWidget))
+	{
+		SlateWidget->OnKeyUp(InGeometry, InEvent);
+	}
+
+	OnEndedAction();
+
+	return FReply::Handled();
+}
+
+void UUIGuideMaskBox::OnEndedAction(const FPointerEvent& InEvent)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Action End"));
 
-	NativeOnMouseLeave(InEvent);
+	if (false == InEvent.GetPressedButtons().IsEmpty())
+	{
+		NativeOnMouseLeave(InEvent);
+	}
 
+	ActivationKey = FKey();
 	TouchStartPos = FVector2D::Zero();
 	HighlightWidget.Reset();
 
 	OnPostAction.ExecuteIfBound();
 
 }
+
 
 bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 {
@@ -309,6 +355,11 @@ bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (EGuideActionType::KeyEvent == ActionType)
+	{
+		return FReply::Unhandled();
+	}
+
 	return OnStartedClick(InGeometry, InMouseEvent);
 }
 
@@ -334,7 +385,7 @@ FReply UUIGuideMaskBox::NativeOnMouseMove(const FGeometry& InGeometry, const FPo
 		break;
 	}
 
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -351,7 +402,7 @@ FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const
 	}
 
 
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 
 FReply UUIGuideMaskBox::NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
@@ -401,9 +452,31 @@ FReply UUIGuideMaskBox::NativeOnTouchEnded(const FGeometry& InGeometry, const FP
 	return FReply::Unhandled();
 }
 
+FReply UUIGuideMaskBox::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (EGuideActionType::KeyEvent == ActionType && InKeyEvent.GetKey() == ActivationKey)
+	{
+		return OnStartedKeyEvent(InGeometry, InKeyEvent);
+	}
+
+	return FReply::Unhandled();
+}
+
+FReply UUIGuideMaskBox::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (EGuideActionType::KeyEvent == ActionType && InKeyEvent.GetKey() == ActivationKey)
+	{
+		return OnEndedKeyEvent(InGeometry, InKeyEvent);
+	}
+
+	return FReply::Unhandled();
+}
+
 void UUIGuideMaskBox::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (HighlightWidget.IsValid())
+	if (EGuideActionType::KeyEvent == ActionType) return;
+
+	else if (HighlightWidget.IsValid())
 	{
 		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 		if (ensure(&SlateWidget))
@@ -415,7 +488,9 @@ void UUIGuideMaskBox::NativeOnMouseEnter(const FGeometry& InGeometry, const FPoi
 
 void UUIGuideMaskBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
-	if (HighlightWidget.IsValid())
+	if (EGuideActionType::KeyEvent == ActionType) return;
+
+	else if (HighlightWidget.IsValid())
 	{
 		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 		if (ensure(&SlateWidget))
@@ -446,6 +521,8 @@ void UUIGuideMaskBox::NativeConstruct()
 
 	OnNativeVisibilityChanged.RemoveAll(this);
 	OnNativeVisibilityChanged.AddUObject(this, &UUIGuideMaskBox::OnChangedVisibility);
+
+	SetIsFocusable(true);
 
 	//FViewport::ViewportResizedEvent.AddUObject(this, &U::OnViewportResized);
 	//FSlateApplication::Get().GetGameViewport();

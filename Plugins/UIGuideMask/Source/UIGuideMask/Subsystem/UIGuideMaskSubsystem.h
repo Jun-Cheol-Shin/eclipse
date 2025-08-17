@@ -72,20 +72,20 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
+	friend class UShowGuideReadyAsyncAction;
+
 public:
 	void PauseGuide(APlayerController* InController);
 	void ResumeGuide(APlayerController* InController);
-
-	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
-	bool GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag);
-
-
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
 	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
+
 
 private:
 	void ShowGuide(const FGameplayTag& InTag);
 	void CompleteGuide(bool bReleaseQueue = true);
+	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
+	bool GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag);
 
 private:
 	friend class UUIGuideRegistrar;
@@ -100,7 +100,7 @@ private:
 private:
 	void SnapshotInputMode(APlayerController* InController);
 	void LoadInputMode(APlayerController* InController);
-	void SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus, bool bUseKeyboardFocus = false);
+	void SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus = nullptr);
 
 
 	void CreateLayer(APlayerController* InController);
@@ -126,6 +126,8 @@ private:
 	TQueue<FGameplayTag> WaitQueue;
 
 	FInputModeSnapshot InputModeSnapshot {};
+
+	bool bKeyboardFocused = false;
 	
 private:
 	UPROPERTY()
