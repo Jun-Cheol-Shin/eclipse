@@ -65,7 +65,8 @@ private:
 	
 public:
 	void ForceComplete();
-	void SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams);
+	void SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParam);
+	void SetBoxAction(const FGuideBoxActionParameters& InParam);
 	
 private:
 	void OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/);

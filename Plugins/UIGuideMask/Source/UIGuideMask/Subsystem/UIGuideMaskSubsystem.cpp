@@ -8,6 +8,63 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
+void UUIGuideMaskSubsystem::SetMessage(FGameplayTag InTag, const FGuideMessageParameters& InParameters)
+{
+	if (CurrentGuidedTag.MatchesTagExact(InTag))
+	{
+		if (nullptr != GuideLayer)
+		{
+			GuideLayer->SetGuideTooltip(InParameters);
+		}
+	}
+
+	else if (Widgets.Contains(InTag))
+	{
+		if (FGuideData* GuideData = Widgets.Find(InTag))
+		{
+			GuideData->GuideParameters.MessageParameter = InParameters;
+		}
+	}
+}
+
+void UUIGuideMaskSubsystem::SetAction(FGameplayTag InTag, const FGuideBoxActionParameters& InParameters)
+{
+	if (CurrentGuidedTag.MatchesTagExact(InTag))
+	{
+		if (nullptr != GuideLayer)
+		{
+			GuideLayer->SetGuideAction(InParameters);
+		}
+	}
+
+	else if (Widgets.Contains(InTag))
+	{
+		if (FGuideData* GuideData = Widgets.Find(InTag))
+		{
+			GuideData->GuideParameters.AcitonParameter = InParameters;
+		}
+	}
+}
+
+void UUIGuideMaskSubsystem::SetNoneAction(FGameplayTag InTag)
+{
+	if (CurrentGuidedTag.MatchesTagExact(InTag))
+	{
+		if (nullptr != GuideLayer)
+		{
+			GuideLayer->SetGuideActionNone();
+		}
+	}
+
+	else if (Widgets.Contains(InTag))
+	{
+		if (FGuideData* GuideData = Widgets.Find(InTag))
+		{
+			GuideData->GuideParameters.bUseAction = false;
+		}
+	}
+}
+
 void UUIGuideMaskSubsystem::PauseGuide(APlayerController* InController)
 {
 	TQueue<FGameplayTag> TempQueue;
@@ -341,18 +398,16 @@ void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, c
 
 	FInputModeGameAndUI Mode;
 
-
 	if (InWidgetToFocus.IsValid())
 	{
 		Mode.SetWidgetToFocus(InWidgetToFocus);
-		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		Mode.SetHideCursorDuringCapture(true);
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+		Mode.SetHideCursorDuringCapture(false);
+		InController->SetInputMode(Mode);
 
-		InController->bShowMouseCursor = false;
-	}
+		InController->bEnableClickEvents = false;
+		InController->SetShowMouseCursor(false);
 
-	else
-	{
 		UGameViewportClient* GameViewportClient = nullptr;
 		if (InController)
 		{
@@ -364,16 +419,22 @@ void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, c
 
 		if (nullptr != GameViewportClient)
 		{
-			GameViewportClient->SetMouseCaptureMode(EMouseCaptureMode::CapturePermanently);
 			GameViewportClient->SetMouseLockMode(EMouseLockMode::LockAlways);
+			GameViewportClient->SetMouseCaptureMode(EMouseCaptureMode::CapturePermanently);
 		}
 
-		Mode.SetHideCursorDuringCapture(false);
-		InController->bShowMouseCursor = true;
+
+		FSlateApplication::Get().SetUserFocus(0, InWidgetToFocus, EFocusCause::SetDirectly);
+		UWidgetBlueprintLibrary::SetFocusToGameViewport();
 	}
 
-	InController->SetInputMode(Mode);
-	UWidgetBlueprintLibrary::SetFocusToGameViewport();
+	else
+	{
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InController->SetInputMode(Mode);
+		InController->SetShowMouseCursor(true);
+	}
+
 }
 
 bool UUIGuideMaskSubsystem::ShouldCreateSubsystem(UObject* Outer) const

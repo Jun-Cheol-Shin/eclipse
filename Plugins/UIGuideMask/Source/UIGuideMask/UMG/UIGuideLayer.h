@@ -74,6 +74,10 @@ private:
 
 public:
 	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam = FGuideParameter());
+	void SetGuideTooltip(const FGuideMessageParameters& InMessageParam);
+	void SetGuideAction(const FGuideBoxActionParameters& InActionParam);
+	void SetGuideActionNone();
+
 
 private:
 	void SetGuideLayer(const FGuideLayerParameters& InLayerParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize);

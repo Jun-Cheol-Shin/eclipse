@@ -18,15 +18,20 @@ void UUIGuideMaskBox::ForceComplete()
 	OnPostAction.ExecuteIfBound();
 }
 
-void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParams)
+void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParam)
 {
 	HighlightWidget = InWidget;
 
-	ActionType = InParams.ActionType;
-	DragThreshold = InParams.DragThreshold;
-	ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
-	ActivationKey = InParams.ActivationKey;
+	SetBoxAction(InParam);
+}
 
+void UUIGuideMaskBox::SetBoxAction(const FGuideBoxActionParameters& InParam)
+{
+	ActionType = InParam.ActionType;
+	DragThreshold = InParam.DragThreshold;
+	ActivationKey = InParam.ActivationKey;
+
+	ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
 	CorrectedDragThreshold = DragThreshold * ActionDPIScale;
 }
 
@@ -119,7 +124,7 @@ FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPoint
 			}
 		}
 
-		return FReply::Handled();
+		return FReply::Handled().CaptureMouse(TakeWidget());
 	}
 
 	return FReply::Unhandled();
@@ -250,7 +255,7 @@ FReply UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointer
 		}
 
 		OnEndedAction(InEvent);
-		return FReply::Handled();
+		return FReply::Handled().ReleaseMouseCapture();
 	}
 
 	return FReply::Unhandled();

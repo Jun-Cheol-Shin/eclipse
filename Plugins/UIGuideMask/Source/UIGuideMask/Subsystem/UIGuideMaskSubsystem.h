@@ -75,6 +75,10 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 	friend class UShowGuideReadyAsyncAction;
 
 public:
+	void SetMessage(FGameplayTag InTag, const FGuideMessageParameters& InParameters);
+	void SetAction(FGameplayTag InTag, const FGuideBoxActionParameters& InParameters);
+	void SetNoneAction(FGameplayTag InTag);
+
 	void PauseGuide(APlayerController* InController);
 	void ResumeGuide(APlayerController* InController);
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);

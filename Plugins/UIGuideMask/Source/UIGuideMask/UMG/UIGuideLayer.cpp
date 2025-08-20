@@ -74,6 +74,45 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 	Subsystem->OnStartGuide();
 }
 
+void UUIGuideLayer::SetGuideTooltip(const FGuideMessageParameters& InMessageParam)
+{
+	GuideTooltip->SetVisibility(true == InMessageParam.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	if (false == InMessageParam.IsEmpty())
+	{
+		if (false == InMessageParam.bUseTitle)
+		{
+			GuideTooltip->Set(
+				FTextFormat::FromString(InMessageParam.Format),
+				FFormatOrderedArguments(InMessageParam.FormatArguments));
+		}
+
+		else
+		{
+			GuideTooltip->Set(
+				FTextFormat::FromString(InMessageParam.TitleFormat),
+				FFormatOrderedArguments(InMessageParam.TitleFormatArguments),
+				FTextFormat::FromString(InMessageParam.Format),
+				FFormatOrderedArguments(InMessageParam.FormatArguments));
+		}
+	}
+}
+
+void UUIGuideLayer::SetGuideAction(const FGuideBoxActionParameters& InActionParam)
+{
+	if (nullptr != GuideMaskBox && nullptr != GuideBoxPanel)
+	{
+		GuideMaskBox->SetBoxAction(InActionParam);
+		GuideBoxPanel->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UUIGuideLayer::SetGuideActionNone()
+{
+	if (nullptr != GuideBoxPanel)
+	{
+		GuideBoxPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
 
 void UUIGuideLayer::SetGuideLayer(const FGuideLayerParameters& InLayerParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize)
 {
@@ -115,7 +154,8 @@ void UUIGuideLayer::SetGuideTooltip(const FGuideMessageParameters& InMessagePara
 			PanelSlot->SetAutoSize(true);
 		}
 
-		GuideTooltip->SetVisibility(true == InMessageParam.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		SetGuideTooltip(InMessageParam);
+
 		if (false == InMessageParam.IsEmpty())
 		{
 			GuideTooltip->ForceLayoutPrepass();
@@ -130,22 +170,6 @@ void UUIGuideLayer::SetGuideTooltip(const FGuideMessageParameters& InMessagePara
 				TooltipSize);
 
 			GuideTooltip->SetRenderTranslation(Position + InMessageParam.Offset);
-
-			if (false == InMessageParam.bUseTitle)
-			{
-				GuideTooltip->Set(
-					FTextFormat::FromString(InMessageParam.Format),
-					FFormatOrderedArguments(InMessageParam.FormatArguments));
-			}
-
-			else
-			{
-				GuideTooltip->Set(
-					FTextFormat::FromString(InMessageParam.TitleFormat),
-					FFormatOrderedArguments(InMessageParam.TitleFormatArguments),
-					FTextFormat::FromString(InMessageParam.Format),
-					FFormatOrderedArguments(InMessageParam.FormatArguments));
-			}
 		}
 	}
 }
@@ -162,7 +186,7 @@ void UUIGuideLayer::SetGuideBox(const FGuideBoxActionParameters& InActionParam, 
 
 		else
 		{
-			GuideBoxPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+			SetGuideActionNone();
 		}
 	}
 
