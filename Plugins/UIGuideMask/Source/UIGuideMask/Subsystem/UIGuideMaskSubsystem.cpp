@@ -2,6 +2,9 @@
 
 
 #include "UIGuideMaskSubsystem.h"
+
+#include "../../UIGuideMaskEditor/GuideMaskSettings.h"
+
 #include "../UMG/UIGuideLayer.h"
 #include "../UIGuideMaskFunctionLibrary.h"
 #include "../Interface/UIGuideMaskable.h"
@@ -383,6 +386,14 @@ void UUIGuideMaskSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	//if (LayerClass.ToSoftObjectPath().IsValid()) return;
 	//TSubclassOf<UUIGuideLayer> LayerSubClass = LayerClass.LoadSynchronous();
+
+	const UGuideMaskSettings* Settings = GetDefault<UGuideMaskSettings>();
+	if (ensure(Settings))
+	{
+		LayerClass = Settings->GetLayerClass();
+		ZOrder = Settings->GetDefaultZOrder();
+		InputType = Settings->GetDefaultCommonInputType();
+	}
 
 	FViewport::ViewportResizedEvent.AddUObject(this, &UUIGuideMaskSubsystem::OnViewportResized);
 }

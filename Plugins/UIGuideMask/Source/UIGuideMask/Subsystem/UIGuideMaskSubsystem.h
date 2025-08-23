@@ -68,7 +68,7 @@ public:
 };
 
 
-UCLASS(Config = UIGuideMask)
+UCLASS()
 class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
@@ -142,6 +142,8 @@ private:
 	UPROPERTY()
 	UUIGuideLayer* GuideLayer = nullptr;
 
-	UPROPERTY(Config, EditAnywhere)
-	TSoftClassPtr<UUIGuideLayer> LayerClass;
+	UPROPERTY()
+	TSoftClassPtr<UUserWidget> LayerClass;
+
+	int32 ZOrder = 0;
 };

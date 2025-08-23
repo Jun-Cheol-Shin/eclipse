@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class UIGuideMask : ModuleRules
+public class UIGuideMaskEditor : ModuleRules
 {
-	public UIGuideMask(ReadOnlyTargetRules Target) : base(Target)
+	public UIGuideMaskEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -26,7 +26,7 @@ public class UIGuideMask : ModuleRules
 			new string[]
 			{
 				"Core",
-                
+
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -37,15 +37,10 @@ public class UIGuideMask : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
-                "UMG",
-                "GameplayTags",
-                "CommonUI",
+				"DeveloperSettings",
                 "CommonInput",
-                "Slate",
-                "SlateCore",
-                "UMG",
-                "InputCore",
-                "UIGuideMaskEditor",
+				"CommonUI",
+                "UMG"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
