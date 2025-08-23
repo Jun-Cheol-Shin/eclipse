@@ -58,6 +58,7 @@ private:
 	// InputSubSystem Callback
 	void OnDetectedTouch();
 	void OnDetectedMouseAndKeyboard();
+	void OnDetectedGamepad();
 
 	// EcpLayer CallBack
 	void OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UNLGameLayer* InLayer, bool bIsActivated);

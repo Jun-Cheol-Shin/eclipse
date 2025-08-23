@@ -25,7 +25,6 @@ void UUIGuideLayer::OnPostAction()
 
 	Subsystem->OnCompleteAction();
 }
-
 const TSharedPtr<SWidget> UUIGuideLayer::GetBoxWidget() const
 {
 	if (nullptr != GuideMaskBox)
@@ -36,15 +35,15 @@ const TSharedPtr<SWidget> UUIGuideLayer::GetBoxWidget() const
 	return nullptr;
 }
 
-void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam)
+void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideLayerParameters& InLayerParam, const FGuideMessageParameters& InMessageParam, bool bUseAction, const FGuideBoxActionParameters& InActionParam)
 {
 	if (nullptr == LayerPanel || nullptr == InWidget) return;
 
 	ForceLayoutPrepass();
 
-	FGuideMessageParameters MessageParam = InParam.MessageParameter;
-	FGuideLayerParameters LayerParam = InParam.LayerParameter;
-	FGuideBoxActionParameters ActionParam = InParam.AcitonParameter;
+	//FGuideMessageParameters MessageParam = InParam.MessageParameter;
+	//FGuideLayerParameters LayerParam = InParam.LayerParameter;
+	//FGuideBoxActionParameters ActionParam = InParam.ActionMap.Get(InputType);
 
 	InWidget->ForceLayoutPrepass();
 
@@ -61,9 +60,13 @@ void UUIGuideLayer::Set(const FGeometry& InGeometry, UWidget* InWidget, const FG
 	FVector2D TargetLocalSize = TargetLocalBottomRight - TargetLocalTopLeft;
 
 
-	SetGuideLayer(LayerParam, ScreenSize, TargetLocation, TargetLocalSize);
-	SetGuideTooltip(MessageParam, ScreenSize, TargetLocation, TargetLocalSize);
-	SetGuideBox(ActionParam, InParam.bUseAction, InWidget);
+	SetGuideLayer(InLayerParam, ScreenSize, TargetLocation, TargetLocalSize);
+
+
+	SetGuideTooltip(InMessageParam, ScreenSize, TargetLocation, TargetLocalSize);
+
+
+	SetGuideBox(InActionParam, bUseAction, InWidget);
 
 	UGameInstance* GameInstance = GetGameInstance();
 	if (nullptr == GameInstance) return;
@@ -94,6 +97,7 @@ void UUIGuideLayer::SetGuideTooltip(const FGuideMessageParameters& InMessagePara
 				FTextFormat::FromString(InMessageParam.Format),
 				FFormatOrderedArguments(InMessageParam.FormatArguments));
 		}
+
 	}
 }
 
@@ -110,6 +114,11 @@ void UUIGuideLayer::SetGuideActionNone()
 {
 	if (nullptr != GuideBoxPanel)
 	{
+		if (nullptr != GuideMaskBox)
+		{
+			GuideMaskBox->Clear();
+		}
+
 		GuideBoxPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 }
@@ -177,11 +186,11 @@ void UUIGuideLayer::SetGuideBox(const FGuideBoxActionParameters& InActionParam, 
 {
 	if (nullptr != GuideMaskBox && nullptr != GuideBoxPanel)
 	{
-		GuideMaskBox->SetBox(InWidget, InActionParam);
+		GuideMaskBox->SetBox(InWidget);
 
 		if (bInUseAction)
 		{
-			GuideBoxPanel->SetVisibility(ESlateVisibility::Visible);
+			SetGuideAction(InActionParam);
 		}
 
 		else
@@ -262,8 +271,22 @@ void UUIGuideLayer::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+FReply UUIGuideLayer::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	// Gamepad Mode
+
+	if (nullptr != GuideBoxPanel && ESlateVisibility::HitTestInvisible == GuideBoxPanel->GetVisibility())
+	{
+		GuideMaskBox->ForceComplete();
+	}
+
+	return Super::NativeOnKeyUp(InGeometry, InKeyEvent);
+}
+
 FReply UUIGuideLayer::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
+	// Pc Mode
+
 	if (nullptr != GuideBoxPanel && ESlateVisibility::HitTestInvisible == GuideBoxPanel->GetVisibility())
 	{
 		GuideMaskBox->ForceComplete();
@@ -274,6 +297,8 @@ FReply UUIGuideLayer::NativeOnMouseButtonUp(const FGeometry& InGeometry, const F
 
 FReply UUIGuideLayer::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
+	// Mobile Mode
+
 	if (nullptr != GuideBoxPanel && ESlateVisibility::HitTestInvisible == GuideBoxPanel->GetVisibility())
 	{
 		GuideMaskBox->ForceComplete();
@@ -305,3 +330,21 @@ void UUIGuideLayer::ShowPreviewDebug()
 	}
 }
 #endif
+
+/*
+bool FActionMap::Resolve(ECommonInputType InMode, FGuideBoxActionParameters& Out) const
+{
+	if (const FGuideBoxActionParameters* Param = InputMap.Find(InMode))
+	{
+		Out = *Param;
+		if (!IsPointer(InMode) && IsDrag(Out))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Guide] Gamepad은 Drag 불가 → Press로 대체"));
+			Out.ActionType = EGuideActionType::KeyEvent;
+			Out.DragThresholdVectorSize = 0.f;
+		}
+		return true;
+	}
+	return false;
+}
+*/

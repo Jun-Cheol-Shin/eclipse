@@ -21,6 +21,14 @@ public:
 	UUIGuideMaskFunctionLibrary() {}
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
+	static void SetInputType(const UGameInstance* InInstance, ECommonInputType InType);
+
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
+	static void SetMessage(const UGameInstance* InInstance, FGameplayTag InTag, const FGuideMessageParameters& InParameter);
+
+
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")
 	static void PauseGuide(const UGameInstance* InInstance);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "UI Guide Helper Function")

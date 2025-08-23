@@ -76,11 +76,15 @@ void UUIGuideRegistrar::ShowPreviewDebug()
 }
 void UUIGuideRegistrar::HidePreviewDebug()
 {
-	for (int i = GuideOverlay->GetChildrenCount() - 1; i >= 1 ; --i)
+	if (nullptr != PreviewOverlay)
 	{
-		UWidget* Child = GuideOverlay->GetChildAt(i);
-		if (Child) Child->RemoveFromParent();
+		for (int i = PreviewOverlay->GetChildrenCount() - 1; i >= 1; --i)
+		{
+			UWidget* Child = PreviewOverlay->GetChildAt(i);
+			if (Child) Child->RemoveFromParent();
+		}
 	}
+
 
 	WidgetPool.ReleaseAll();
 }
@@ -124,13 +128,18 @@ void UUIGuideRegistrar::CreatePreviewLayer()
 			}
 		}
 
-		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(PreviewGuideLayerWidget))
+		if (nullptr != PreviewOverlay)
 		{
-			OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
-			OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
+			if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(PreviewOverlay->AddChildToOverlay(PreviewGuideLayerWidget)))
+			{
+				OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Fill);
+				OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Fill);
+			}
 		}
 
-		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), PreviewWidget, Parameter);
+	
+
+		PreviewGuideLayerWidget->Set(NamedSlot->GetCachedGeometry(), PreviewWidget, Parameter.LayerParameter, Parameter.MessageParameter, Parameter.bUseAction);
 	}
 }
 
@@ -218,17 +227,18 @@ void UUIGuideRegistrar::NativeConstruct()
 			}
 		}
 
-		UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
-		if (OverlaySlot)
+		/*UBorderSlot* BorderSlot = Cast<UBorderSlot>(NamedSlot->Slot);
+		if (BorderSlot)
 		{
 			UWidget* NamedSlotWidget = NamedSlot->GetChildAt(0);
 			UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(NamedSlotWidget);
 
-			OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
-			OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
+			BorderSlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
+			BorderSlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
 		}
+		*/
 
-
+		PreviewOverlay = nullptr;
 		RegistedTagList.Reset();
 		WidgetPool.ReleaseAll();
 
@@ -259,6 +269,8 @@ void UUIGuideRegistrar::NativeDestruct()
 
 	}
 
+	PreviewOverlay = nullptr;
+
 	Super::NativeDestruct();
 }
 
@@ -267,7 +279,7 @@ void UUIGuideRegistrar::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
-	if (NamedSlot->GetChildrenCount() <= 0)
+	if (NamedSlot && NamedSlot->GetChildrenCount() <= 0)
 	{
 		FString ParentWidgetName = GetNameSafe(this);
 
@@ -276,27 +288,35 @@ void UUIGuideRegistrar::SynchronizeProperties()
 			ParentWidgetName = GetNameSafe(OuterWidget);
 		}
 
+
 		UTextBlock* TextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 		TextBlock->SetText(FText::FromString(FString::Printf(TEXT("Change the screen mode of %s to fill screen mode."), *ParentWidgetName)));
 		TextBlock->SetColorAndOpacity(FLinearColor::Gray);
 
-		if (UOverlaySlot* OverlaySlot = GuideOverlay->AddChildToOverlay(TextBlock))
+		if (PreviewOverlay)
 		{
-			OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
-			OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Top);
+			if (UOverlaySlot* OverlaySlot = PreviewOverlay->AddChildToOverlay(TextBlock))
+			{
+				OverlaySlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Left);
+				OverlaySlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Top);
+			}
 		}
 	}
 
 
-	UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
-	if (OverlaySlot)
+	if (NamedSlot)
 	{
-		UWidget* NamedSlotWidget = NamedSlot->GetChildAt(0);
-		UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(NamedSlotWidget);
+		UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(NamedSlot->Slot);
+		if (OverlaySlot)
+		{
+			UWidget* NamedSlotWidget = NamedSlot->GetChildAt(0);
+			UCanvasPanel* CanvasPanel = Cast<UCanvasPanel>(NamedSlotWidget);
 
-		OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
-		OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
+			OverlaySlot->SetHorizontalAlignment(nullptr != CanvasPanel ? EHorizontalAlignment::HAlign_Fill : EHorizontalAlignment::HAlign_Center);
+			OverlaySlot->SetVerticalAlignment(nullptr != CanvasPanel ? EVerticalAlignment::VAlign_Fill : EVerticalAlignment::VAlign_Center);
+		}
 	}
+
 
 
 #if WITH_EDITOR
@@ -316,26 +336,28 @@ void UUIGuideRegistrar::SynchronizeProperties()
 		}
 	}
 
-	for (auto& Child : NamedSlot->GetAllChildren())
+	if (NamedSlot)
 	{
-		UUIGuideMaskFunctionLibrary::ForEachWidgetRecursive(Child, [&](UWidget* InRoot)
-			{
-				check(InRoot);
-				if (InRoot->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
+		for (auto& Child : NamedSlot->GetAllChildren())
+		{
+			UUIGuideMaskFunctionLibrary::ForEachWidgetRecursive(Child, [&](UWidget* InRoot)
 				{
-					TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(InRoot);
-
-					for (auto& [Tag, Widget] : Map)
+					check(InRoot);
+					if (InRoot->GetClass()->ImplementsInterface(UUIGuideMaskable::StaticClass()))
 					{
-						RegistedTagList.Add(Tag, InRoot);
+						TMap<FGameplayTag, UWidget*> Map = IUIGuideMaskable::Execute_OnGetMaskableWidget(InRoot);
+
+						for (auto& [Tag, Widget] : Map)
+						{
+							RegistedTagList.Add(Tag, InRoot);
+						}
+
+						UE_LOG(LogTemp, Log, TEXT("Found: %s (%s)"), *GetNameSafe(InRoot), *InRoot->GetClass()->GetName());
+
 					}
-
-					UE_LOG(LogTemp, Log, TEXT("Found: %s (%s)"), *GetNameSafe(InRoot), *InRoot->GetClass()->GetName());
-
-				}
-			});
+				});
+		}
 	}
-
 
 #endif
 
@@ -355,6 +377,7 @@ const FText UUIGuideRegistrar::GetPaletteCategory()
 {
 	return LOCTEXT("UIGuideMask", "UIGuideMask");
 }
+
 TSharedRef<SWidget> UUIGuideRegistrar::RebuildWidget()
 {
 #if WITH_EDITOR

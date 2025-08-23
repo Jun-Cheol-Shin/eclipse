@@ -14,6 +14,24 @@
 #include "Components/DynamicEntryBox.h"
 
 
+void UUIGuideMaskFunctionLibrary::SetInputType(const UGameInstance* InInstance, ECommonInputType InType)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->SetInputType(InType);
+	}
+}
+
+void UUIGuideMaskFunctionLibrary::SetMessage(const UGameInstance* InInstance, FGameplayTag InTag, const FGuideMessageParameters& InParameter)
+{
+	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();
+	if (ensure(GuideSubSystem))
+	{
+		GuideSubSystem->SetMessage(InTag, InParameter);
+	}
+}
+
 void UUIGuideMaskFunctionLibrary::PauseGuide(const UGameInstance* InInstance)
 {
 	UUIGuideMaskSubsystem* GuideSubSystem = InInstance->GetSubsystem<UUIGuideMaskSubsystem>();

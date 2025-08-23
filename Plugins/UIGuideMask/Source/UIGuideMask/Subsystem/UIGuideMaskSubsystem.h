@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "../UMG/UIGuideLayer.h"
+
 #include "UIGuideMaskSubsystem.generated.h"
 
 
@@ -75,17 +76,20 @@ class UIGUIDEMASK_API UUIGuideMaskSubsystem : public UGameInstanceSubsystem
 	friend class UShowGuideReadyAsyncAction;
 
 public:
-	void SetMessage(FGameplayTag InTag, const FGuideMessageParameters& InParameters);
-	void SetAction(FGameplayTag InTag, const FGuideBoxActionParameters& InParameters);
-	void SetNoneAction(FGameplayTag InTag);
-
-	void PauseGuide(APlayerController* InController);
-	void ResumeGuide(APlayerController* InController);
 	void ShowGuide(APlayerController* InController, const FGameplayTag& InTag);
 	void ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags);
 
 
+	void PauseGuide(APlayerController* InController);
+	void ResumeGuide(APlayerController* InController);
+
+	void SetInputType(ECommonInputType InInputType);
+	void SetMessage(FGameplayTag InTag, const FGuideMessageParameters& InParameters);
+
 private:
+	void SetGuideInputType(APlayerController* InController);
+	void SetGuideInputTypeInternal(APlayerController* InController, bool bShowMouseCursor, const TSharedPtr<SWidget>& InWidgetToFocus = nullptr);
+
 	void ShowGuide(const FGameplayTag& InTag);
 	void CompleteGuide(bool bReleaseQueue = true);
 	bool GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag);
@@ -98,13 +102,12 @@ private:
 	void OnStartGuide();
 	void OnCompleteAction();
 
+private:
 	void RegistGuideWidget(const FGuideData& InData);
 	void UnregistGuideWidget(FGameplayTag InTag) { if (Widgets.Contains(InTag)) Widgets.Remove(InTag); }
 
-private:
 	void SnapshotInputMode(APlayerController* InController);
 	void LoadInputMode(APlayerController* InController);
-	void SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus = nullptr);
 
 
 	void CreateLayer(APlayerController* InController);
@@ -131,7 +134,9 @@ private:
 
 	FInputModeSnapshot InputModeSnapshot {};
 
-	bool bKeyboardFocused = false;
+	TWeakObjectPtr<APlayerController> MyPlayerController;
+
+	ECommonInputType InputType = ECommonInputType::MouseAndKeyboard;
 	
 private:
 	UPROPERTY()

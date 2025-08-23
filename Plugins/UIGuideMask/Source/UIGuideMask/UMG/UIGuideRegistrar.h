@@ -10,9 +10,8 @@
 #include "UIGuideRegistrar.generated.h"
 
 
-
 class UOverlay;
-class UCanvasPanel;
+class UBorder;
 class UUIGuideLayer;
 
 UCLASS(meta = (DisplayName = "UI Guide Registrar", Category = "UI_Guide", ToolTip = "If Not Use CanvasPanel, Set Fill Screen Mode!"))
@@ -51,6 +50,8 @@ private:
 
 	TMap<FGameplayTag, UWidget* /* OuterWidget */> RegistedTagList;
 	FUserWidgetPool WidgetPool{ };
+
+
 #endif
 
 private:
@@ -69,9 +70,9 @@ protected:
 
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	UOverlay* GuideOverlay;
+	UNamedSlot* NamedSlot;
 
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	UNamedSlot* NamedSlot;
+	UOverlay* PreviewOverlay;
 
 };

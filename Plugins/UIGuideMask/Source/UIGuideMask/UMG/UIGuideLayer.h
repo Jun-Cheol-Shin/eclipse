@@ -6,6 +6,7 @@
 #include "CommonUserWidget.h"
 #include "UIGuideTooltip.h"
 #include "UIGuideMaskBox.h"
+#include "CommonInputTypeEnum.h"
 #include "UIGuideLayer.generated.h"
 
 
@@ -36,6 +37,21 @@ public:
 
 };
 
+
+USTRUCT(BlueprintType)
+struct FActionMap
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+	TMap<ECommonInputType, FGuideBoxActionParameters> InputMap;
+
+public:
+	FGuideBoxActionParameters Get(ECommonInputType InType) const { return true == InputMap.Contains(InType) ? InputMap[InType] : FGuideBoxActionParameters(); }
+};
+
+
 USTRUCT(BlueprintType)
 struct FGuideParameter
 {
@@ -52,7 +68,7 @@ public:
 	bool bUseAction = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "true == bUseAction"))
-	FGuideBoxActionParameters AcitonParameter {};
+	FActionMap ActionMap {};
 };
 
 
@@ -73,23 +89,17 @@ private:
 	const TSharedPtr<SWidget> GetBoxWidget() const;
 
 public:
-	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideParameter& InParam = FGuideParameter());
+	void Set(const FGeometry& InGeometry, UWidget* InWidget, const FGuideLayerParameters& InLayerParam, const FGuideMessageParameters& InMessageParam, bool bUseAction, const FGuideBoxActionParameters& InActionParam = FGuideBoxActionParameters());
 	void SetGuideTooltip(const FGuideMessageParameters& InMessageParam);
-	void SetGuideAction(const FGuideBoxActionParameters& InActionParam);
-	void SetGuideActionNone();
-
 
 private:
 	void SetGuideLayer(const FGuideLayerParameters& InLayerParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize);
 	void SetGuideTooltip(const FGuideMessageParameters& InMessageParam, const FVector2D& InScreenSize, const FVector2D& InTargetLoc, const FVector2D& InTargetSize);
 	void SetGuideBox(const FGuideBoxActionParameters& InActionParam, bool bInUseAction, UWidget* InWidget);
+	void SetGuideAction(const FGuideBoxActionParameters& InActionParam);
+	void SetGuideActionNone();
 
 private:
-#if WITH_EDITOR
-	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "Preview", DisplayName = "Show Debug"))
-	void ShowPreviewDebug();
-#endif
-
 	void OnResizedViewport(FViewport* InViewport, uint32 InMessage);
 	void SetMaterialTransform(const FVector2D& InViewportSize, const FVector2D& InPosiiton, const FVector2D& InWidgetSize, const FVector2D& InOffset = FVector2D());
 
@@ -97,8 +107,15 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
+	virtual FReply NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 	virtual FReply NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
+
+private:
+#if WITH_EDITOR
+	UFUNCTION(BlueprintCosmetic, CallInEditor, meta = (Category = "Preview", DisplayName = "Show Debug"))
+	void ShowPreviewDebug();
+#endif
 
 private:
 // BP Variables

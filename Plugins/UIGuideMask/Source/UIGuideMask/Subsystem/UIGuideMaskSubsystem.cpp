@@ -8,6 +8,81 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
+void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGameplayTag& InTag)
+{
+	if (nullptr == InController) return;
+
+	MyPlayerController = InController;
+
+	if (nullptr == GuideLayer)
+	{
+		CreateLayer(MyPlayerController.Get());
+	}
+
+	if (false == Steps.IsEmpty())
+	{
+		Steps.Enqueue(InTag);
+	}
+
+	else if (nullptr != GuideLayer)
+	{
+		CurrentGuidedTag = InTag;
+		if (false == InputModeSnapshot.IsSnapped())
+		{
+			SnapshotInputMode(MyPlayerController.Get());
+		}
+
+		// Play Animation..
+		GuideLayer->AddToViewport(12000);
+		ShowGuide(InTag);
+	}
+}
+void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags)
+{
+	if (nullptr == InController) return;
+
+	MyPlayerController = InController;
+
+	for (int i = 0; i < InTags.Num(); ++i)
+	{
+		Steps.Enqueue(InTags[i]);
+	}
+
+
+	if (true == Steps.Dequeue(OUT CurrentGuidedTag))
+	{
+		if (false == InputModeSnapshot.IsSnapped())
+		{
+			SnapshotInputMode(MyPlayerController.Get());
+		}
+
+		if (nullptr == GuideLayer)
+		{
+			CreateLayer(MyPlayerController.Get());
+		}
+
+		if (nullptr != GuideLayer)
+		{
+			// Play Animation.. (FadeIn)
+			GuideLayer->AddToViewport(12000);
+			ShowGuide(CurrentGuidedTag);
+		}
+	}
+
+	else if (nullptr != GuideLayer && GuideLayer->IsInViewport())
+	{
+		CompleteGuide();
+	}
+}
+
+void UUIGuideMaskSubsystem::SetInputType(ECommonInputType InInputType)
+{
+	InputType = InInputType;
+
+	SetGuideInputType(MyPlayerController.Get());
+}
+
+
 void UUIGuideMaskSubsystem::SetMessage(FGameplayTag InTag, const FGuideMessageParameters& InParameters)
 {
 	if (CurrentGuidedTag.MatchesTagExact(InTag))
@@ -26,94 +101,6 @@ void UUIGuideMaskSubsystem::SetMessage(FGameplayTag InTag, const FGuideMessagePa
 		}
 	}
 }
-
-void UUIGuideMaskSubsystem::SetAction(FGameplayTag InTag, const FGuideBoxActionParameters& InParameters)
-{
-	if (CurrentGuidedTag.MatchesTagExact(InTag))
-	{
-		if (nullptr != GuideLayer)
-		{
-			GuideLayer->SetGuideAction(InParameters);
-		}
-	}
-
-	else if (Widgets.Contains(InTag))
-	{
-		if (FGuideData* GuideData = Widgets.Find(InTag))
-		{
-			GuideData->GuideParameters.AcitonParameter = InParameters;
-		}
-	}
-}
-
-void UUIGuideMaskSubsystem::SetNoneAction(FGameplayTag InTag)
-{
-	if (CurrentGuidedTag.MatchesTagExact(InTag))
-	{
-		if (nullptr != GuideLayer)
-		{
-			GuideLayer->SetGuideActionNone();
-		}
-	}
-
-	else if (Widgets.Contains(InTag))
-	{
-		if (FGuideData* GuideData = Widgets.Find(InTag))
-		{
-			GuideData->GuideParameters.bUseAction = false;
-		}
-	}
-}
-
-void UUIGuideMaskSubsystem::PauseGuide(APlayerController* InController)
-{
-	TQueue<FGameplayTag> TempQueue;
-
-	if (CurrentGuidedTag.IsValid())
-	{
-		TempQueue.Enqueue(MoveTemp(CurrentGuidedTag));
-	}
-
-	FGameplayTag Tag;
-	while (Steps.Dequeue(Tag))
-	{
-		TempQueue.Enqueue(MoveTemp(Tag));
-	}
-
-	Steps.Empty();
-	Tag = FGameplayTag::EmptyTag;
-	CurrentGuidedTag = FGameplayTag::EmptyTag;
-
-
-	while (TempQueue.Dequeue(Tag))
-	{
-		Steps.Enqueue(Tag);
-	}
-
-	if (nullptr != GuideLayer && GuideLayer->IsInViewport())
-	{
-		GuideLayer->RemoveFromParent();
-	}
-
-	LoadInputMode(InController);
-}
-
-void UUIGuideMaskSubsystem::ResumeGuide(APlayerController* InController)
-{
-	if (!ensure(GuideLayer)) return;
-
-	if (true == Steps.Dequeue(CurrentGuidedTag))
-	{
-		if (false == InputModeSnapshot.IsSnapped())
-		{
-			SnapshotInputMode(InController);
-		}
-
-		GuideLayer->AddToViewport(12000);
-		ShowGuide(CurrentGuidedTag);
-	}
-}
-
 
 void UUIGuideMaskSubsystem::OnStartGuide()
 {
@@ -143,8 +130,6 @@ void UUIGuideMaskSubsystem::OnCompleteAction()
 	TWeakObjectPtr<UWidget> OuterWidget = Widgets[CurrentGuidedTag].OuterWidget;
 	if (false == OuterWidget.IsValid()) return;
 
-	FGuideBoxActionParameters ActionParam = Widgets[CurrentGuidedTag].GuideParameters.AcitonParameter;
-
 	FGameplayTag Temp = CurrentGuidedTag;
 	TWeakObjectPtr<UWidget> TempTarget = Widgets[CurrentGuidedTag].TargetWidget;
 	CompleteGuide();
@@ -160,7 +145,6 @@ void UUIGuideMaskSubsystem::OnCompleteAction()
 	}
 
 }
-
 void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
 {
 	if (nullptr != GuideLayer)
@@ -176,72 +160,11 @@ void UUIGuideMaskSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused
 		}
 	}
 }
-
-void UUIGuideMaskSubsystem::ShowGuide(APlayerController* InController, const FGameplayTag& InTag)
-{
-	if (nullptr == GuideLayer)
-	{
-		CreateLayer(InController);
-	}
-
-	if (false == Steps.IsEmpty())
-	{
-		Steps.Enqueue(InTag);
-	}
-
-	else if (nullptr != GuideLayer)
-	{
-		CurrentGuidedTag = InTag;
-		if (false == InputModeSnapshot.IsSnapped())
-		{
-			SnapshotInputMode(InController);
-		}
-
-		// Play Animation..
-		GuideLayer->AddToViewport(12000);
-		ShowGuide(InTag);
-	}
-}
-
-void UUIGuideMaskSubsystem::ShowGuideSteps(APlayerController* InController, const TArray<FGameplayTag>& InTags)
-{
-	for (int i = 0; i < InTags.Num(); ++i)
-	{
-		Steps.Enqueue(InTags[i]);
-	}
-
-
-	if (true == Steps.Dequeue(OUT CurrentGuidedTag))
-	{
-		if (false == InputModeSnapshot.IsSnapped())
-		{
-			SnapshotInputMode(InController);
-		}
-
-		if (nullptr == GuideLayer)
-		{
-			CreateLayer(InController);
-		}
-
-		if (nullptr != GuideLayer)
-		{		
-			// Play Animation.. (FadeIn)
-			GuideLayer->AddToViewport(12000);
-			ShowGuide(CurrentGuidedTag);
-		}
-	}
-
-	else if (nullptr != GuideLayer && GuideLayer->IsInViewport())
-	{
-		CompleteGuide();
-	}
-}
-
 void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 {
 	if (ensure(GuideLayer))
 	{
-		FGeometry ViewportGeo = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
+		FGeometry ViewportGeo = UWidgetLayoutLibrary::GetPlayerScreenWidgetGeometry(MyPlayerController.Get());
 
 		if (Widgets.Contains(InTag) && ensure(Widgets[InTag].TargetWidget.IsValid()))
 		{
@@ -253,25 +176,11 @@ void UUIGuideMaskSubsystem::ShowGuide(const FGameplayTag& InTag)
 				TargetWidget = UUIGuideMaskFunctionLibrary::GetEntry(OuterWidget, TargetWidget);
 			}
 
-			if (true == Widgets[InTag].GuideParameters.bUseAction)
-			{
-				if (EGuideActionType::KeyEvent == Widgets[InTag].GuideParameters.AcitonParameter.ActionType) 
-				{
-					SetGuideInputMode(GetGameInstance()->GetFirstLocalPlayerController(), GuideLayer->GetBoxWidget());
-				}
-
-				else
-				{
-					SetGuideInputMode(GetGameInstance()->GetFirstLocalPlayerController());
-				}
-			}
-
-			//CurrentGuidedTag = InTag;
-			GuideLayer->Set(ViewportGeo, TargetWidget, Widgets[InTag].GuideParameters);
+			SetGuideInputType(MyPlayerController.Get());
+			GuideLayer->Set(ViewportGeo, TargetWidget, Widgets[InTag].GuideParameters.LayerParameter, Widgets[InTag].GuideParameters.MessageParameter, Widgets[InTag].GuideParameters.bUseAction, Widgets[InTag].GuideParameters.ActionMap.Get(InputType));
 		}
 	}
 }
-
 void UUIGuideMaskSubsystem::CompleteGuide(bool bReleaseQueue)
 {
 	if (Steps.Dequeue(OUT CurrentGuidedTag))
@@ -310,7 +219,6 @@ void UUIGuideMaskSubsystem::CreateLayer(APlayerController* InController)
 		GuideLayer = CreateWidget<UUIGuideLayer>(InController, LayerSubClass);
 	}
 }
-
 void UUIGuideMaskSubsystem::RegistGuideWidget(const FGuideData& InData)
 {
 	Widgets.Emplace(InData.GameplayTag, InData);
@@ -392,7 +300,28 @@ void UUIGuideMaskSubsystem::LoadInputMode(APlayerController* InController)
 	InputModeSnapshot.Reset();
 }
 
-void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, const TSharedPtr<SWidget>& InWidgetToFocus)
+void UUIGuideMaskSubsystem::SetGuideInputType(APlayerController* InController)
+{
+	switch (InputType)
+	{
+	case ECommonInputType::MouseAndKeyboard:
+	case ECommonInputType::Touch:
+	{
+		SetGuideInputTypeInternal(InController, true, GuideLayer->GetBoxWidget());
+	}
+	break;
+
+	case ECommonInputType::Gamepad:
+	{
+		SetGuideInputTypeInternal(InController, false, GuideLayer->GetBoxWidget());
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+void UUIGuideMaskSubsystem::SetGuideInputTypeInternal(APlayerController* InController, bool bShowMouseCursor, const TSharedPtr<SWidget>& InWidgetToFocus)
 {
 	if (!ensure(InController)) return;
 
@@ -406,7 +335,7 @@ void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, c
 		InController->SetInputMode(Mode);
 
 		InController->bEnableClickEvents = false;
-		InController->SetShowMouseCursor(false);
+		InController->SetShowMouseCursor(bShowMouseCursor);
 
 		UGameViewportClient* GameViewportClient = nullptr;
 		if (InController)
@@ -432,7 +361,7 @@ void UUIGuideMaskSubsystem::SetGuideInputMode(APlayerController* InController, c
 	{
 		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		InController->SetInputMode(Mode);
-		InController->SetShowMouseCursor(true);
+		InController->SetShowMouseCursor(bShowMouseCursor);
 	}
 
 }
@@ -450,7 +379,6 @@ bool UUIGuideMaskSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 
 	return false;
 }
-
 void UUIGuideMaskSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	//if (LayerClass.ToSoftObjectPath().IsValid()) return;
@@ -458,14 +386,20 @@ void UUIGuideMaskSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	FViewport::ViewportResizedEvent.AddUObject(this, &UUIGuideMaskSubsystem::OnViewportResized);
 }
-
 void UUIGuideMaskSubsystem::Deinitialize()
 {
 	FViewport::ViewportResizedEvent.RemoveAll(this);
+
+	MyPlayerController.Reset();
+	WaitQueue.Empty();
+	Widgets.Reset();
+	Steps.Empty();
 	LayerClass.Reset();
+
 	GuideLayer = nullptr;
 }
 
+// Helper
 bool UUIGuideMaskSubsystem::GetTargetWidget(OUT UWidget** OutTarget, FGameplayTag InTag)
 {
 	if (Widgets.Contains(InTag))
@@ -476,7 +410,6 @@ bool UUIGuideMaskSubsystem::GetTargetWidget(OUT UWidget** OutTarget, FGameplayTa
 
 	return false;
 }
-
 bool UUIGuideMaskSubsystem::GetOuterWidget(OUT UWidget** OutOuterWidget, FGameplayTag InTag)
 {
 	if (Widgets.Contains(InTag))
@@ -486,4 +419,53 @@ bool UUIGuideMaskSubsystem::GetOuterWidget(OUT UWidget** OutOuterWidget, FGamepl
 	}
 
 	return false;
+}
+
+
+void UUIGuideMaskSubsystem::PauseGuide(APlayerController* InController)
+{
+	TQueue<FGameplayTag> TempQueue;
+
+	if (CurrentGuidedTag.IsValid())
+	{
+		TempQueue.Enqueue(MoveTemp(CurrentGuidedTag));
+	}
+
+	FGameplayTag Tag;
+	while (Steps.Dequeue(Tag))
+	{
+		TempQueue.Enqueue(MoveTemp(Tag));
+	}
+
+	Steps.Empty();
+	Tag = FGameplayTag::EmptyTag;
+	CurrentGuidedTag = FGameplayTag::EmptyTag;
+
+
+	while (TempQueue.Dequeue(Tag))
+	{
+		Steps.Enqueue(Tag);
+	}
+
+	if (nullptr != GuideLayer && GuideLayer->IsInViewport())
+	{
+		GuideLayer->RemoveFromParent();
+	}
+
+	LoadInputMode(InController);
+}
+void UUIGuideMaskSubsystem::ResumeGuide(APlayerController* InController)
+{
+	if (!ensure(GuideLayer)) return;
+
+	if (true == Steps.Dequeue(CurrentGuidedTag))
+	{
+		if (false == InputModeSnapshot.IsSnapped())
+		{
+			SnapshotInputMode(InController);
+		}
+
+		GuideLayer->AddToViewport(12000);
+		ShowGuide(CurrentGuidedTag);
+	}
 }

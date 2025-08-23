@@ -34,6 +34,16 @@ void UNLGameLayout::OnDetectedMouseAndKeyboard()
 
 }
 
+void UNLGameLayout::OnDetectedGamepad()
+{
+	// todo : change console main hud
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Gamepad!"));
+	}
+}
+
 void UNLGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UNLGameLayer* InLayer, bool bIsActivated)
 {
 	const FGameplayTag* TagPtr = Layers.FindKey(InLayer);
@@ -137,6 +147,7 @@ void UNLGameLayout::NativeConstruct()
 	{
 		InputSubSystem->OnChangedDetectTouch.AddUObject(this, &UNLGameLayout::OnDetectedTouch);
 		InputSubSystem->OnChangedDetectMouseAndKeyboard.AddUObject(this, &UNLGameLayout::OnDetectedMouseAndKeyboard);
+		InputSubSystem->OnChangedDetectGamePad.AddUObject(this, &UNLGameLayout::OnDetectedGamepad);
 	}
 
 
@@ -150,6 +161,7 @@ void UNLGameLayout::NativeDestruct()
 	UNLInputManagerSubSystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
 	if (ensure(InputSubSystem))
 	{
+		InputSubSystem->OnChangedDetectGamePad.RemoveAll(this);
 		InputSubSystem->OnChangedDetectMouseAndKeyboard.RemoveAll(this);
 		InputSubSystem->OnChangedDetectTouch.RemoveAll(this);
 	}

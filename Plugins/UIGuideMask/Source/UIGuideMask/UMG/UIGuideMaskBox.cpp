@@ -5,35 +5,55 @@
 
 #include "Components/Button.h"
 #include "Components/CheckBox.h"
+#include "Components/ProgressBar.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 
 
+void UUIGuideMaskBox::Clear()
+{
+	StartTime = 0.f;
+	TouchStartPos = FVector2D::Zero();
+	HighlightWidget.Reset();
+}
 
 void UUIGuideMaskBox::ForceComplete()
 {
-	TouchStartPos = FVector2D::Zero();
-	HighlightWidget.Reset();
+	Clear();
 
 	OnPostAction.ExecuteIfBound();
 }
 
-void UUIGuideMaskBox::SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParam)
+void UUIGuideMaskBox::SetBox(UWidget* InWidget)
 {
 	HighlightWidget = InWidget;
-
-	SetBoxAction(InParam);
 }
 
-void UUIGuideMaskBox::SetBoxAction(const FGuideBoxActionParameters& InParam)
+void UUIGuideMaskBox::SetBoxAction(const FGuideBoxActionParameters& InActionParam)
 {
-	ActionType = InParam.ActionType;
-	DragThreshold = InParam.DragThreshold;
-	ActivationKey = InParam.ActivationKey;
+	if (nullptr != HoldProgressBar && nullptr != HoldProgressBar->GetParent())
+	{
+		HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::Collapsed);
+		HoldProgressBar->SetPercent(0.f);
+	}
 
-	ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
-	CorrectedDragThreshold = DragThreshold * ActionDPIScale;
+	ActionType = InActionParam.ActionType;
+	ActivationKey = InActionParam.ActivationKey;
+
+	if (true == IsDragType(InActionParam.ActionType))
+	{
+		DragThreshold = InActionParam.DragThresholdVectorSize;
+		ActionDPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
+
+		CorrectedDragThreshold = DragThreshold * ActionDPIScale;
+	}
+
+	else if (EGuideActionType::Hold == InActionParam.ActionType)
+	{
+		HoldSeconds = InActionParam.HoldSeconds;
+	}
 }
+
 
 void UUIGuideMaskBox::OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/)
 {
@@ -131,6 +151,8 @@ FReply UUIGuideMaskBox::OnStartedClick(const FGeometry& InGeometry, const FPoint
 }
 FReply UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
+	if (TouchStartPos.IsZero()) return FReply::Unhandled();
+
 	float DPIScale = UWidgetLayoutLibrary::GetViewportScale(this);
 
 	FVector2D CurrentPosition = InGeometry.AbsoluteToLocal(InEvent.GetScreenSpacePosition());
@@ -153,7 +175,7 @@ FReply UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent
 		if (CorrectedDragThreshold <= MoveVec.Size())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
-			OnEndedClick(InGeometry, InEvent);
+			OnEndedAction(InEvent);
 		}
 	}
 		break;
@@ -179,7 +201,7 @@ FReply UUIGuideMaskBox::OnMoved(const FGeometry& InGeometry, const FPointerEvent
 			if (CorrectedDragThreshold <= MoveVec.Size())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Complete Drag!"));
-				OnEndedClick(InGeometry, InEvent);
+				OnEndedAction(InEvent);
 			}
 		}
 
@@ -263,8 +285,6 @@ FReply UUIGuideMaskBox::OnEndedClick(const FGeometry& InGeometry, const FPointer
 
 FReply UUIGuideMaskBox::OnStartedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent)
 {
-	if (EGuideActionType::KeyEvent != ActionType) return FReply::Unhandled();
-
 	TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 	if (ensure(&SlateWidget))
 	{
@@ -276,8 +296,6 @@ FReply UUIGuideMaskBox::OnStartedKeyEvent(const FGeometry& InGeometry, const FKe
 
 FReply UUIGuideMaskBox::OnEndedKeyEvent(const FGeometry& InGeometry, const FKeyEvent& InEvent)
 {
-	if (EGuideActionType::KeyEvent != ActionType) return FReply::Unhandled();
-
 	TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 	if (ensure(&SlateWidget))
 	{
@@ -298,14 +316,12 @@ void UUIGuideMaskBox::OnEndedAction(const FPointerEvent& InEvent)
 		NativeOnMouseLeave(InEvent);
 	}
 
-	ActivationKey = FKey();
-	TouchStartPos = FVector2D::Zero();
-	HighlightWidget.Reset();
+
+	Clear();
 
 	OnPostAction.ExecuteIfBound();
 
 }
-
 
 bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 {
@@ -360,9 +376,22 @@ bool UUIGuideMaskBox::IsCorrectSwipe(const FVector2D& InMoveVec)
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (EGuideActionType::KeyEvent == ActionType)
+	if (InMouseEvent.GetEffectingButton() != ActivationKey)
 	{
 		return FReply::Unhandled();
+	}
+
+	else if (EGuideActionType::Hold == ActionType)
+	{
+		StartTime = FPlatformTime::Seconds();
+		TouchStartPos = InGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
+		
+		if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
+		{
+			HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+
+		return FReply::Handled();
 	}
 
 	return OnStartedClick(InGeometry, InMouseEvent);
@@ -390,28 +419,54 @@ FReply UUIGuideMaskBox::NativeOnMouseMove(const FGeometry& InGeometry, const FPo
 		break;
 	}
 
-	return FReply::Unhandled();
+	return FReply::Handled();
 }
 
 FReply UUIGuideMaskBox::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	switch (ActionType)
+	if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
 	{
-	case EGuideActionType::Click: 
-	{
-		return OnEndedClick(InGeometry, InMouseEvent);
-	}
-		break;
-	default:
-		break;
+		HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	if (false == TouchStartPos.IsZero())
+	{
+		TouchStartPos = FVector2D::Zero();
+		StartTime = 0.f;
+
+		switch (ActionType)
+		{
+		case EGuideActionType::DownAndUp:
+		{
+			if (InMouseEvent.GetEffectingButton() == ActivationKey)
+			{
+				return OnEndedClick(InGeometry, InMouseEvent);
+			}
+		}
+		break;
+		default:
+			break;
+		}
+	}
 
 	return FReply::Unhandled();
 }
 
 FReply UUIGuideMaskBox::NativeOnTouchStarted(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
 {
+	if (EGuideActionType::Hold == ActionType)
+	{
+		StartTime = FPlatformTime::Seconds();
+		TouchStartPos = InGeometry.AbsoluteToLocal(InGestureEvent.GetScreenSpacePosition());
+
+		if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
+		{
+			HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+
+		return FReply::Handled();
+	}
+
 	return OnStartedClick(InGeometry, InGestureEvent);
 }
 
@@ -442,26 +497,52 @@ FReply UUIGuideMaskBox::NativeOnTouchMoved(const FGeometry& InGeometry, const FP
 
 FReply UUIGuideMaskBox::NativeOnTouchEnded(const FGeometry& InGeometry, const FPointerEvent& InGestureEvent)
 {
-	switch (ActionType)
+	if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
 	{
-	case EGuideActionType::Click:
-	{
-		return OnEndedClick(InGeometry, InGestureEvent);
-	}
-	break;
-	default:
-		break;
+		HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	if (false == TouchStartPos.IsZero())
+	{
+		TouchStartPos = FVector2D::Zero();
+		StartTime = 0.f;
+
+		switch (ActionType)
+		{
+		case EGuideActionType::DownAndUp:
+		{
+			return OnEndedClick(InGeometry, InGestureEvent);
+		}
+		break;
+		default:
+			break;
+		}
+	}
 
 	return FReply::Unhandled();
 }
 
 FReply UUIGuideMaskBox::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (EGuideActionType::KeyEvent == ActionType && InKeyEvent.GetKey() == ActivationKey)
+	if (InKeyEvent.GetKey() == ActivationKey)
 	{
-		return OnStartedKeyEvent(InGeometry, InKeyEvent);
+		if (EGuideActionType::Hold == ActionType && true == TouchStartPos.IsZero())
+		{
+			StartTime = FPlatformTime::Seconds();
+			TouchStartPos = InGeometry.AbsoluteToLocal(FSlateApplication::Get().GetCursorPos());
+
+			if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
+			{
+				HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			}
+
+			return OnStartedKeyEvent(InGeometry, InKeyEvent);
+		}
+
+		else
+		{
+			return OnStartedKeyEvent(InGeometry, InKeyEvent);
+		}
 	}
 
 	return FReply::Unhandled();
@@ -469,7 +550,20 @@ FReply UUIGuideMaskBox::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyE
 
 FReply UUIGuideMaskBox::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (EGuideActionType::KeyEvent == ActionType && InKeyEvent.GetKey() == ActivationKey)
+	if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
+	{
+		HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (EGuideActionType::Hold == ActionType && false == TouchStartPos.IsZero())
+	{
+		StartTime = 0.f;
+		TouchStartPos = FVector2D::Zero();
+
+		return FReply::Handled();
+	}
+
+	else if (InKeyEvent.GetKey() == ActivationKey)
 	{
 		return OnEndedKeyEvent(InGeometry, InKeyEvent);
 	}
@@ -479,9 +573,7 @@ FReply UUIGuideMaskBox::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEve
 
 void UUIGuideMaskBox::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (EGuideActionType::KeyEvent == ActionType) return;
-
-	else if (HighlightWidget.IsValid())
+	if (HighlightWidget.IsValid())
 	{
 		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 		if (ensure(&SlateWidget))
@@ -493,15 +585,41 @@ void UUIGuideMaskBox::NativeOnMouseEnter(const FGeometry& InGeometry, const FPoi
 
 void UUIGuideMaskBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
-	if (EGuideActionType::KeyEvent == ActionType) return;
+	if (nullptr != HoldProgressBar && HoldProgressBar->GetParent())
+	{
+		HoldProgressBar->GetParent()->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
-	else if (HighlightWidget.IsValid())
+	if (HighlightWidget.IsValid())
 	{
 		TSharedRef<SWidget> SlateWidget = HighlightWidget->TakeWidget();
 		if (ensure(&SlateWidget))
 		{
 			SlateWidget.Get().OnMouseLeave(InMouseEvent);
 		}
+		
+
+		if (UButton* ButtonWidget = Cast<UButton>(HighlightWidget))
+		{
+			ButtonWidget->SetClickMethod(CachedClickMethod);
+			ButtonWidget->SetTouchMethod(CachedTouchMethod);
+		}
+
+		else if (UCheckBox* CheckBoxWidget = Cast<UCheckBox>(HighlightWidget))
+		{
+			CheckBoxWidget->SetClickMethod(CachedClickMethod);
+			CheckBoxWidget->SetTouchMethod(CachedTouchMethod);
+		}
+	}
+
+	if (false == IsDragType(ActionType))
+	{
+		TouchStartPos = FVector2D::Zero();
+	}
+
+	if (EGuideActionType::Hold != ActionType)
+	{
+		StartTime = 0.f;
 	}
 }
 
@@ -518,6 +636,15 @@ FPointerEvent UUIGuideMaskBox::CreateMouseLikePointerEventFromTouch(const FPoint
 	);
 }
 
+bool UUIGuideMaskBox::IsDragType(EGuideActionType InType) const
+{
+	return  InType == EGuideActionType::Drag ||
+			InType == EGuideActionType::Swipe_Up ||
+			InType == EGuideActionType::Swipe_Down ||
+			InType == EGuideActionType::Swipe_Left ||
+			InType == EGuideActionType::Swipe_Right;
+}
+
 void UUIGuideMaskBox::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -528,9 +655,6 @@ void UUIGuideMaskBox::NativeConstruct()
 	OnNativeVisibilityChanged.AddUObject(this, &UUIGuideMaskBox::OnChangedVisibility);
 
 	SetIsFocusable(true);
-
-	//FViewport::ViewportResizedEvent.AddUObject(this, &U::OnViewportResized);
-	//FSlateApplication::Get().GetGameViewport();
 }
 
 void UUIGuideMaskBox::NativeDestruct()
@@ -538,4 +662,26 @@ void UUIGuideMaskBox::NativeDestruct()
 	Super::NativeDestruct();
 
 	OnNativeVisibilityChanged.RemoveAll(this);
+}
+
+void UUIGuideMaskBox::NativeTick(const FGeometry& InGeometry, float InDeltaTime)
+{
+	Super::NativeTick(InGeometry, InDeltaTime);
+
+	if (false == TouchStartPos.IsZero() && 
+		ActionType == EGuideActionType::Hold)
+	{
+		if (FPlatformTime::Seconds() > StartTime + HoldSeconds)
+		{
+			OnEndedAction();
+		}
+
+		else if (nullptr != HoldProgressBar)
+		{
+			double Value = (FPlatformTime::Seconds() - StartTime) / HoldSeconds;
+
+			HoldProgressBar->SetPercent(Value);
+		}
+
+	}
 }

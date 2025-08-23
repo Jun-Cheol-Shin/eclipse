@@ -10,23 +10,16 @@
 UENUM(BlueprintType)
 enum class EGuideActionType : uint8
 {
-	Click,
+	DownAndUp,
+	Hold,
+
 	Drag,
 	Swipe_Up,
 	Swipe_Down,
 	Swipe_Left,
 	Swipe_Right,
-
-	KeyEvent,
 };
 
-UENUM(BlueprintType)
-enum class EActionCompletionPolicy : uint8
-{
-	Immediate,			  // Layer에서 터치/클릭 인식 즉시 완료 (팁/다음으로)
-	OnTargetHandled,      // 타겟 위젯의 ‘성공 시그널’을 확인한 뒤 완료 (버튼 클릭 등)
-	OnPredicate			  // 임의 조건(프레딕트) 충족 시 완료 (확장됨, 선택됨, 텍스트 유효 등)
-};
 
 USTRUCT(BlueprintType)
 struct FGuideBoxActionParameters
@@ -35,14 +28,20 @@ struct FGuideBoxActionParameters
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EGuideActionType ActionType = EGuideActionType::Click;
+	EGuideActionType ActionType = EGuideActionType::DownAndUp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Click != ActionType && EGuideActionType::KeyEvent != ActionType", EditConditionHides))
-	float DragThreshold = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::DownAndUp == ActionType || EGuideActionType::Hold == ActionType", EditConditionHides))
+	FKey ActivationKey;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::KeyEvent == ActionType", EditConditionHides))
-	FKey ActivationKey = FKey();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::DownAndUp != ActionType && EGuideActionType::KeyEvent != ActionType && EGuideActionType::Hold != ActionType", EditConditionHides))
+	float DragThresholdVectorSize = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "EGuideActionType::Hold == ActionType", EditConditionHides))
+	float HoldSeconds = 0.f;
 };
+
+class UProgressBar;
+
 
 UCLASS()
 class UIGUIDEMASK_API UUIGuideMaskBox : public UCommonUserWidget
@@ -53,20 +52,11 @@ public:
 	DECLARE_DELEGATE(FOnPostActionSignature)
 	FOnPostActionSignature OnPostAction;
 
-private:
-	UPROPERTY(EditDefaultsOnly, Transient, meta = (AllowPrivateAccess = "true"))
-	EGuideActionType ActionType = EGuideActionType::Click;
-
-	UPROPERTY(EditDefaultsOnly, Transient, meta = (AllowPrivateAccess = "true", ClampMin = "10", ClampMax = "100"))
-	float DragThreshold = 100.f;
-
-	float ActionDPIScale = 0.f;
-	float CorrectedDragThreshold = 0.f;
-	
 public:
 	void ForceComplete();
-	void SetBox(UWidget* InWidget, const FGuideBoxActionParameters& InParam);
-	void SetBoxAction(const FGuideBoxActionParameters& InParam);
+	void SetBox(UWidget* InWidget);
+	void SetBoxAction(const FGuideBoxActionParameters& InActionParam);
+	void Clear();
 	
 private:
 	void OnResizedViewport(FViewport* InViewport, uint32 InWindowMode /*?*/);
@@ -83,6 +73,7 @@ private:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void NativeTick(const FGeometry& InGeometry, float InDeltaTime) override;
 
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -102,11 +93,27 @@ protected:
 private:
 	bool IsCorrectSwipe(const FVector2D& InMoveVec);
 	FPointerEvent CreateMouseLikePointerEventFromTouch(const FPointerEvent& InTouchEvent);
+	bool IsDragType(EGuideActionType InType) const;
 
 private:
-	FKey ActivationKey = FKey();
 	FVector2D TouchStartPos = FVector2D();
-	TWeakObjectPtr<UWidget> HighlightWidget = nullptr;
+	float DragThreshold = 100.f;
+	float ActionDPIScale = 0.f;
+	float CorrectedDragThreshold = 0.f;
+	double StartTime = 0.f;
+	double HoldSeconds = 0.f;
+
 	EButtonClickMethod::Type CachedClickMethod = EButtonClickMethod::DownAndUp;
 	EButtonTouchMethod::Type CachedTouchMethod = EButtonTouchMethod::DownAndUp;
+
+
+private:
+	FKey ActivationKey {};
+	EGuideActionType ActionType {};
+
+	TWeakObjectPtr<UWidget> HighlightWidget = nullptr;
+
+private:
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UProgressBar* HoldProgressBar = nullptr;
 };
