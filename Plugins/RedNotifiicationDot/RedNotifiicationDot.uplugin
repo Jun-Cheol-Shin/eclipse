@@ -2,9 +2,9 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "UIGuideMask",
-	"Description": "Tutorial Guide UI Mask System",
-	"Category": "UI",
+	"FriendlyName": "RedNotifiicationDot",
+	"Description": "",
+	"Category": "Other",
 	"CreatedBy": "904sinjun",
 	"CreatedByURL": "",
 	"DocsURL": "",
@@ -16,20 +16,9 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "UIGuideMask",
+			"Name": "RedNotifiicationDot",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "UIGuideMaskEditor",
-			"Type": "Editor",
-			"LoadingPhase": "PreDefault"
-		}
-	],
-	"Plugins": [
-		{
-			"Name": "CommonUI",
-			"Enabled": true
 		}
 	]
 }
