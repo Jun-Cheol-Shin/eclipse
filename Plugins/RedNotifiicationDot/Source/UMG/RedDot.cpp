@@ -65,6 +65,8 @@ void URedDot::NativeConstruct()
 		RedDotNode = NewNode;
 
 		RedDotNode.Pin()->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
+
+		OnChangedVisible(RedDotNode.Pin()->GetVisible(), RedDotNode.Pin()->GetChildCount());
 	}
 }
 

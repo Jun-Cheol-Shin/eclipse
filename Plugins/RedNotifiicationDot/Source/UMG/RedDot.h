@@ -36,7 +36,7 @@ private:
 	
 private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
-	ERedDotCountPolicy CountPolicy = ERedDotCountPolicy::ChildNodes;
+	ERedDotCountPolicy CountPolicy = ERedDotCountPolicy::ChildCount;
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
 	FGameplayTag ParentTag;

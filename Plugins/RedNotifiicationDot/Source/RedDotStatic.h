@@ -8,8 +8,8 @@
 UENUM(BlueprintType)
 enum class ERedDotCountPolicy : uint8
 {
-	ChildNodes,
-	Subscribers,
+	ChildCount,
+	VisibleCount,
 };
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChangedVisibleSignature, bool /* bVisible */, int32 /* Subscribe Count or Child Count */)
@@ -17,7 +17,7 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChangedVisibleSignature, bool /* bVisibl
 class FRedDotNode
 {
 public:
-	FRedDotNode(FGameplayTag InMyTag, ERedDotCountPolicy InPolicy) : MyTag(InMyTag), CountPolicy(InPolicy), SubscribeCount(0), IsVisible(false)
+	FRedDotNode(FGameplayTag InMyTag, ERedDotCountPolicy InPolicy) : MyTag(InMyTag), CountPolicy(InPolicy), SubscribeCount(0), VisibleCount(0)
 	{
 		ParentNodes.Reset();
 		ChildNodes.Reset();
@@ -40,72 +40,61 @@ public:
 public:
 	FOnChangedVisibleSignature OnChangedVisible;
 
-	void On()
-	{
-		IsVisible = true;
-		int32 ChildSubscribeCount = 0;
-
-		for (auto& Child : ChildNodes)
-		{
-			if (false == Child.IsValid()) continue;
-			ChildSubscribeCount += Child.Pin()->GetSubscribeCount();
-		}
-
-		OnChangedVisible.Broadcast(IsVisible, ERedDotCountPolicy::ChildNodes == CountPolicy ? ChildNodes.Num() : ChildSubscribeCount);
-
-		for (auto& ParentNode : ParentNodes)
-		{
-			if (false == ParentNode.IsValid()) continue;
-			ParentNode.Pin()->On();
-		}
-	}
-
-	void Off()
-	{
-		bool bVisibleChild = false;
-		int32 ChildSubscribeCount = 0;
-
-		for (auto& Child : ChildNodes)
-		{
-			if (false == Child.IsValid()) continue;
-
-			if (Child.IsValid() && Child.Pin()->GetVisible() == true)
-			{
-				bVisibleChild = true;
-			}
-
-			ChildSubscribeCount += Child.Pin()->GetSubscribeCount();
-		}
-
-		IsVisible = bVisibleChild;
-		OnChangedVisible.Broadcast(IsVisible, ERedDotCountPolicy::ChildNodes == CountPolicy ? ChildNodes.Num() : ChildSubscribeCount);
-
-		for (auto& ParentNode : ParentNodes)
-		{
-			if (false == ParentNode.IsValid()) continue;
-			ParentNode.Pin()->Off();
-		}
-	}
+	void On();
+	void Off();
 
 	void SetSubcribe() { ++SubscribeCount; }
-	void ReleaseSubscribe() { if (SubscribeCount > 0) --SubscribeCount; }
+	void ReleaseSubscribe() { --SubscribeCount; }
 
-	const FGameplayTag& GetTag() const { return MyTag; }
-	int32 GetSubscribeCount() const { return SubscribeCount; }
-	bool GetVisible() const { return IsVisible; }
+	uint32 GetChildCount() const { return ChildNodes.Num(); }
+	uint32 GetSubscribeCount() const { return SubscribeCount; }
+	bool GetVisible() const { return VisibleCount > 0; }
 
 	void AddParent(const TSharedPtr<FRedDotNode> InParentNode) { ParentNodes.Emplace(InParentNode); }
 	void AddChild(const TSharedPtr<FRedDotNode> InChildNode) { ChildNodes.Emplace(InChildNode); }
+	void RemoveParent(const TSharedPtr<FRedDotNode> InParentNode) { ParentNodes.Remove(InParentNode); }
+	void RemoveChild(const TSharedPtr<FRedDotNode> InChildNode) { ChildNodes.Remove(InChildNode); }
+
+	const FGameplayTag& GetTag() const { return MyTag; }
+	const TSet<TWeakPtr<FRedDotNode>>& GetParents() const { return ParentNodes; }
+	const TSet<TWeakPtr<FRedDotNode>>& GetChilds() const { return ParentNodes; }
 
 private:
 	TSet<TWeakPtr<FRedDotNode>> ParentNodes {};
 	TSet<TWeakPtr<FRedDotNode>> ChildNodes {};
 
 	FGameplayTag MyTag{};
-	ERedDotCountPolicy CountPolicy = ERedDotCountPolicy::ChildNodes;
-	int32 SubscribeCount = 0;
-	bool IsVisible = false;
+	ERedDotCountPolicy CountPolicy = ERedDotCountPolicy::ChildCount;
+	uint32 SubscribeCount = 0;
+
+
+	uint32 VisibleCount = 0;
 };
+
+void FRedDotNode::On()
+{
+	++VisibleCount;
+
+	OnChangedVisible.Broadcast(VisibleCount > 0, ERedDotCountPolicy::ChildCount == CountPolicy ? ChildNodes.Num() : VisibleCount);
+
+	for (auto& ParentNode : ParentNodes)
+	{
+		if (false == ParentNode.IsValid()) continue;
+		ParentNode.Pin()->On();
+	}
+}
+void FRedDotNode::Off()
+{
+	--VisibleCount;
+
+	OnChangedVisible.Broadcast(VisibleCount > 0, ERedDotCountPolicy::ChildCount == CountPolicy ? ChildNodes.Num() : VisibleCount);
+
+	for (auto& ParentNode : ParentNodes)
+	{
+		if (false == ParentNode.IsValid()) continue;
+		ParentNode.Pin()->Off();
+	}
+}
 
 
 namespace RedDotStatic
@@ -154,6 +143,18 @@ namespace RedDotStatic
 
 		if (RedDot && *RedDot)
 		{
+			for (TWeakPtr<FRedDotNode> ParentNode : (*RedDot)->GetParents())
+			{
+				if (false == ParentNode.IsValid()) continue;
+				ParentNode.Pin()->RemoveChild(*RedDot);
+			}
+
+			for (TWeakPtr<FRedDotNode> ChildNode : (*RedDot)->GetChilds())
+			{
+				if (false == ChildNode.IsValid()) continue;
+				ChildNode.Pin()->RemoveParent(*RedDot);
+			}
+
 			(*RedDot).Reset();
 			RedDotGraph.Remove(InMyTag);
 		}
