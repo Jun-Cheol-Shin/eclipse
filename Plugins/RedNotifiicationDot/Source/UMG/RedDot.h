@@ -36,9 +36,6 @@ private:
 	
 private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
-	ERedDotCountPolicy CountPolicy = ERedDotCountPolicy::ChildCount;
-
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
 	FGameplayTag ParentTag;
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
@@ -60,4 +57,14 @@ private:
 	UTextBlock* CountText = nullptr;
 
 	TWeakPtr<FRedDotNode> RedDotNode = nullptr;
+
+
+public:
+	static TSharedPtr<FRedDotNode> CreateNode(const FGameplayTag& InParentTag, const FGameplayTag& InMyTag);
+	static bool GetNode(const FGameplayTag& InTag, OUT TSharedPtr<FRedDotNode>* OutNode);
+	static void RemoveNode(const FGameplayTag& InMyTag);
+	void ClearGraph();
+
+private:
+	static TMap<FGameplayTag, TSharedPtr<FRedDotNode>> RedDotGraph;
 };
