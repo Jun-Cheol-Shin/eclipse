@@ -8,45 +8,44 @@
 
 TMap<FGameplayTag, TSharedPtr<FRedDotNode>> URedDot::RedDotGraph;
 
-bool URedDot::GetNode(const FGameplayTag& InTag, OUT TSharedPtr<FRedDotNode>* OutNode)
-{
-	if (RedDotGraph.Contains(InTag))
-	{
-		*OutNode = RedDotGraph[InTag];
-		return true;
-	}
-
-	return false;
-}
 TSharedPtr<FRedDotNode> URedDot::CreateNode(const FGameplayTag& InParentTag, const FGameplayTag& InMyTag)
 {
 	if (RedDotGraph.Contains(InMyTag))
 	{
+		// check GetNode
 		return RedDotGraph[InMyTag];
 	}
 
 	TSharedPtr<FRedDotNode> RedDotNode = MakeShared<FRedDotNode>(InMyTag);
 	if (RedDotNode.IsValid())
 	{
-		TSharedPtr<FRedDotNode> ParentNode = nullptr;
-		if (true == GetNode(InParentTag, &ParentNode) && ParentNode.IsValid())
+		if (RedDotGraph.Contains(InParentTag))
 		{
-			ParentNode->AddChild(RedDotNode.ToSharedRef());
-			RedDotNode->AddParent(ParentNode.ToSharedRef());
+			TSharedPtr<FRedDotNode> ParentNode = RedDotGraph[InParentTag];
+
+			if (ParentNode.IsValid())
+			{
+				ParentNode->AddChild(RedDotNode);
+				RedDotNode->AddParent(ParentNode);
+			}
 		}
 
-		RedDotGraph.Emplace(InMyTag, RedDotNode);
+		if (InMyTag.IsValid())
+		{
+			RedDotGraph.Emplace(InMyTag, RedDotNode);
+		}
 
 		return RedDotNode;
 	}
 
 	return nullptr;
 }
+
 void URedDot::RemoveNode(const FGameplayTag& InMyTag)
 {
 	TSharedPtr<FRedDotNode>* RedDot = RedDotGraph.Find(InMyTag);
 
-	if (RedDot && *RedDot)
+	if (RedDot && (*RedDot).IsValid())
 	{
 		for (TWeakPtr<FRedDotNode> ParentNode : (*RedDot)->GetParents())
 		{
@@ -74,9 +73,7 @@ void URedDot::ClearGraph()
 	RedDotGraph.Empty();
 }
 
-
-
-void URedDot::OnChangedVisible(bool bIsVisible, int32 InVisibleCount)
+void URedDot::OnChangedVisible(bool bIsVisible)
 {
 	if (false == bIsVisible)
 	{
@@ -86,7 +83,6 @@ void URedDot::OnChangedVisible(bool bIsVisible, int32 InVisibleCount)
 	else
 	{
 		SetVisibility(ESlateVisibility::HitTestInvisible);
-		Count = InVisibleCount;
 		SetCountText();
 	}
 }
@@ -95,7 +91,7 @@ void URedDot::On()
 {
 	if (RedDotNode.IsValid())
 	{
-		RedDotNode.Pin()->On();
+		RedDotNode->On();
 	}
 }
 
@@ -103,7 +99,7 @@ void URedDot::Off()
 {
 	if (RedDotNode.IsValid())
 	{
-		RedDotNode.Pin()->Off();
+		RedDotNode->Off();
 	}
 }
 
@@ -118,32 +114,34 @@ void URedDot::NativeOnInitialized()
 void URedDot::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
-	TSharedPtr<FRedDotNode> NewNode = nullptr;
 
-	if (false == GetNode(MyTag, OUT &NewNode))
+	if (RedDotGraph.Contains(MyTag))
 	{
-		NewNode = CreateNode(ParentTag, MyTag);
+		RedDotNode = RedDotGraph[MyTag];
+	}
+
+	else
+	{
+		RedDotNode = CreateNode(ParentTag, MyTag);
 	}
 
 
-	if (NewNode.IsValid())
+	if (RedDotNode.IsValid())
 	{
-		NewNode->SetSubcribe();
-		NewNode->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
-		RedDotNode = NewNode;
+		RedDotNode->SetSubcribe();
+		RedDotNode->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
 	}
+
 }
-
 void URedDot::NativeDestruct()
 {
 	int SubscribeCount = 0;
 
 	if (RedDotNode.IsValid())
 	{
-		RedDotNode.Pin()->OnChangedVisible.RemoveAll(this);
-		RedDotNode.Pin()->ReleaseSubscribe();
-		SubscribeCount = RedDotNode.Pin()->GetSubscribeCount();
+		RedDotNode->OnChangedVisible.RemoveAll(this);
+		RedDotNode->ReleaseSubscribe();
+		SubscribeCount = RedDotNode->GetSubscribeCount();
 	}
 
 	RedDotNode.Reset();
@@ -163,6 +161,8 @@ void URedDot::SynchronizeProperties()
 }
 void URedDot::SetCountText()
 {
+	Count = true == RedDotNode.IsValid() ? RedDotNode->GetCount() : Count;
+
 	if (nullptr != CountText && nullptr != CountText->GetParent())
 	{
 		CountText->GetParent()->SetVisibility(true == bShowCount && Count > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);

@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnChangedVisibleSignature, bool /* bVisible */, int32 /* Notify Count */)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnChangedVisibleSignature, bool /* bVisible */)
 
 class FRedDotNode
 {
 public:
-	FRedDotNode(FGameplayTag InMyTag) : MyTag(InMyTag), SubscribeCount(0), NotifyCount(0), ForceCount(0)
+	FRedDotNode(FGameplayTag InMyTag) : MyTag(InMyTag), SubscribeCount(0), NotifyCount(0)
 	{
 		ParentNodes.Reset();
 		ChildNodes.Reset();
@@ -27,6 +27,9 @@ public:
 		{
 			ChildNode.Reset();
 		}
+
+		ParentNodes.Reset();
+		ChildNodes.Reset();
 	};
 
 
@@ -43,16 +46,16 @@ public:
 	void ReleaseSubscribe() { --SubscribeCount; }
 	uint32 GetSubscribeCount() const { return SubscribeCount; }
 
+	uint32 GetCount() const { return NotifyCount; }
+
 	void AddParent(const TSharedPtr<FRedDotNode> InParentNode) { ParentNodes.Emplace(InParentNode); }
 	void AddChild(const TSharedPtr<FRedDotNode> InChildNode) { ChildNodes.Emplace(InChildNode); }
-	void RemoveParent(const TSharedPtr<FRedDotNode> InParentNode) { ParentNodes.Remove(InParentNode); }
-	void RemoveChild(const TSharedPtr<FRedDotNode> InChildNode) { ChildNodes.Remove(InChildNode); }
+	void RemoveParent(const TWeakPtr<FRedDotNode> InParentNode) { ParentNodes.Remove(InParentNode); }
+	void RemoveChild(const TWeakPtr<FRedDotNode> InChildNode) { ChildNodes.Remove(InChildNode); }
 
 	const TSet<TWeakPtr<FRedDotNode>>& GetParents() const { return ParentNodes; }
-	const TSet<TWeakPtr<FRedDotNode>>& GetChilds() const { return ParentNodes; }
+	const TSet<TWeakPtr<FRedDotNode>>& GetChilds() const { return ChildNodes; }
 
-private:
-	void Notify(bool bIsOn);
 
 private:
 	TSet<TWeakPtr<FRedDotNode>> ParentNodes {};
@@ -60,70 +63,92 @@ private:
 
 	FGameplayTag MyTag{};
 
-	// 같은 태그 노드를 공유하는 구독자 수
+	// 노드를 갖고있는 구독자 수 (위젯 수)
 	uint32 SubscribeCount = 0;
 
-	// 자식 알림 카운트 합
+	// 알림 카운트 
 	uint32 NotifyCount = 0;
-
-	// 강제 세팅 카운트
-	uint32 ForceCount = 0;
 
 };
 
-void FRedDotNode::Notify(bool bIsOn)
+void FRedDotNode::On()
 {
-	if (true == bIsOn)
+	if (ChildNodes.IsEmpty())
 	{
-		++NotifyCount;
-		if (ForceCount < NotifyCount) ForceCount = NotifyCount;
+		NotifyCount = FMath::Clamp(NotifyCount + 1, 0, SubscribeCount);
 	}
 
 	else
 	{
-		--NotifyCount;
-		if (ForceCount > NotifyCount) ForceCount = NotifyCount;
+		NotifyCount = 0;
+
+		for (auto& Child : ChildNodes)
+		{
+			if (false == Child.IsValid()) continue;
+			NotifyCount += Child.Pin()->GetCount();
+		}
+	}
+
+
+	for (auto& ParentNode : ParentNodes)
+	{
+		if (false == ParentNode.IsValid()) continue;
+		ParentNode.Pin()->On();
 	}
 	
-	for (auto& ParentNode : ParentNodes)
-	{
-		if (false == ParentNode.IsValid()) continue;
-		ParentNode.Pin()->Notify(bIsOn);
-	}
-
-	OnChangedVisible.Broadcast(NotifyCount > 0, NotifyCount);
-}
-
-void FRedDotNode::On()
-{
-	for (auto& ParentNode : ParentNodes)
-	{
-		if (false == ParentNode.IsValid()) continue;
-		ParentNode.Pin()->Notify(true);
-	}
-
-	OnChangedVisible.Broadcast(true, 1);
+	OnChangedVisible.Broadcast(true);
 }
 void FRedDotNode::Off()
 {
+	if (ChildNodes.IsEmpty())
+	{
+		NotifyCount = FMath::Clamp(NotifyCount - 1, 0, SubscribeCount);
+	}
+
+	else
+	{
+		NotifyCount = 0;
+
+		for (auto& Child : ChildNodes)
+		{
+			if (false == Child.IsValid()) continue;
+			NotifyCount += Child.Pin()->GetCount();
+		}
+	}
+
 	for (auto& ParentNode : ParentNodes)
 	{
 		if (false == ParentNode.IsValid()) continue;
-		ParentNode.Pin()->Notify(false);
+		ParentNode.Pin()->Off();
 	}
 
-	OnChangedVisible.Broadcast(false, 0);
+	OnChangedVisible.Broadcast(NotifyCount > 0);
 }
 
 void FRedDotNode::ForceOn(uint32 InCount)
 {
-	ForceCount = InCount;
+	if (ChildNodes.IsEmpty())
+	{
+		NotifyCount = InCount;
+	}
+
+	else
+	{
+		NotifyCount = 0;
+
+		for (auto& Child : ChildNodes)
+		{
+			if (false == Child.IsValid()) continue;
+			NotifyCount += Child.Pin()->GetCount();
+		}
+	}
+
 
 	for (auto& ParentNode : ParentNodes)
 	{
 		if (false == ParentNode.IsValid()) continue;
-		ParentNode.Pin()->ForceOn(ForceCount);
+		ParentNode.Pin()->On();
 	}
 
-	OnChangedVisible.Broadcast(ForceCount > 0, ForceCount);
+	OnChangedVisible.Broadcast(true);
 }

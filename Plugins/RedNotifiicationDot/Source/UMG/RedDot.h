@@ -16,7 +16,7 @@ class REDNOTIFIICATIONDOT_API URedDot : public UUserWidget
 	GENERATED_BODY()
 
 private:
-	void OnChangedVisible(bool bIsVisible, int32 InVisibleCount);
+	void OnChangedVisible(bool bIsVisible);
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -56,15 +56,17 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CountText = nullptr;
 
-	TWeakPtr<FRedDotNode> RedDotNode = nullptr;
+	TSharedPtr<FRedDotNode> RedDotNode = nullptr;
 
 
 public:
 	static TSharedPtr<FRedDotNode> CreateNode(const FGameplayTag& InParentTag, const FGameplayTag& InMyTag);
-	static bool GetNode(const FGameplayTag& InTag, OUT TSharedPtr<FRedDotNode>* OutNode);
 	static void RemoveNode(const FGameplayTag& InMyTag);
 	void ClearGraph();
 
 private:
 	static TMap<FGameplayTag, TSharedPtr<FRedDotNode>> RedDotGraph;
+	
+	// TODO : 혹시 모를 부모가 로드가 안됐을 때 대기해야 할 레드닷 위젯 WeakObjectPtr, 부모가 로드되면, 부모를 등록해줘야 함.
+	// TArray?
 };
