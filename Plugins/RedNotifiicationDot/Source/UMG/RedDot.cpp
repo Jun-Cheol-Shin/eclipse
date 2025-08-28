@@ -89,17 +89,46 @@ void URedDot::OnChangedVisible(bool bIsVisible)
 
 void URedDot::On()
 {
+	if (IsVisible()) return;
+
 	if (RedDotNode.IsValid())
 	{
 		RedDotNode->On();
 	}
-}
 
+	else
+	{
+		if (ParentDotNode.IsValid())
+		{
+			ParentDotNode.Pin()->IncreaseCloneCount();
+			ParentDotNode.Pin()->On();
+		}
+
+		SetVisibility(ESlateVisibility::HitTestInvisible);
+		Count = 1;
+		SetCountText();
+	}
+
+}
 void URedDot::Off()
 {
+	if (false == IsVisible()) return;
+
 	if (RedDotNode.IsValid())
 	{
 		RedDotNode->Off();
+	}
+
+	else
+	{
+		if (ParentDotNode.IsValid())
+		{
+			ParentDotNode.Pin()->DecreaseCloneCount();
+			ParentDotNode.Pin()->Off();
+		}
+
+		SetVisibility(ESlateVisibility::Collapsed);
+		Count = 0;
 	}
 }
 
@@ -115,20 +144,33 @@ void URedDot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (RedDotGraph.Contains(MyTag))
+	if (MyTag.IsValid())
 	{
-		RedDotNode = RedDotGraph[MyTag];
+		if (RedDotGraph.Contains(MyTag))
+		{
+			RedDotNode = RedDotGraph[MyTag];
+			if (RedDotNode.IsValid()) RedDotNode->SetSubcribe();
+		}
+
+		else
+		{
+			RedDotNode = CreateNode(ParentTag, MyTag);
+		}
 	}
 
-	else
+	else if (ParentTag.IsValid())
 	{
-		RedDotNode = CreateNode(ParentTag, MyTag);
+		TSharedPtr<FRedDotNode>* ParentNode = RedDotGraph.Find(ParentTag);
+		if (ParentNode && *ParentNode)
+		{
+			ParentDotNode = *ParentNode;
+		}	
 	}
+	
 
 
 	if (RedDotNode.IsValid())
 	{
-		RedDotNode->SetSubcribe();
 		RedDotNode->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
 	}
 
@@ -145,6 +187,7 @@ void URedDot::NativeDestruct()
 	}
 
 	RedDotNode.Reset();
+	ParentDotNode.Reset();
 
 	if (SubscribeCount <= 0)
 	{
@@ -161,7 +204,10 @@ void URedDot::SynchronizeProperties()
 }
 void URedDot::SetCountText()
 {
-	Count = true == RedDotNode.IsValid() ? RedDotNode->GetCount() : Count;
+	if (RedDotNode.IsValid())
+	{
+		Count = RedDotNode->GetCount();
+	}
 
 	if (nullptr != CountText && nullptr != CountText->GetParent())
 	{

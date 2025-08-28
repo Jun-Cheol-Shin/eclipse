@@ -57,6 +57,7 @@ private:
 	UTextBlock* CountText = nullptr;
 
 	TSharedPtr<FRedDotNode> RedDotNode = nullptr;
+	TWeakPtr<FRedDotNode> ParentDotNode = nullptr;
 
 
 public:
