@@ -35,39 +35,40 @@ private:
 	void SetCountText();
 	
 private:
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "RedDot Tag Setting"))
 	FGameplayTag ParentTag;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Categoryd = "RedDot Tag Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "RedDot Tag Setting", InlineEditConditionToggle))
+	bool bEnableIncludeChild = false;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "RedDot Tag Setting", EditCondition = "bEnableIncludeChild"))
 	FGameplayTag MyTag;
 
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting", EditCondition = "bEnableIncludeChild"))
 	bool bShowCount = false;
-
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting", EditCondition = "true == bShowCount"))
-	int32 Count = 0;
-
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting", EditCondition = "true == bShowCount"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting", EditCondition = "bShowCount"))
 	bool bUseGrouping = false;
 	
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Reddot UI Setting", EditCondition = "bShowCount"))
+	int32 PreviewCount = 0;
+#endif
+
 
 private:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CountText = nullptr;
 
-	TSharedPtr<FRedDotNode> RedDotNode = nullptr;
-	TWeakPtr<FRedDotNode> ParentDotNode = nullptr;
+	TWeakPtr<FRedDotNode> RedDotNode = nullptr;
 
 
 public:
-	static TSharedPtr<FRedDotNode> CreateNode(const FGameplayTag& InParentTag, const FGameplayTag& InMyTag);
+	static TSharedPtr<FRedDotNode> CreateNode(const FGameplayTag& InMyTag);
 	static void RemoveNode(const FGameplayTag& InMyTag);
 	void ClearGraph();
 
 private:
 	static TMap<FGameplayTag, TSharedPtr<FRedDotNode>> RedDotGraph;
 	
-	// TODO : 혹시 모를 부모가 로드가 안됐을 때 대기해야 할 레드닷 위젯 WeakObjectPtr, 부모가 로드되면, 부모를 등록해줘야 함.
-	// TArray?
 };

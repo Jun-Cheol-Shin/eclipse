@@ -10,7 +10,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnChangedVisibleSignature, bool /* bVisible
 class FRedDotNode
 {
 public:
-	FRedDotNode(FGameplayTag InMyTag) : MyTag(InMyTag), SubscribeCount(0), NotifyCount(0), CloneNodeVisibleCount(0)
+	FRedDotNode(FGameplayTag InMyTag) : MyTag(InMyTag), SubscribeCount(0), ChildNotifyCount(0), NotifyCount(0)
 	{
 		ParentNodes.Reset();
 		ChildNodes.Reset();
@@ -36,20 +36,12 @@ public:
 public:
 	FOnChangedVisibleSignature OnChangedVisible;
 
-	void IncreaseCloneCount() { CloneNodeVisibleCount = FMath::Clamp(CloneNodeVisibleCount + 1, CloneNodeVisibleCount, UINT32_MAX); }
-	void DecreaseCloneCount() { CloneNodeVisibleCount = FMath::Clamp(CloneNodeVisibleCount - 1, 0, CloneNodeVisibleCount); }
-
 	void On();
 	void Off();
+	void Notify(uint32 InCount);
 
-	// 하위 노드가 로드되지 않았을 때, 상위 노드에 대한 카운트 세팅 함수
-	//void ForceOn(uint32 InCount);
-
-	void SetSubcribe() { ++SubscribeCount; }
-	void ReleaseSubscribe() { --SubscribeCount; }
 	uint32 GetSubscribeCount() const { return SubscribeCount; }
-
-	uint32 GetCount() const { return NotifyCount; }
+	uint32 GetCount() const { return ChildNotifyCount + NotifyCount; }
 
 	void AddParent(const TSharedPtr<FRedDotNode> InParentNode) { ParentNodes.Emplace(InParentNode); }
 	void AddChild(const TSharedPtr<FRedDotNode> InChildNode) { ChildNodes.Emplace(InChildNode); }
@@ -59,6 +51,8 @@ public:
 	const TSet<TWeakPtr<FRedDotNode>>& GetParents() const { return ParentNodes; }
 	const TSet<TWeakPtr<FRedDotNode>>& GetChilds() const { return ChildNodes; }
 
+	void SetSubcribe() { ++SubscribeCount; }
+	void ReleaseSubscribe() { --SubscribeCount; }
 
 private:
 	TSet<TWeakPtr<FRedDotNode>> ParentNodes {};
@@ -67,60 +61,79 @@ private:
 	FGameplayTag MyTag{};
 
 	uint32 SubscribeCount = 0;
+	uint32 ChildNotifyCount = 0;
 	uint32 NotifyCount = 0;
-
-	// 태그가 None인 자식들의 Visible Count (노드가 많아지는 것에 대한 최적화 방법)
-	uint32 CloneNodeVisibleCount = 0;
 
 };
 
-void FRedDotNode::On()
+void FRedDotNode::Notify(uint32 InCount)
 {
-	NotifyCount = 0;
+	bool IsOn = NotifyCount < InCount && InCount > 0 ? true : false;
+
+	NotifyCount = InCount;
 
 	if (false == ChildNodes.IsEmpty())
 	{
+		ChildNotifyCount = 0;
+
 		for (auto& Child : ChildNodes)
 		{
 			if (false == Child.IsValid()) continue;
 
-			NotifyCount += Child.Pin()->GetCount();
+			ChildNotifyCount += Child.Pin()->GetCount();
 		}
 	}
 
-	NotifyCount += CloneNodeVisibleCount;
+	for (auto& ParentNode : ParentNodes)
+	{
+		if (false == ParentNode.IsValid()) continue;
+		true == IsOn ? ParentNode.Pin()->On() : ParentNode.Pin()->Off();
+	}
 
-	if (NotifyCount <= 0) NotifyCount = 1;
+	OnChangedVisible.Broadcast(ChildNotifyCount + NotifyCount > 0);
+}
+
+void FRedDotNode::On()
+{
+	int Count = 0;
+
+	if (false == ChildNodes.IsEmpty())
+	{
+		ChildNotifyCount = 0;
+
+		for (auto& Child : ChildNodes)
+		{
+			if (false == Child.IsValid()) continue;
+
+			ChildNotifyCount += Child.Pin()->GetCount();
+		}
+	}
 
 	for (auto& ParentNode : ParentNodes)
 	{
 		if (false == ParentNode.IsValid()) continue;
 		ParentNode.Pin()->On();
 	}
-	
-	OnChangedVisible.Broadcast(NotifyCount > 0);
+
+	Count = ChildNotifyCount + NotifyCount;
+	OnChangedVisible.Broadcast(Count > 0);
 }
 
 void FRedDotNode::Off()
 {
-	if (ChildNodes.IsEmpty())
-	{
-		NotifyCount = 0;
-	}
+	int Count = 0;
 
-	else
+	if (false == ChildNodes.IsEmpty())
 	{
-		NotifyCount = 0;
+		ChildNotifyCount = 0;
 
 		for (auto& Child : ChildNodes)
 		{
 			if (false == Child.IsValid()) continue;
 
-			NotifyCount += Child.Pin()->GetCount();
+			ChildNotifyCount += Child.Pin()->GetCount();
 		}
 	}
-
-	NotifyCount += CloneNodeVisibleCount;
 
 	for (auto& ParentNode : ParentNodes)
 	{
@@ -128,5 +141,7 @@ void FRedDotNode::Off()
 		ParentNode.Pin()->Off();
 	}
 
-	OnChangedVisible.Broadcast(NotifyCount > 0);
+	Count = ChildNotifyCount + NotifyCount;
+	OnChangedVisible.Broadcast(Count > 0);
 }
+

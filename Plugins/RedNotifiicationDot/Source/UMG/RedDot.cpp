@@ -8,7 +8,7 @@
 
 TMap<FGameplayTag, TSharedPtr<FRedDotNode>> URedDot::RedDotGraph;
 
-TSharedPtr<FRedDotNode> URedDot::CreateNode(const FGameplayTag& InParentTag, const FGameplayTag& InMyTag)
+TSharedPtr<FRedDotNode> URedDot::CreateNode(const FGameplayTag& InMyTag)
 {
 	if (RedDotGraph.Contains(InMyTag))
 	{
@@ -19,7 +19,7 @@ TSharedPtr<FRedDotNode> URedDot::CreateNode(const FGameplayTag& InParentTag, con
 	TSharedPtr<FRedDotNode> RedDotNode = MakeShared<FRedDotNode>(InMyTag);
 	if (RedDotNode.IsValid())
 	{
-		if (RedDotGraph.Contains(InParentTag))
+		/*if (RedDotGraph.Contains(InParentTag))
 		{
 			TSharedPtr<FRedDotNode> ParentNode = RedDotGraph[InParentTag];
 
@@ -28,7 +28,7 @@ TSharedPtr<FRedDotNode> URedDot::CreateNode(const FGameplayTag& InParentTag, con
 				ParentNode->AddChild(RedDotNode);
 				RedDotNode->AddParent(ParentNode);
 			}
-		}
+		}*/
 
 		if (InMyTag.IsValid())
 		{
@@ -91,22 +91,21 @@ void URedDot::On()
 {
 	if (IsVisible()) return;
 
-	if (RedDotNode.IsValid())
+	else if (false == RedDotNode.IsValid()) return;
+
+
+	// 주체가 되는 레드닷 일 경우..
+	if (true == bEnableIncludeChild)
 	{
-		RedDotNode->On();
+		RedDotNode.Pin()->On();
 	}
 
+	// 자식 레드닷일 경우 (주체가 되지 않음)
 	else
 	{
-		if (ParentDotNode.IsValid())
-		{
-			ParentDotNode.Pin()->IncreaseCloneCount();
-			ParentDotNode.Pin()->On();
-		}
-
 		SetVisibility(ESlateVisibility::HitTestInvisible);
-		Count = 1;
-		SetCountText();
+		int ParentNotifyCount = RedDotNode.Pin()->GetCount();
+		RedDotNode.Pin()->Notify(ParentNotifyCount + 1);
 	}
 
 }
@@ -114,21 +113,18 @@ void URedDot::Off()
 {
 	if (false == IsVisible()) return;
 
-	if (RedDotNode.IsValid())
+	// 주체가 되는 레드닷 일 경우..
+	if (true == bEnableIncludeChild)
 	{
-		RedDotNode->Off();
+		RedDotNode.Pin()->Off();
 	}
 
+	// 자식 레드닷일 경우 (주체가 되지 않음)
 	else
 	{
-		if (ParentDotNode.IsValid())
-		{
-			ParentDotNode.Pin()->DecreaseCloneCount();
-			ParentDotNode.Pin()->Off();
-		}
-
 		SetVisibility(ESlateVisibility::Collapsed);
-		Count = 0;
+		int ParentNotifyCount = RedDotNode.Pin()->GetCount();
+		RedDotNode.Pin()->Notify(ParentNotifyCount - 1);
 	}
 }
 
@@ -136,63 +132,88 @@ void URedDot::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	Count = 0;
-	SetCountText();
 	SetVisibility(ESlateVisibility::Collapsed);
 }
+
 void URedDot::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (MyTag.IsValid())
+	if (true == bEnableIncludeChild)
 	{
-		if (RedDotGraph.Contains(MyTag))
+		TSharedPtr<FRedDotNode> MyNode = nullptr;
+		TSharedPtr<FRedDotNode> ParentNode = nullptr;
+
+		if (MyTag.IsValid())
 		{
-			RedDotNode = RedDotGraph[MyTag];
-			if (RedDotNode.IsValid()) RedDotNode->SetSubcribe();
+			MyNode = RedDotGraph.Contains(MyTag) ? RedDotGraph[MyTag] : CreateNode(MyTag);
+
+			if (ensure(MyNode.IsValid()))
+			{
+				MyNode->SetSubcribe();
+				MyNode->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
+				RedDotNode = MyNode;
+			}
+		}
+
+
+		if (ParentTag.IsValid())
+		{
+			ParentNode = RedDotGraph.Contains(ParentTag) ? RedDotGraph[ParentTag] : CreateNode(ParentTag);
+
+			if (ensure(ParentNode.IsValid()))
+			{
+				// 부모 노드를 찾았을 때, 부모 관계를 연결해준다.
+				ParentNode->AddChild(RedDotNode.Pin());
+
+				// MyNode가 없을 수 있을까?
+				if (MyNode.IsValid()) MyNode->AddParent(ParentNode);
+			}
+		}
+	}
+
+	else
+	{
+		TSharedPtr<FRedDotNode> ParentNode = nullptr;
+		if (ParentTag.IsValid())
+		{
+			ParentNode = RedDotGraph.Contains(ParentTag) ? RedDotGraph[ParentTag] : CreateNode(ParentTag);
+
+			if (ensure(ParentNode.IsValid()))
+			{
+				RedDotNode = ParentNode;
+			}
+		}
+	}
+}
+
+void URedDot::NativeDestruct()
+{
+	int SubscribeCount = 0;
+	if (RedDotNode.IsValid())
+	{
+		if (true == bEnableIncludeChild)
+		{
+			RedDotNode.Pin()->OnChangedVisible.RemoveAll(this);
+
+			RedDotNode.Pin()->Off();
+			RedDotNode.Pin()->ReleaseSubscribe();
+			SubscribeCount = RedDotNode.Pin()->GetSubscribeCount();
+
+			if (SubscribeCount <= 0)
+			{
+				RemoveNode(MyTag);
+			}
 		}
 
 		else
 		{
-			RedDotNode = CreateNode(ParentTag, MyTag);
+			int ParentNotifyCount = RedDotNode.Pin()->GetCount();
+			RedDotNode.Pin()->Notify(ParentNotifyCount - 1);
 		}
 	}
 
-	else if (ParentTag.IsValid())
-	{
-		TSharedPtr<FRedDotNode>* ParentNode = RedDotGraph.Find(ParentTag);
-		if (ParentNode && *ParentNode)
-		{
-			ParentDotNode = *ParentNode;
-		}	
-	}
-	
-
-
-	if (RedDotNode.IsValid())
-	{
-		RedDotNode->OnChangedVisible.AddUObject(this, &URedDot::OnChangedVisible);
-	}
-
-}
-void URedDot::NativeDestruct()
-{
-	int SubscribeCount = 0;
-
-	if (RedDotNode.IsValid())
-	{
-		RedDotNode->OnChangedVisible.RemoveAll(this);
-		RedDotNode->ReleaseSubscribe();
-		SubscribeCount = RedDotNode->GetSubscribeCount();
-	}
-
 	RedDotNode.Reset();
-	ParentDotNode.Reset();
-
-	if (SubscribeCount <= 0)
-	{
-		RemoveNode(MyTag);
-	}
 
 	Super::NativeDestruct();
 }
@@ -200,14 +221,26 @@ void URedDot::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
-	SetCountText();
+	if (IsDesignTime())
+	{
+		if (nullptr != CountText && nullptr != CountText->GetParent())
+		{
+			CountText->GetParent()->SetVisibility(true == bShowCount && PreviewCount > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+			if (true == bShowCount && PreviewCount > 0)
+			{
+				FNumberFormattingOptions Option;
+				Option.SetUseGrouping(bUseGrouping);
+				CountText->SetText(FText::AsNumber(PreviewCount, &Option));
+			}
+		}
+	}
 }
 void URedDot::SetCountText()
 {
-	if (RedDotNode.IsValid())
-	{
-		Count = RedDotNode->GetCount();
-	}
+	if (false == bEnableIncludeChild) return;
+
+	int Count = RedDotNode.IsValid() ? RedDotNode.Pin()->GetCount() : 0;
 
 	if (nullptr != CountText && nullptr != CountText->GetParent())
 	{
