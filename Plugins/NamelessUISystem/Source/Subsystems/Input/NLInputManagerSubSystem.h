@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
 #include "CommonInputTypeEnum.h"
+#include "EnhancedInputSubsystems.h"
 #include "NLInputManagerSubSystem.generated.h"
 
 /**
@@ -15,8 +15,8 @@ class FNLInputProcessor;
 DECLARE_EVENT_OneParam(FNLInputProcessor, FChangedGamepadDetectedEvent, FName);
 DECLARE_MULTICAST_DELEGATE(FChangedInputTypeDetectedEvent)
 
-UCLASS(MinimalAPI)
-class UNLInputManagerSubSystem : public ULocalPlayerSubsystem
+UCLASS(MinimalAPI, Abstract)
+class UNLInputManagerSubSystem : public UEnhancedInputLocalPlayerSubsystem
 {
 	GENERATED_BODY()
 	
@@ -39,9 +39,9 @@ public:
 
 	
 protected:
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
+	NAMELESSUISYSTEM_API virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	NAMELESSUISYSTEM_API virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	NAMELESSUISYSTEM_API virtual void Deinitialize() override;
 
 	// Gamepad function
 private:

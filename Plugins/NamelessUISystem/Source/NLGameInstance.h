@@ -9,19 +9,18 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(MinimalAPI, Abstract)
 class UNLGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 
-private:
-	virtual void Init() override;
-	virtual void Shutdown() override;
+protected:
+	NAMELESSUISYSTEM_API virtual void Init() override;
+	NAMELESSUISYSTEM_API virtual void Shutdown() override;
 
 
 private:
 	void OnAddedLocalPlayer(ULocalPlayer* InNewPlayer);
 	void OnRemoveLocalPlayer(ULocalPlayer* InRemovedPlayer);
-
 
 };
