@@ -10,6 +10,9 @@ class UInputAction;
 class AEpPlayerController;
 struct FInputActionValue;
 
+class USpringArmComponent;
+class UCameraComponent;
+
 UCLASS()
 class ECLIPSE_API AEpCharacter : public ACharacter
 {
@@ -18,6 +21,15 @@ class ECLIPSE_API AEpCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AEpCharacter(const FObjectInitializer& ObjectInitializer);
+
+private:
+	/** Camera boom positioning the camera behind the character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* CameraBoom;
+
+	/** Follow camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FollowCamera;
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
