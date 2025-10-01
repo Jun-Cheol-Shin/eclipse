@@ -57,5 +57,5 @@ private:
 private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AEpPlayerController> CachedPlayerController = nullptr;
-	
+
 };
