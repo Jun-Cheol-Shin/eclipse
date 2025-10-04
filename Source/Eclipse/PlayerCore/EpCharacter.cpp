@@ -87,7 +87,6 @@ void AEpCharacter::DoLook(float Yaw, float Pitch)
 void AEpCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame

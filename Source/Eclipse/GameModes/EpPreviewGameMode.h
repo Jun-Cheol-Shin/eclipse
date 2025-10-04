@@ -15,6 +15,7 @@ class ECLIPSE_API AEpPreviewGameMode : public AGameModeBase
 	GENERATED_BODY()
 	
 	
-	
+protected:
+	virtual void StartPlay() override;
 	
 };

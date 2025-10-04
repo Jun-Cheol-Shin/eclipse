@@ -43,8 +43,8 @@ void FEpDefaultAnimInstProxy::Update(float DeltaSeconds)
 
 	if (OwningCharacter)
 	{
-		GroundSpeed = UKismetMathLibrary::VSizeXY(Velocity);
-		bShouldMove = GroundSpeed > 3.f && false == Acceleration.Equals(FVector::ZeroVector);
+		GroundSpeed = UKismetMathLibrary::VSizeXY(Velocity) / 600.f;
+		bShouldMove = GroundSpeed > 0.01f && false == Acceleration.Equals(FVector::ZeroVector);
 
 		if (bCanStrafe)
 		{

@@ -76,7 +76,6 @@ Platforms/HoloLens/Config/HoloLensEngine.ini
 Platforms/HoloLens/Config/HoloLensEngine.ini
 
 
-Content/Characters/*
+Content/Mesh/*
 Content/Animation/*
-Content/Protector/*
 

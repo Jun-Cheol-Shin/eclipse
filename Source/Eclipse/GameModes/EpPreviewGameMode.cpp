@@ -3,6 +3,15 @@
 
 #include "EpPreviewGameMode.h"
 
+#include "../Subsystems/EpGameDataSubSystem.h"
 
+void AEpPreviewGameMode::StartPlay()
+{
+	Super::StartPlay();
 
+	/*if (UEpGameDataSubSystem* Subsystem = GetGameInstance()->GetSubsystem<UEpGameDataSubSystem>())
+	{
+		const FItemDataRow* ItemData = Subsystem->GetGameData<FItemDataRow>(0);
+	}*/
 
+}
