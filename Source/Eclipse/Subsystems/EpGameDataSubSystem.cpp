@@ -16,5 +16,5 @@ void UEpGameDataSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UEpGameDataSubSystem::Deinitialize()
 {
-
+	DataTables.Reset();
 }

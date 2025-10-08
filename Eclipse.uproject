@@ -11,7 +11,8 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"CommonUI",
-				"NamelessUISystem"
+				"NamelessUISystem",
+				"CoreUObject"
 			]
 		}
 	],
@@ -29,6 +30,10 @@
 		},
 		{
 			"Name": "AnimationLocomotionLibrary",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayAbilities",
 			"Enabled": true
 		}
 	]

@@ -2,6 +2,8 @@
 
 
 #include "EpCharacter.h"
+#include "EpPlayerState.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "../Subsystems/EpInputManagerSubSystem.h"
@@ -87,6 +89,10 @@ void AEpCharacter::DoLook(float Yaw, float Pitch)
 void AEpCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// AI 캐릭터는 여기서 AbilitySystemComp를 가져온다.
+	// AbilitySystemComponent를 Actor가 가지고 있고 Controller가 Pawn에 Set되어야 한다는 제약도 없습니다.
+
 }
 
 // Called every frame
@@ -109,7 +115,45 @@ void AEpCharacter::PossessedBy(AController* NewController)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid Eclipse Player Controller!!! %s"), ANSI_TO_TCHAR(__FUNCTION__));
 	}
+
+	// 서버에서 ASC를 설정합니다. 클라이언트는 OnRep_PlayerState()에서 이 작업을 수행합니다.
+	if (AEpPlayerState* EpPlayerState = GetPlayerState<AEpPlayerState>())
+	{
+		CachedAbilitySystemComp = EpPlayerState->GetAbilitySystemComponent();
+
+		// AI에는 PlayerController가 없으므로 여기서 다시 초기화할 수 있습니다. 
+		// PlayerController가 있는 영웅일 경우 두 번 초기화하는 것도 나쁘지 않습니다.
+
+		// Owner Actor는 해당 Component를 가지고 있는 Actor 입니다.
+		// Avatar Actor는 해당 Component를 적용받고 화면에 보여질 Actor 입니다.
+		// AI (적군)은 Owner Actor와 Avatar Actor가 해당 Actor가 될 것입니다.
+
+		if (ensure(CachedAbilitySystemComp.IsValid()))
+		{
+			CachedAbilitySystemComp->InitAbilityActorInfo(EpPlayerState, this);
+		}
+	}
 }
+
+// 클라이언트만
+void AEpCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (AEpPlayerState* EpPlayerState = GetPlayerState<AEpPlayerState>())
+	{
+		// 클라이언트에 대한 ASC를 설정합니다. 서버는 PossessedBy에서 이 작업을 수행합니다.
+
+		CachedAbilitySystemComp = EpPlayerState->GetAbilitySystemComponent();
+		if (ensure(CachedAbilitySystemComp.IsValid()))
+		{
+			// 클라이언트에 대한 ASC 액터 정보를 초기화합니다. 서버가 새 액터를 보유하면 ASC를 초기화합니다.
+			CachedAbilitySystemComp->InitAbilityActorInfo(EpPlayerState, this);
+		}
+	}	
+}
+
+
 
 void AEpCharacter::UnPossessed()
 {

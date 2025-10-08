@@ -8,6 +8,7 @@
 
 class UInputAction;
 class AEpPlayerController;
+class UAbilitySystemComponent;
 struct FInputActionValue;
 
 class USpringArmComponent;
@@ -21,6 +22,11 @@ class ECLIPSE_API AEpCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AEpCharacter(const FObjectInitializer& ObjectInitializer);
+
+	// Ability system component
+protected:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 private:
 	/** Camera boom positioning the camera behind the character */
@@ -43,7 +49,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -57,5 +62,8 @@ private:
 private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AEpPlayerController> CachedPlayerController = nullptr;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComp = nullptr;
 
 };

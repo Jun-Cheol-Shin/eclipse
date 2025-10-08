@@ -18,6 +18,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<UObject> InGameActorPath;
-
-
 };

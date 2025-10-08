@@ -14,7 +14,8 @@ public class Eclipse : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"EnhancedInput",
-			"NamelessUISystem"});
+			"NamelessUISystem"
+			});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
 			"CommonUI", 
@@ -22,7 +23,10 @@ public class Eclipse : ModuleRules
 			"ApplicationCore", 
 			"CommonInput",
             "GameplayTags",
-			});
+            "GameplayTasks",
+            "GameplayAbilities",
+			"NetCore"
+            });
 
 		// Uncomment if you are using Slate UI
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
