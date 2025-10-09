@@ -78,4 +78,6 @@ Platforms/HoloLens/Config/HoloLensEngine.ini
 
 Content/Mesh/*
 Content/Animation/*
+Content/Assets/*
+Content/Effects/*
 

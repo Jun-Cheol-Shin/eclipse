@@ -8,6 +8,7 @@
 #include "EpInventoryComponent.generated.h"
 
 class UEclipseInventoryItem;
+class UActorComponent;
 
 USTRUCT(BlueprintType)
 struct FEclipseInventoryEntry : public FFastArraySerializerItem
@@ -20,20 +21,8 @@ struct FEclipseInventoryEntry : public FFastArraySerializerItem
 	UPROPERTY()
 	TObjectPtr<UEclipseInventoryItem> ItemInstance = nullptr;
 
-	/**
-	 * Optional functions you can implement for client side notification of changes to items;
-	 * Parameter type can match the type passed as the 2nd template parameter in associated call to FastArrayDeltaSerialize
-	 *
-	 * NOTE: It is not safe to modify the contents of the array serializer within these functions, nor to rely on the contents of the array
-	 * being entirely up-to-date as these functions are called on items individually as they are updated, and so may be called in the middle of a mass update.
-	 */
-	//void PreReplicatedRemove(const struct FExampleArray& InArraySerializer);
-	//void PostReplicatedAdd(const struct FExampleArray& InArraySerializer);
-	//void PostReplicatedChange(const struct FExampleArray& InArraySerializer);
-
 	// Optional: debug string used with LogNetFastTArray logging
-	//FString GetDebugString();
-
+	FString GetDebugString();
 };
 
 USTRUCT(BlueprintType)
@@ -58,8 +47,8 @@ public:
 		return FFastArraySerializer::FastArrayDeltaSerialize<FEclipseInventoryEntry, FEclipseInventoryArray>(Items, DeltaParms, *this);
 	}
 
-	void AddItem(UEclipseInventoryItem* InItem);
 	void AddItem(UEpInventoryComponent* InComponent);
+	void AddItem(UEclipseInventoryItem* InItem);
 	void RemoveItem(UEclipseInventoryItem* InItem);
 
 
@@ -78,7 +67,8 @@ struct TStructOpsTypeTraits< FEclipseInventoryArray > : public TStructOpsTypeTra
 	};
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnChangedItemSignature, UEclipseInventoryItem*, InChangedItem);
+
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ECLIPSE_API UEpInventoryComponent : public UActorComponent
 {
@@ -89,8 +79,25 @@ public:
 	UEpInventoryComponent();
 		
 public:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnChangedItemSignature, UEclipseInventoryItem*, InChangedItem);
 	FOnChangedItemSignature OnAddedItemDelegate;
 	FOnChangedItemSignature OnRemovedItemDelegate;
-	
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFailedItemSignature, const FString&, InFailedMsg);
+	FOnFailedItemSignature OnFailedMessageDelegate;
+
+public:
+	void AddItem(UEclipseInventoryItem* InAddItem);
+	void RemoveItem(UEclipseInventoryItem* InRemovedItem);
+
+protected:
+	virtual void InitializeComponent() override;
+	virtual bool ReplicateSubobjects(UActorChannel* InChannel, FOutBunch* InBunch, FReplicationFlags* InRepFlags) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void TickComponent(float InDeltaTime, ELevelTick InTickType, FActorComponentTickFunction* InTickFunc) override;
+
+protected:
+	UPROPERTY(Replicated)
+	FEclipseInventoryArray InventoryItemArray;
 };
  

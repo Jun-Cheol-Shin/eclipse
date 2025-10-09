@@ -9,6 +9,7 @@
 
 
 class UAbilitySystemComponent;
+class UEpInventoryComponent;
 /**
  * 
  */
@@ -19,10 +20,15 @@ class ECLIPSE_API AEpPlayerState : public APlayerState, public IAbilitySystemInt
 	
 public:
 	AEpPlayerState();
+
+public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComp; }
-	
+	UEpInventoryComponent* GetInventoryComponent() const { return InventoryComp; }
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComp;
-	
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<UEpInventoryComponent> InventoryComp;
 };

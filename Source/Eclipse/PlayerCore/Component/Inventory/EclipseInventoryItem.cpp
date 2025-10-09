@@ -5,10 +5,32 @@
 #include "../../../GameModes/EpGameInstance.h"
 #include "../../../Subsystems/EpGameDataSubSystem.h"
 
+#include "Net/UnrealNetwork.h"
+
 void UEclipseInventoryItem::SetItem(int32 InItemId, int64 InStackCount)
 {
+	Serial = FGuid::NewGuid();
 	ItemId = InItemId;
 	StackCount = StackCount;
+}
+
+void UEclipseInventoryItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// TODO : Change Conditional
+
+	DOREPLIFETIME(UEclipseInventoryItem, StackCount);
+	DOREPLIFETIME(UEclipseInventoryItem, Serial);
+	DOREPLIFETIME(UEclipseInventoryItem, ItemId);
+}
+
+
+bool UEclipseInventoryItem::IsEqual(UEclipseInventoryItem* OtherItem)
+{
+	return	Serial == OtherItem->Serial &&
+			ItemId == OtherItem->ItemId &&
+			StackCount == OtherItem->StackCount;
 }
 
 FString UEclipseInventoryItem::GetItemNameStr() const
@@ -66,16 +88,28 @@ int64 UEclipseInventoryItem::GetMaxStackCount() const
 	return 0;
 }
 
-FSoftObjectPath UEclipseInventoryItem::GetIngameActorPath() const
+TSoftObjectPtr<UStaticMesh> UEclipseInventoryItem::GetMesh() const
 {
-	const FItemResourceDataRow* ItemData = GetItemResourceData();
-	if (ItemData)
+	const FItemResourceDataRow* ResourceData = GetItemResourceData();
+	if (ResourceData)
 	{
-		return ItemData->InGameActorPath.ToSoftObjectPath();
+		return ResourceData->StaticMesh;
 	}
 	
-	return FSoftObjectPath();
+	return nullptr;
 }
+
+TSoftObjectPtr<UObject> UEclipseInventoryItem::GetThumbnail() const
+{
+	const FItemResourceDataRow* ResourceData = GetItemResourceData();
+	if (ResourceData)
+	{
+		return ResourceData->ThumbnailImage;
+	}
+
+	return nullptr;
+}
+
 
 const FItemDataRow* UEclipseInventoryItem::GetItemData() const
 {

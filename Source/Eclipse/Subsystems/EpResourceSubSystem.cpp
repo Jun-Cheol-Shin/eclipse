@@ -6,13 +6,36 @@
 
 namespace ResourcePath
 {
-    const FName DataTablePath = TEXT("/Game/DataTables");
-    const FName SpawnPath = TEXT("/Game/Blueprint/Spawn");
+    const FName DataTablePath = TEXT("/Game/DataTable");
+    const FName DataAssetPath = TEXT("/Game/DataAsset");
+    const FName SpawnPath = TEXT("/Game/Blueprint/IngameActor");
+}
+
+TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TSoftObjectPtr<UObject> InSoftPtr, FOnLoadedFuncSignature OnLoadedDelegate)
+{
+    if (UObject* Object = InSoftPtr.Get())
+    {
+        OnLoadedDelegate.ExecuteIfBound(Object);
+        return nullptr;
+    }
+
+    FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
+    return StreamManager.RequestAsyncLoad(InSoftPtr.ToSoftObjectPath(),
+        FStreamableDelegate::CreateWeakLambda(this, [InSoftPtr, OnLoadedDelegate]()
+            {
+                OnLoadedDelegate.ExecuteIfBound(InSoftPtr.Get());
+            }));
 }
 
 void UEpResourceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+    FString Path = ResourcePath::DataAssetPath.ToString() + TEXT("/DA_ColorPalette");
+    ColorPalette = Cast<UColorPaletteDataAsset>(FSoftObjectPath(Path).TryLoad());
 
+    if (ensure(ColorPalette))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Success Load ColorPalette!"));
+    }
 }
 
 void UEpResourceSubSystem::Deinitialize()

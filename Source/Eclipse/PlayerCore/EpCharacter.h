@@ -13,6 +13,7 @@ struct FInputActionValue;
 
 class USpringArmComponent;
 class UCameraComponent;
+class UEpInventoryComponent;
 
 UCLASS()
 class ECLIPSE_API AEpCharacter : public ACharacter
@@ -65,5 +66,8 @@ private:
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComp = nullptr;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UEpInventoryComponent> CachedInventoryComp = nullptr;
 
 };

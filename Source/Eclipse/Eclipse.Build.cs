@@ -25,7 +25,8 @@ public class Eclipse : ModuleRules
             "GameplayTags",
             "GameplayTasks",
             "GameplayAbilities",
-			"NetCore"
+			"NetCore",
+            "Niagara"
             });
 
 		// Uncomment if you are using Slate UI

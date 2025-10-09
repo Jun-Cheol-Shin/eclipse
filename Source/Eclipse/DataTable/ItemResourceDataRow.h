@@ -6,6 +6,8 @@
 #include "Engine/DataTable.h"
 #include "ItemResourceDataRow.generated.h"
 
+class UStaticMesh;
+class UObject;
 
 USTRUCT(Blueprintable)
 struct FItemResourceDataRow : public FTableRowBase
@@ -17,5 +19,9 @@ public:
 	int32 ItemId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UObject> InGameActorPath;
+	TSoftObjectPtr<UStaticMesh> StaticMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSoftObjectPtr<UObject> ThumbnailImage;
+
 };

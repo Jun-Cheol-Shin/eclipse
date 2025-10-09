@@ -26,24 +26,36 @@ public:
 	// Setter
 	void SetItem(int32 InItemId, int64 InStackCount);
 
-	// Item Data Getter
+	// Item Data
 	FString						GetItemNameStr() const;
 	EItemRarity					GetRarity() const;
 	EClassType					GetClassTypeEnum() const;
 	uint8						GetClassTypeBit() const;
 	int64						GetMaxStackCount() const;
-	FSoftObjectPath				GetIngameActorPath() const;
+
+	// Item Resource Data
+	TSoftObjectPtr<UStaticMesh>		GetMesh() const;
+	TSoftObjectPtr<UObject>			GetThumbnail() const;
+
 
 	FORCEINLINE int32			GetItemId() const { return ItemId; }
 	FORCEINLINE int64			GetItemStackCount() const { return StackCount; }
+
+	bool						IsEqual(UEclipseInventoryItem* OtherItem);
 
 private:
 	const FItemDataRow*			GetItemData() const;
 	const FItemResourceDataRow*	GetItemResourceData() const;
 	UEpGameDataSubSystem*		GetGameDataSubSytem() const;
 
+protected:
+	virtual bool IsSupportedForNetworking() const override { return true; }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 private:
-	int32			ItemId = 0;
-	int64			StackCount = 0;
+	FGuid						Serial;
+	int32						ItemId = 0;
+	int64						StackCount = 0;
 	
 };
+

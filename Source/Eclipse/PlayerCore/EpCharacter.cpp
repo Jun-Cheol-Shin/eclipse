@@ -3,6 +3,7 @@
 
 #include "EpCharacter.h"
 #include "EpPlayerState.h"
+#include "Component/Inventory/EpInventoryComponent.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
@@ -131,7 +132,11 @@ void AEpCharacter::PossessedBy(AController* NewController)
 		if (ensure(CachedAbilitySystemComp.IsValid()))
 		{
 			CachedAbilitySystemComp->InitAbilityActorInfo(EpPlayerState, this);
+			UE_LOG(LogTemp, Warning, TEXT("Init Ability System Component!"));
 		}
+
+
+		CachedInventoryComp = EpPlayerState->GetInventoryComponent();
 	}
 }
 
