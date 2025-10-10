@@ -21,19 +21,6 @@ void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
 		TSoftObjectPtr<UStaticMesh> MeshPtr = ItemData->GetMesh();
 
 		Particle->SetColorParameter(TEXT("User_GunPad_Color"), EPColorPalette(GetWorld()).GetColor(RarityEnum));
-
-		TWeakObjectPtr<AEpDropItemActor> WeakThis = this;
-		EPResource(GetWorld()).AsyncLoadObject<UStaticMesh>(MeshPtr, [WeakThis = TWeakObjectPtr<AEpDropItemActor>(this)](UStaticMesh* InObject)
-			{
-				if (WeakThis.IsValid())
-				{
-					UStaticMeshComponent* StaticMeshComp = WeakThis->Mesh;
-					if (ensure(StaticMeshComp))
-					{
-						StaticMeshComp->SetStaticMesh(InObject);
-					}
-				}
-			});
 	}
 }
 

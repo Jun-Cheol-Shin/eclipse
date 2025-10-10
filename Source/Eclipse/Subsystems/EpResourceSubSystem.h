@@ -27,12 +27,13 @@
     check(__GI);                                                                            \
     UEpResourceSubSystem* __SS = __GI->GetSubsystem<UEpResourceSubSystem>();                \
     check(__SS);																			\
-	const UColorPaletteDataAsset* DataAsset = __SS->GetPalette();							\
+	const UColorPaletteDataAsset* DataAsset = __SS->GetColorPalette();						\
 	check(DataAsset);																		\
     return *DataAsset;																		\
 }())
 
 class UColorPaletteAsset;
+class UObjectLibrary;
 
 DECLARE_DELEGATE_OneParam(FOnLoadedFuncSignature, UObject*);
 
@@ -45,20 +46,8 @@ private:
 	friend class UEpGameDataSubSystem;
 
 public:
-	template<typename T>
-	TSharedPtr<FStreamableHandle> AsyncLoadObject(TSoftObjectPtr<T> InSoftPtr, TFunction<void(T*)> OnLoaded)
-	{
-		AsyncLoadObject(InSoftPtr, FOnLoadedFuncSignature::CreateWeakLambda(this, [OnLoaded](UObject* InObject)
-			{
-				OnLoaded(Cast<T>(InObject));
-			}));
-	}
-	TSharedPtr<FStreamableHandle> AsyncLoadObject(TSoftObjectPtr<UObject> InSoftPtr, FOnLoadedFuncSignature OnLoadedDelegate);
-
-
-
-	UFUNCTION(BlueprintPure)
-	const UColorPaletteDataAsset* GetPalette() const { return ColorPalette; }
+	const UColorPaletteDataAsset* GetColorPalette();
+	bool GetDataTable(const FString& InDataName, OUT UDataTable** OutDataTable) const;
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
@@ -66,9 +55,17 @@ protected:
 	virtual void Deinitialize() override;
 
 private:
-	bool GetDataTable(const FString& InDataName, OUT UDataTable** OutDataTable);
+	TSharedPtr<FStreamableHandle> AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate);
+	UObject* SyncLoadObject(const FAssetData& InAssetData) const;
+	UClass* SyncLoadClass(const FAssetData& InAssetData, bool bUseGeneratedClass) const;
 
 private:
 	UPROPERTY()
-	const UColorPaletteDataAsset* ColorPalette = nullptr;
+	UColorPaletteDataAsset* ColorPalette = nullptr;
+
+	UPROPERTY() 
+	UObjectLibrary* AssetLibrary = nullptr;
+
+	UPROPERTY() 
+	TMap<FName, FAssetData> CachedAssetDataList;
 };
