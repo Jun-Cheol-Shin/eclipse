@@ -34,8 +34,8 @@ public:
 	int64						GetMaxStackCount() const;
 
 	// Item Resource Data
-	TSoftObjectPtr<UStaticMesh>		GetMesh() const;
-	TSoftObjectPtr<UObject>			GetThumbnail() const;
+	FSoftObjectPath				GetMeshPath() const;
+	FSoftObjectPath				GetThumbnailPath() const;
 
 
 	FORCEINLINE int32			GetItemId() const { return ItemId; }

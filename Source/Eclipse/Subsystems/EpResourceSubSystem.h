@@ -34,6 +34,7 @@
 
 class UColorPaletteAsset;
 class UObjectLibrary;
+class AEpDropItemActor;
 
 DECLARE_DELEGATE_OneParam(FOnLoadedFuncSignature, UObject*);
 
@@ -46,8 +47,14 @@ private:
 	friend class UEpGameDataSubSystem;
 
 public:
+	// get blueprint class
+	TSubclassOf<AEpDropItemActor> GetDropItemActor() const;
+
+
+public:
+	// get resource (data table, data asset..)
+	UDataTable* GetDataTable(const FString& InDataName) const;
 	const UColorPaletteDataAsset* GetColorPalette();
-	bool GetDataTable(const FString& InDataName, OUT UDataTable** OutDataTable) const;
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
@@ -55,7 +62,7 @@ protected:
 	virtual void Deinitialize() override;
 
 private:
-	TSharedPtr<FStreamableHandle> AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate);
+	TSharedPtr<FStreamableHandle> AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const;
 	UObject* SyncLoadObject(const FAssetData& InAssetData) const;
 	UClass* SyncLoadClass(const FAssetData& InAssetData, bool bUseGeneratedClass) const;
 

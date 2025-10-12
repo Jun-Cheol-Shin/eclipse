@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "../Interactable.h"
 #include "EpDropItemActor.generated.h"
 
-class USphereComponent;
+class UCapsuleComponent;
 class UStaticMeshComponent;
 class UNiagaraComponent;
 
@@ -14,7 +15,7 @@ class UEclipseInventoryItem;
 
 
 UCLASS()
-class ECLIPSE_API AEpDropItemActor : public AActor
+class ECLIPSE_API AEpDropItemActor : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 	
@@ -23,18 +24,32 @@ public:
 	AEpDropItemActor();
 
 	void Set(const UEclipseInventoryItem* InItem);
+	void Reset();
+
+private:
+
+
+protected:
+	// IInteractable
+	virtual void NativeOnInteract() override;
+
+	virtual bool IsAutoInteract() const override { return false; }
+
+	virtual const UInputAction* GetAction(APlayerController* InOwningController) const override;
+	virtual int32 BindInteract(const UInputAction* InAction, UEnhancedInputComponent* InComponent) override;
+
+	virtual void OnPreInteract_Implementation(AActor* OtherActor) override;
+	virtual void OnEndInteract_Implementation(AActor* OtherActor) override;
+	// End IInteractable
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USphereComponent* Trigger;
+	UCapsuleComponent* Trigger;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* Mesh;
@@ -44,13 +59,4 @@ protected:
 
 private:
 	TWeakObjectPtr<const UEclipseInventoryItem> ItemData = nullptr;
-
-private:
-#if WITH_EDITOR
-	void ShowDebugCollision(const TArray<FString>& Args);
-#endif
-
-#if WITH_EDITORONLY_DATA
-	IConsoleObject* ConsoleDelHandle;
-#endif
 };

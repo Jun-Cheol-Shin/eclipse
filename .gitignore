@@ -80,4 +80,8 @@ Content/Mesh/*
 Content/Animation/*
 Content/Assets/*
 Content/Effects/*
+Content/Resource/Mesh/*
+Content/Resource/Texture/*
+Content/Resource/Material/*
+
 

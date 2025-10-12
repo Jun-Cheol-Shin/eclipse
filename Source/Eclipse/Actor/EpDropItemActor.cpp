@@ -3,11 +3,22 @@
 
 #include "EpDropItemActor.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "NiagaraComponent.h"
+#include "../PlayerCore/EpPlayerController.h"
 
 #include "../PlayerCore/Component/Inventory/EclipseInventoryItem.h"
 #include "../Subsystems/EpResourceSubSystem.h"
+
+#include "EnhancedInputComponent.h"
+#include "InputAction.h"
+#include "../Option/EpInputConfig.h"
+
+void AEpDropItemActor::NativeOnInteract()
+{
+	UE_LOG(LogTemp, Error, TEXT("Begin Interact!!!!!!!!!"));
+}
+
 
 void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
 {
@@ -18,10 +29,34 @@ void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
 	if (ItemData.IsValid())
 	{
 		EItemRarity RarityEnum = ItemData->GetRarity();
-		TSoftObjectPtr<UStaticMesh> MeshPtr = ItemData->GetMesh();
+		Particle->SetColorParameter(TEXT("GunPad_Color"), EPColorPalette(GetWorld()).GetColor(RarityEnum));
 
-		Particle->SetColorParameter(TEXT("User_GunPad_Color"), EPColorPalette(GetWorld()).GetColor(RarityEnum));
+		// BP_Sword에 여러 Sword mesh가 있다면?
+		FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
+
+		TSharedPtr<FStreamableHandle> Handle = StreamManager.RequestAsyncLoad(ItemData->GetMeshPath(),
+			FStreamableDelegate::CreateWeakLambda(this, [WeakOuter = TWeakObjectPtr<AEpDropItemActor>(this), Path = ItemData->GetMeshPath()]()
+				{
+					if (WeakOuter.IsValid() && nullptr != WeakOuter->Mesh)
+					{
+						WeakOuter->Mesh->SetStaticMesh(Cast<UStaticMesh>(Path.ResolveObject()));
+					}
+
+					else
+					{
+						UE_LOG(LogTemp, Error, TEXT("Invalid DropItemActor. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+					}
+
+				}));
 	}
+}
+
+void AEpDropItemActor::Reset()
+{
+	ItemData.Reset();
+
+	Trigger->OnComponentBeginOverlap.RemoveAll(this);
+	Trigger->OnComponentEndOverlap.RemoveAll(this);
 }
 
 // Sets default values
@@ -31,45 +66,40 @@ AEpDropItemActor::AEpDropItemActor()
 	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	Trigger = CreateDefaultSubobject<USphereComponent>(TEXT("Trigger"));
+	Trigger = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Trigger"));
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Particle = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Particle"));
 
 	Trigger->SetupAttachment(RootComponent);
-	Mesh->SetupAttachment(RootComponent);
+	Trigger->SetHiddenInGame(true);
+
+	Particle->SetupAttachment(Trigger);
+
 	Mesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	Mesh->SetCastShadow(false);
 	Mesh->SetCollisionProfileName(TEXT("Trigger"));
-
-	Particle->AttachToComponent(Mesh, FAttachmentTransformRules::KeepRelativeTransform, FName("NiagaraComponent"));
-
-	Trigger->SetHiddenInGame(true);
-	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::OnOverlapBegin);
-
+	Mesh->AttachToComponent(Particle, FAttachmentTransformRules::KeepRelativeTransform, FName("NiagaraComponent"));
 }
 
 // Called when the game starts or when spawned
 void AEpDropItemActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
-#if WITH_EDITOR
-	FConsoleCommandWithArgsDelegate ConsoleDelegate;
-	ConsoleDelegate.Unbind();
-	ConsoleDelegate.BindUObject(this, &AEpDropItemActor::ShowDebugCollision);
 
-	ConsoleDelHandle = IConsoleManager::Get().RegisterConsoleCommand(
-		TEXT("showdebug.ingameactor"),
-		TEXT("showdebug.ingameactor 0 = false, 1 = true"), ConsoleDelegate);
+	// test
+	if (Particle)
+	{
+		Particle->SetColorParameter(TEXT("GunPad_Color"), EPColorPalette(GetWorld()).GetColor(EItemRarity::Common));
+	}
 
-#endif 
+
+	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnPreInteract);
+	Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnEndInteract);
 }
 
 void AEpDropItemActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-#if WITH_EDITOR
-	IConsoleManager::Get().UnregisterConsoleObject(ConsoleDelHandle);
-#endif
+	Reset();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -78,28 +108,52 @@ void AEpDropItemActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AEpDropItemActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-void AEpDropItemActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+
+// IInteractable
+const UInputAction* AEpDropItemActor::GetAction(APlayerController* InOwningController) const
 {
-
-}
-
-#if WITH_EDITOR
-void AEpDropItemActor::ShowDebugCollision(const TArray<FString>& Args)
-{
-	if (Args.Num() < 1)
-		return;
-
-	int Flag = FCString::Atoi(*Args[0]);
-
-
-	if (Trigger)
+	AEpPlayerController* PlayerController = Cast<AEpPlayerController>(InOwningController);
+	if (nullptr == PlayerController)
 	{
-		Trigger->SetHiddenInGame(0 == Flag ? false : true);
+		return nullptr;
 	}
 
-}
-#endif
+	UEpInputConfig* Config = PlayerController->GetInputConfig();
+	if (!ensure(Config))
+	{
+		return nullptr;
+	}
 
+	if (const UInputAction* InteractAction = Config->FindNativeInputActionForTag(
+		FGameplayTag::RequestGameplayTag(FName("InputTag.Interact"), true)))
+	{
+		return InteractAction;
+	}
+
+	return nullptr;
+}
+
+int32 AEpDropItemActor::BindInteract(const UInputAction* InAction, UEnhancedInputComponent* InComponent)
+{
+	if (InComponent)
+	{
+		auto& Handle = InComponent->BindAction(InAction, ETriggerEvent::Started, this, &AEpDropItemActor::NativeOnInteract);
+		return Handle.GetHandle();
+	}
+
+	return INDEX_NONE;
+}
+
+void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)
+{
+	UE_LOG(LogTemp, Warning, TEXT("On Pre Interact c++"));
+}
+
+void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
+{
+	UE_LOG(LogTemp, Warning, TEXT("On End Interact c++"));
+}
+
+// End IInteractable

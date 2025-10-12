@@ -19,9 +19,9 @@ public:
 	int32 ItemId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UStaticMesh> StaticMesh;
+	FSoftObjectPath StaticMeshPath;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UObject> ThumbnailImage;
+	FSoftObjectPath ThumbnailImagePath;
 
 };

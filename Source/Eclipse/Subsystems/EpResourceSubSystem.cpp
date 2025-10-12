@@ -2,6 +2,7 @@
 
 
 #include "EpResourceSubSystem.h"
+#include "EpGameDataSubSystem.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/ObjectLibrary.h"
 
@@ -44,6 +45,22 @@ void UEpResourceSubSystem::Deinitialize()
     ColorPalette = nullptr;
 }
 
+UDataTable* UEpResourceSubSystem::GetDataTable(const FString& InDataName) const
+{
+    FName DataTableName = FName(TEXT("DT_") + InDataName);
+
+    if (CachedAssetDataList.Contains(DataTableName))
+    {
+        return Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(DataTableName)));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+    }
+
+    return nullptr;
+}
+
 const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
 {
     if (nullptr == ColorPalette)
@@ -54,26 +71,34 @@ const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
         {
             ColorPalette = Cast<UColorPaletteDataAsset>(SyncLoadObject(CachedAssetDataList.FindRef(ColorPaletteName)));
         }
+
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+        }
     }
 
     return ColorPalette;
 }
 
-bool UEpResourceSubSystem::GetDataTable(const FString& InDataName, OUT UDataTable** OutDataTable) const
+TSubclassOf<AEpDropItemActor> UEpResourceSubSystem::GetDropItemActor() const
 {
-    FName DataTableName = FName(TEXT("DT_") + InDataName);
-
-    if (CachedAssetDataList.Contains(DataTableName))
+    FName DropItemActorName = TEXT("BP_DropItemActor");
+    if (CachedAssetDataList.Contains(DropItemActorName))
     {
-        *OutDataTable = Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(DataTableName)));
-        return true;
+        FAssetData AssetData = CachedAssetDataList.FindRef(DropItemActorName);
+        return SyncLoadClass(AssetData, true);
+    }
+    
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
     }
 
-    return false;
+    return nullptr;
 }
 
-
-TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate)
+TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const
 {
     FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
 

@@ -186,9 +186,6 @@ void AEpCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	UEpInputConfig* Config = CachedPlayerController->GetInputConfig();
 	check(Config);
 
-	const ULocalPlayer* LocalPlayer = CachedPlayerController->GetLocalPlayer();
-	check(LocalPlayer);
-
 	// Bind Action..
 	if (const UInputAction* MoveAction = Config->FindNativeInputActionForTag(
 		FGameplayTag::RequestGameplayTag(FName("InputTag.Move"), true)))
@@ -201,9 +198,6 @@ void AEpCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	{
 		EnhancedInputComponent->BindAction(MouseLook, ETriggerEvent::Triggered, this, &AEpCharacter::Look);
 	}
-
-
-
 
 }
 

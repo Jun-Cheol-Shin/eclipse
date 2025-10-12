@@ -88,23 +88,23 @@ int64 UEclipseInventoryItem::GetMaxStackCount() const
 	return 0;
 }
 
-TSoftObjectPtr<UStaticMesh> UEclipseInventoryItem::GetMesh() const
+FSoftObjectPath UEclipseInventoryItem::GetMeshPath() const
 {
 	const FItemResourceDataRow* ResourceData = GetItemResourceData();
 	if (ResourceData)
 	{
-		return ResourceData->StaticMesh;
+		return ResourceData->StaticMeshPath;
 	}
 	
 	return nullptr;
 }
 
-TSoftObjectPtr<UObject> UEclipseInventoryItem::GetThumbnail() const
+FSoftObjectPath UEclipseInventoryItem::GetThumbnailPath() const
 {
 	const FItemResourceDataRow* ResourceData = GetItemResourceData();
 	if (ResourceData)
 	{
-		return ResourceData->ThumbnailImage;
+		return ResourceData->ThumbnailImagePath;
 	}
 
 	return nullptr;

@@ -58,8 +58,7 @@ private:
 		FString RowName = RowStruct->GetName();           // ex) "ItemDatRow -> ItemData"
 		RowName.RemoveFromEnd(TEXT("Row"));
 
-		UDataTable* NewDataTable = nullptr;
-		InResourceManager->GetDataTable(RowName, OUT &NewDataTable);
+		UDataTable* NewDataTable = InResourceManager->GetDataTable(RowName);
 
 		if (ensureAlways(nullptr != NewDataTable))
 		{
