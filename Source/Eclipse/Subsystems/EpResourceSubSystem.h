@@ -47,14 +47,15 @@ private:
 	friend class UEpGameDataSubSystem;
 
 public:
-	// get blueprint class
+	// Async Load..
+	
+	// End Async Load
+
+	// Sync Load
 	TSubclassOf<AEpDropItemActor> GetDropItemActor() const;
-
-
-public:
-	// get resource (data table, data asset..)
 	UDataTable* GetDataTable(const FString& InDataName) const;
 	const UColorPaletteDataAsset* GetColorPalette();
+	// End Sync Load
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
@@ -63,9 +64,7 @@ protected:
 
 private:
 	TSharedPtr<FStreamableHandle> AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const;
-	UObject* SyncLoadObject(const FAssetData& InAssetData) const;
-	UClass* SyncLoadClass(const FAssetData& InAssetData, bool bUseGeneratedClass) const;
-
+	UObject* SyncLoadObject(const FAssetData& InAssetData, bool bUseGeneratedClass) const;
 private:
 	UPROPERTY()
 	UColorPaletteDataAsset* ColorPalette = nullptr;

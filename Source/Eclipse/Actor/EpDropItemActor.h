@@ -10,9 +10,8 @@
 class UCapsuleComponent;
 class UStaticMeshComponent;
 class UNiagaraComponent;
-
 class UEclipseInventoryItem;
-
+class UEpInputConfig;
 
 UCLASS()
 class ECLIPSE_API AEpDropItemActor : public AActor, public IInteractable
@@ -27,16 +26,13 @@ public:
 	void Reset();
 
 private:
-
+	void OnInteract();
+	void OnPing();
+	void OnDirectUse();
 
 protected:
 	// IInteractable
-	virtual void NativeOnInteract() override;
-
-	virtual bool IsAutoInteract() const override { return false; }
-
-	virtual const UInputAction* GetAction(APlayerController* InOwningController) const override;
-	virtual int32 BindInteract(const UInputAction* InAction, UEnhancedInputComponent* InComponent) override;
+	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions) override;
 
 	virtual void OnPreInteract_Implementation(AActor* OtherActor) override;
 	virtual void OnEndInteract_Implementation(AActor* OtherActor) override;
@@ -59,4 +55,8 @@ protected:
 
 private:
 	TWeakObjectPtr<const UEclipseInventoryItem> ItemData = nullptr;
+
+private:
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
+	TSoftObjectPtr<UInputMappingContext> InputMapping;
 };

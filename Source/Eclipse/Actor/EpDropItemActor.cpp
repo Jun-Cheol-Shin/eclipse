@@ -10,14 +10,8 @@
 #include "../PlayerCore/Component/Inventory/EclipseInventoryItem.h"
 #include "../Subsystems/EpResourceSubSystem.h"
 
-#include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "../Option/EpInputConfig.h"
-
-void AEpDropItemActor::NativeOnInteract()
-{
-	UE_LOG(LogTemp, Error, TEXT("Begin Interact!!!!!!!!!"));
-}
 
 
 void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
@@ -59,6 +53,21 @@ void AEpDropItemActor::Reset()
 	Trigger->OnComponentEndOverlap.RemoveAll(this);
 }
 
+void AEpDropItemActor::OnInteract()
+{
+	UE_LOG(LogTemp, Display, TEXT("Interact!"));
+}
+
+void AEpDropItemActor::OnPing()
+{
+	UE_LOG(LogTemp, Display, TEXT("Ping!"));
+}
+
+void AEpDropItemActor::OnDirectUse()
+{
+	UE_LOG(LogTemp, Display, TEXT("Use Direct!"));
+}
+
 // Sets default values
 AEpDropItemActor::AEpDropItemActor()
 {
@@ -95,10 +104,13 @@ void AEpDropItemActor::BeginPlay()
 
 	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnPreInteract);
 	Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnEndInteract);
+
+	SetContext(InputMapping.LoadSynchronous());
 }
 
 void AEpDropItemActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	IInteractable::Clear();
 	Reset();
 
 	Super::EndPlay(EndPlayReason);
@@ -110,40 +122,29 @@ void AEpDropItemActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-
 // IInteractable
-const UInputAction* AEpDropItemActor::GetAction(APlayerController* InOwningController) const
+void AEpDropItemActor::BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions)
 {
-	AEpPlayerController* PlayerController = Cast<AEpPlayerController>(InOwningController);
-	if (nullptr == PlayerController)
+	check(InConfig);
+
+	if (nullptr != InComponent)
 	{
-		return nullptr;
+		const UInputAction* InteractAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact"), true));
+		const UInputAction* PingAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact.Ping"), true));
+
+		FEnhancedInputActionEventBinding& InteractHandle = InComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AEpDropItemActor::OnInteract);
+		FEnhancedInputActionEventBinding& PingHandle = InComponent->BindAction(PingAction, ETriggerEvent::Started, this, &AEpDropItemActor::OnPing);
+
+		OutActions.Emplace(InteractHandle.GetHandle(), InteractHandle.GetAction());
+		OutActions.Emplace(PingHandle.GetHandle(), PingHandle.GetAction());
+
+		// TODO : 바로 사용 가능한 아이템인지 체크 (바로 사용 액션)
+		//int32 ItemId = ItemData->GetItemId();
+		//const UInputAction* UseDirectAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact.UseDirect"), true));
+		//InComponent->BindAction(UseDirec)
+
 	}
 
-	UEpInputConfig* Config = PlayerController->GetInputConfig();
-	if (!ensure(Config))
-	{
-		return nullptr;
-	}
-
-	if (const UInputAction* InteractAction = Config->FindNativeInputActionForTag(
-		FGameplayTag::RequestGameplayTag(FName("InputTag.Interact"), true)))
-	{
-		return InteractAction;
-	}
-
-	return nullptr;
-}
-
-int32 AEpDropItemActor::BindInteract(const UInputAction* InAction, UEnhancedInputComponent* InComponent)
-{
-	if (InComponent)
-	{
-		auto& Handle = InComponent->BindAction(InAction, ETriggerEvent::Started, this, &AEpDropItemActor::NativeOnInteract);
-		return Handle.GetHandle();
-	}
-
-	return INDEX_NONE;
 }
 
 void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)

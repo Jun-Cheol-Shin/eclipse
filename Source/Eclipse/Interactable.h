@@ -4,10 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "EnhancedInputComponent.h"
 #include "Interactable.generated.h"
 
 class UInputAction;
+class UInputMappingContext;
 class UShapeComponent;
+
+class UEpInputConfig;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -24,16 +28,14 @@ class ECLIPSE_API IInteractable
 	GENERATED_BODY()
 
 protected:
-	virtual bool IsAutoInteract() const = 0;
-
 	// return handle
-	virtual int32 BindInteract(const UInputAction* InAction, UEnhancedInputComponent* InComponent) = 0;
-
-	// return input action
-	virtual const UInputAction* GetAction(APlayerController* InOwningController) const = 0;
+	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions) = 0;
 
 protected:
-	virtual void NativeOnInteract();
+	virtual void SetContext(UInputMappingContext* InContext);
+	void Clear();
+
+protected:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact", DisplayName = "On Interact")
 	void OnInteract();
@@ -51,9 +53,11 @@ protected:
 	void OnEndInteract(AActor* OtherActor);
 
 private:
-	void SetAction(APlayerController* OtherController, const UInputAction* InInputAction);
-	void Clear(APlayerController* OtherController);
+	void SetAction(APlayerController* OtherController);
+	void RemoveAction(APlayerController* OtherController);
 
 private:
-	int32 InteractBindingHandle = INDEX_NONE;
+	TMap<uint32, TWeakObjectPtr<const UInputAction>> Handles;
+	TWeakObjectPtr<UInputMappingContext> InputContext;
+	TWeakObjectPtr<APlayerController> OwningController;
 };

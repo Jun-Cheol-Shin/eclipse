@@ -51,8 +51,9 @@ UDataTable* UEpResourceSubSystem::GetDataTable(const FString& InDataName) const
 
     if (CachedAssetDataList.Contains(DataTableName))
     {
-        return Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(DataTableName)));
+        return Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(DataTableName), true));
     }
+
     else
     {
         UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
@@ -69,7 +70,7 @@ const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
 
         if (CachedAssetDataList.Contains(ColorPaletteName))
         {
-            ColorPalette = Cast<UColorPaletteDataAsset>(SyncLoadObject(CachedAssetDataList.FindRef(ColorPaletteName)));
+            ColorPalette = Cast<UColorPaletteDataAsset>(SyncLoadObject(CachedAssetDataList.FindRef(ColorPaletteName), true));
         }
 
         else
@@ -87,7 +88,16 @@ TSubclassOf<AEpDropItemActor> UEpResourceSubSystem::GetDropItemActor() const
     if (CachedAssetDataList.Contains(DropItemActorName))
     {
         FAssetData AssetData = CachedAssetDataList.FindRef(DropItemActorName);
-        return SyncLoadClass(AssetData, true);
+
+        if (UBlueprintGeneratedClass* BPGenClass = Cast<UBlueprintGeneratedClass>(SyncLoadObject(AssetData, true)))
+        {
+            return BPGenClass->GetDefaultObject()->GetClass();
+        }
+
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Invalid BPGenClass.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+        }
     }
     
     else
@@ -102,7 +112,19 @@ TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectP
 {
     FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
 
-    TSharedPtr<FStreamableHandle> Handle = StreamManager.RequestAsyncLoad(InAssetData.ToSoftObjectPath(),
+    FSoftObjectPath Path;
+    FString OutValue;
+
+    if (true == InAssetData.GetTagValue(TEXT("GeneratedClass"), OUT OutValue))
+    {
+        Path = FSoftObjectPath(OutValue);
+    }
+    else
+    {
+        Path = InAssetData.ToSoftObjectPath();
+    }
+
+    TSharedPtr<FStreamableHandle> Handle = StreamManager.RequestAsyncLoad(Path,
         FStreamableDelegate::CreateWeakLambda(this, [OuterClass, OnLoadedDelegate, InAssetData]()
             {
                 if (ensure(OuterClass.IsValid()))
@@ -114,35 +136,16 @@ TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectP
     return Handle;
 }
 
-UObject* UEpResourceSubSystem::SyncLoadObject(const FAssetData& InAssetData) const
-{
-    FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
-    return StreamManager.LoadSynchronous(InAssetData.ToSoftObjectPath());
-}
-
-UClass* UEpResourceSubSystem::SyncLoadClass(const FAssetData& InAssetData, bool bUseGeneratedClass) const
+UObject* UEpResourceSubSystem::SyncLoadObject(const FAssetData& InAssetData, bool bUseGeneratedClass) const
 {
     FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
     FString OutValue;
 
     if (true == bUseGeneratedClass && true == InAssetData.GetTagValue(TEXT("GeneratedClass"), OUT OutValue))
     {
-        UObject* LoadedClass = StreamManager.LoadSynchronous(OutValue);
-        if (LoadedClass)
-        {
-            return LoadedClass->GetClass()->GetDefaultObject()->StaticClass();
-        }
+        FSoftObjectPath Path = FSoftObjectPath(OutValue);
+        return StreamManager.LoadSynchronous(Path);
     }
 
-    else
-    {
-        UObject* LoadedClass = StreamManager.LoadSynchronous(InAssetData.ToSoftObjectPath());
-        if (LoadedClass)
-        {
-            return LoadedClass->GetClass()->GetDefaultObject()->StaticClass();
-        }
-    }
-
-    return nullptr;
+    return StreamManager.LoadSynchronous(InAssetData.ToSoftObjectPath());
 }
-

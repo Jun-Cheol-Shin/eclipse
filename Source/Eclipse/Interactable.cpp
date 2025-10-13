@@ -9,13 +9,10 @@
 #include "Eclipse/Option/EpInputConfig.h"
 #include "InputActionValue.h"
 
+#include "Eclipse/SubSystems/EpInputManagerSubSystem.h"
+
 // Add default functionality here for any IInteractable functions that are not pure virtual.
 
-
-void IInteractable::NativeOnInteract()
-{
-	Execute_OnInteract(Cast<UObject>(this));
-}
 
 void IInteractable::NativeOnPreInteract(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -33,12 +30,7 @@ void IInteractable::NativeOnPreInteract(UPrimitiveComponent* OverlappedComp, AAc
 		return;
 	}
 
-	SetAction(PlayerController, GetAction(PlayerController));
-
-	if (IsAutoInteract())
-	{
-
-	}
+	SetAction(PlayerController);
 }
 
 void IInteractable::NativeOnEndInteract(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -57,15 +49,17 @@ void IInteractable::NativeOnEndInteract(UPrimitiveComponent* OverlappedComp, AAc
 		return;
 	}
 
-	Clear(PlayerController);
+	RemoveAction(PlayerController);
 }
 
-void IInteractable::SetAction(APlayerController* OtherController, const UInputAction* InInputActionTag)
+void IInteractable::SetContext(UInputMappingContext* InContext)
 {
-	if (!ensureAlways(InInputActionTag))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid Input Action Tag, %s"), ANSI_TO_TCHAR(__FUNCTION__));
-	}
+	InputContext = InContext;
+}
+
+void IInteractable::SetAction(APlayerController* OtherController)
+{
+	OwningController = OtherController;
 
 	AActor* MyActor = Cast<AActor>(this);
 	if (!ensure(MyActor))
@@ -78,21 +72,49 @@ void IInteractable::SetAction(APlayerController* OtherController, const UInputAc
 		return;
 	}
 
+	// Set Input Context.
+	ULocalPlayer* LocalPlayer = OtherController->GetLocalPlayer();
+	if (nullptr == LocalPlayer)
+	{
+		return;
+	}
+
+	if (UEpInputManagerSubSystem* SubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>())
+	{
+		if (InputContext.IsValid())
+		{
+			SubSystem->AddMappingContext(InputContext.Get(), 0);
+		}
+	}
+
+
+	// Enable Actor Input
 	MyActor->EnableInput(OtherController);
 
 
+	// Bind Input Action
 	if (UEnhancedInputComponent* EnhancedInputComp = Cast<UEnhancedInputComponent>(MyActor->InputComponent))
 	{
 		EnhancedInputComp->ClearActionBindings();
-		InteractBindingHandle = BindInteract(GetAction(OtherController), EnhancedInputComp);
 
-		//auto& Handle = EnhancedInputComp->BindAction(GetAction(OtherController), ETriggerEvent::Started, this, &IInteractable::BeginInteract);
-		//InteractBindingHandle = Handle.GetHandle();
+		AEpPlayerController* EpController = Cast<AEpPlayerController>(OtherController);
+		
+		if (!ensure(EpController))
+		{
+			return;
+		}
+
+		const UEpInputConfig* Config = EpController->GetInputConfig();
+
+		if (ensure(Config))
+		{
+			BindAction(Config, EnhancedInputComp, OUT Handles);
+		}
 	}
 }
 
 
-void IInteractable::Clear(APlayerController* OtherController)
+void IInteractable::RemoveAction(APlayerController* OtherController)
 {
 	AActor* MyActor = Cast<AActor>(this);
 	if (!ensure(MyActor))
@@ -106,11 +128,42 @@ void IInteractable::Clear(APlayerController* OtherController)
 		return;
 	}
 
-	if (UEnhancedInputComponent* EnhancedInputComp = Cast<UEnhancedInputComponent>(MyActor->InputComponent))
+	ULocalPlayer* LocalPlayer = OtherController->GetLocalPlayer();
+	if (nullptr == LocalPlayer)
 	{
-		EnhancedInputComp->RemoveBindingByHandle(InteractBindingHandle);
+		return;
 	}
 
-	InteractBindingHandle = INDEX_NONE;
+	if (UEpInputManagerSubSystem* SubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>())
+	{
+		if (InputContext.IsValid())
+		{
+			SubSystem->RemoveMappingContext(InputContext.Get());
+		}
+	}
+
+
+	if (UEnhancedInputComponent* EnhancedInputComp = Cast<UEnhancedInputComponent>(MyActor->InputComponent))
+	{
+		for (auto& [Num, Action] : Handles)
+		{
+			EnhancedInputComp->RemoveActionBindingForHandle(Num);
+		}
+
+		Handles.Reset();
+	}
+
 	MyActor->DisableInput(OtherController);
+
+	OwningController.Reset();
+}
+
+
+void IInteractable::Clear()
+{
+	RemoveAction(OwningController.Get());
+	InputContext.Reset();
+	Handles.Reset();
+
+	OwningController.Reset();
 }
