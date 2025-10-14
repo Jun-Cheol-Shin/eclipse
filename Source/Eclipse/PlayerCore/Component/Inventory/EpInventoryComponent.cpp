@@ -7,6 +7,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/ActorChannel.h"
 
+#include "../../../Actor/EpDropItemActor.h"
+
 
 static TAutoConsoleVariable<int32> CVarShowInventory(
 	TEXT("ShowDebugInventory"),
@@ -16,6 +18,37 @@ static TAutoConsoleVariable<int32> CVarShowInventory(
 	TEXT(" 1 : on\n"),
 	ECVF_Cheat
 );
+
+void UEpInventoryComponent::Server_AddItem_Implementation(UEclipseInventoryItem* InAddItem)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		InventoryItemArray.AddItem(InAddItem);
+	}
+}
+
+bool UEpInventoryComponent::Server_AddItem_Validate(UEclipseInventoryItem* InAddItem)
+{
+	if (nullptr == InAddItem)
+	{
+		return false;
+	}
+
+	if (0 >= InAddItem->GetItemId() || 0 >= InAddItem->GetItemStackCount())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void UEpInventoryComponent::RemoveItem(UEclipseInventoryItem* InRemovedItem)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		InventoryItemArray.RemoveItem(InRemovedItem);
+	}
+}
 
 // Sets default values for this component's properties
 UEpInventoryComponent::UEpInventoryComponent()
@@ -85,23 +118,6 @@ void UEpInventoryComponent::TickComponent(float InDeltaTime, ELevelTick InTickTy
 #endif
 
 }
-
-void UEpInventoryComponent::AddItem(UEclipseInventoryItem* InAddItem)
-{
-	if (GetOwner()->HasAuthority())
-	{
-		InventoryItemArray.AddItem(InAddItem);
-	}
-}
-
-void UEpInventoryComponent::RemoveItem(UEclipseInventoryItem* InRemovedItem)
-{
-	if (GetOwner()->HasAuthority())
-	{
-		InventoryItemArray.RemoveItem(InRemovedItem);
-	}
-}
-
 
 // FEclipseInventoryArray
 
@@ -211,6 +227,7 @@ void FEclipseInventoryArray::AddItem(UEclipseInventoryItem* InItem)
 
 	MarkItemDirty(NewEntry);
 }
+
 void FEclipseInventoryArray::RemoveItem(UEclipseInventoryItem* InItem)
 {
 	for (auto EntryIt = Items.CreateIterator(); EntryIt; ++EntryIt)

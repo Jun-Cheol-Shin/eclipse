@@ -17,28 +17,20 @@ UCLASS()
 class ECLIPSE_API AEpDropItemActor : public AActor, public IInteractable
 {
 	GENERATED_BODY()
+
+public:
+	const UEclipseInventoryItem* GetItemInstance() const { return ItemData.IsValid() ? ItemData.Get() : nullptr; }
 	
 public:	
 	// Sets default values for this actor's properties
 	AEpDropItemActor();
 
-	void Set(const UEclipseInventoryItem* InItem);
+	void Set(UEclipseInventoryItem* InItem);
 	void Reset();
 
 private:
 	// Interact
 	void OnInteract();
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_InteractReq(int32 InItemId);
-
-
-
-	// End Interact
-
-
-
-
 	void OnPing();
 	void OnDirectUse();
 
@@ -66,7 +58,7 @@ protected:
 	UNiagaraComponent* Particle;
 
 private:
-	TWeakObjectPtr<const UEclipseInventoryItem> ItemData = nullptr;
+	TWeakObjectPtr<UEclipseInventoryItem> ItemData = nullptr;
 
 private:
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))

@@ -4,17 +4,21 @@
 #include "EpDropItemActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "NiagaraComponent.h"
-#include "../PlayerCore/EpPlayerController.h"
 
+#include "NiagaraComponent.h"
+#include "InputAction.h"
+
+#include "../PlayerCore/EpPlayerController.h"
+#include "../PlayerCore/Component/Inventory/EpInventoryComponent.h"
 #include "../PlayerCore/Component/Inventory/EclipseInventoryItem.h"
 #include "../Subsystems/EpResourceSubSystem.h"
 
-#include "InputAction.h"
 #include "../Option/EpInputConfig.h"
 
+#include "../PlayerCore/EpPlayerState.h"
 
-void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
+
+void AEpDropItemActor::Set(UEclipseInventoryItem* InItem)
 {
 	// TODO : 
 	// Server에서 실행시키자. SetOwner() 필수
@@ -57,36 +61,28 @@ void AEpDropItemActor::Reset()
 
 void AEpDropItemActor::OnInteract()
 {
-
-	if (ItemData.IsValid())
+	if (ensure(ItemData.IsValid() && OwningController.IsValid()))
 	{	
-		// client to server
-		Server_InteractReq(ItemData->GetItemId());
+		if (AEpPlayerState* PlayerState = OwningController->GetPlayerState<AEpPlayerState>())
+		{
+			if (UEpInventoryComponent* InventoryComponent = PlayerState->GetInventoryComponent())
+			{
+				// client to server
+				InventoryComponent->Server_AddItem(ItemData.Get());
+			}
+
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Invalid InventoryComponent. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+			}
+		}
+
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid Player State. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		}
 	}
 }
-
-void AEpDropItemActor::Server_InteractReq_Implementation(int32 InItemId)
-{
-	check(true == ItemData.IsValid() && ItemData->GetItemId() == InItemId);
-
-	UE_LOG(LogTemp, Warning, TEXT("Server : OnReq Interact!!"));
-}
-
-bool AEpDropItemActor::Server_InteractReq_Validate(int32 InItemId)
-{
-	if (false == ItemData.IsValid())
-	{
-		return false;
-	}
-
-	else if (ItemData->GetItemId() != InItemId)
-	{
-		return false;
-	}
-
-	return true;
-}
-
 
 void AEpDropItemActor::OnPing()
 {

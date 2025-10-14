@@ -9,6 +9,7 @@
 
 class UEclipseInventoryItem;
 class UActorComponent;
+class AEpDropItemActor;
 
 USTRUCT(BlueprintType)
 struct FEclipseInventoryEntry : public FFastArraySerializerItem
@@ -74,6 +75,10 @@ class ECLIPSE_API UEpInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+public:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_AddItem(UEclipseInventoryItem* InAddItem);
+
 public:	
 	// Sets default values for this component's properties
 	UEpInventoryComponent();
@@ -87,7 +92,7 @@ public:
 	FOnFailedItemSignature OnFailedMessageDelegate;
 
 public:
-	void AddItem(UEclipseInventoryItem* InAddItem);
+
 	void RemoveItem(UEclipseInventoryItem* InRemovedItem);
 
 protected:
