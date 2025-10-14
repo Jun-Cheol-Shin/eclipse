@@ -26,7 +26,19 @@ public:
 	void Reset();
 
 private:
+	// Interact
 	void OnInteract();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_InteractReq(int32 InItemId);
+
+
+
+	// End Interact
+
+
+
+
 	void OnPing();
 	void OnDirectUse();
 

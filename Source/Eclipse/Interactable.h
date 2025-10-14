@@ -59,5 +59,7 @@ private:
 private:
 	TMap<uint32, TWeakObjectPtr<const UInputAction>> Handles;
 	TWeakObjectPtr<UInputMappingContext> InputContext;
+
+protected:
 	TWeakObjectPtr<APlayerController> OwningController;
 };

@@ -28,6 +28,7 @@ public:
 protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void OnRep_Controller() override;
 
 private:
 	/** Camera boom positioning the camera behind the character */

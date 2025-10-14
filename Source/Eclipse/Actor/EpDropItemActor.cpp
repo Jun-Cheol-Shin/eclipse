@@ -16,7 +16,9 @@
 
 void AEpDropItemActor::Set(const UEclipseInventoryItem* InItem)
 {
-	// TODO : DropItemActor는 Pooling할 예정..
+	// TODO : 
+	// Server에서 실행시키자. SetOwner() 필수
+	// 액터 인스턴스는 Pooling할 예정..
 
 	ItemData = InItem;
 	
@@ -55,8 +57,36 @@ void AEpDropItemActor::Reset()
 
 void AEpDropItemActor::OnInteract()
 {
-	UE_LOG(LogTemp, Display, TEXT("Interact!"));
+
+	if (ItemData.IsValid())
+	{	
+		// client to server
+		Server_InteractReq(ItemData->GetItemId());
+	}
 }
+
+void AEpDropItemActor::Server_InteractReq_Implementation(int32 InItemId)
+{
+	check(true == ItemData.IsValid() && ItemData->GetItemId() == InItemId);
+
+	UE_LOG(LogTemp, Warning, TEXT("Server : OnReq Interact!!"));
+}
+
+bool AEpDropItemActor::Server_InteractReq_Validate(int32 InItemId)
+{
+	if (false == ItemData.IsValid())
+	{
+		return false;
+	}
+
+	else if (ItemData->GetItemId() != InItemId)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 
 void AEpDropItemActor::OnPing()
 {
@@ -88,6 +118,8 @@ AEpDropItemActor::AEpDropItemActor()
 	Mesh->SetCastShadow(false);
 	Mesh->SetCollisionProfileName(TEXT("Trigger"));
 	Mesh->AttachToComponent(Particle, FAttachmentTransformRules::KeepRelativeTransform, FName("NiagaraComponent"));
+
+	SetReplicates(true);
 }
 
 // Called when the game starts or when spawned
@@ -101,11 +133,21 @@ void AEpDropItemActor::BeginPlay()
 		Particle->SetColorParameter(TEXT("GunPad_Color"), EPColorPalette(GetWorld()).GetColor(EItemRarity::Common));
 	}
 
+	switch (GetNetMode())
+	{
+	case ENetMode::NM_ListenServer:
+	case ENetMode::NM_Standalone:
+	case ENetMode::NM_Client:
+	{
+		Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnPreInteract);
+		Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnEndInteract);
+		SetContext(InputMapping.LoadSynchronous());
+	}
+	break;
 
-	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnPreInteract);
-	Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnEndInteract);
-
-	SetContext(InputMapping.LoadSynchronous());
+	default:
+		break;
+	}
 }
 
 void AEpDropItemActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -144,17 +186,31 @@ void AEpDropItemActor::BindAction(const UEpInputConfig* InConfig, UEnhancedInput
 		//InComponent->BindAction(UseDirec)
 
 	}
-
 }
 
 void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("On Pre Interact c++"));
+	if (ENetMode::NM_DedicatedServer == GetNetMode())
+	{
+		return;
+	}
+
+
+	// Show Prompt
+	UE_LOG(LogTemp, Error, TEXT("Show Prompt"));
+
 }
 
 void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("On End Interact c++"));
+	if (ENetMode::NM_DedicatedServer == GetNetMode())
+	{
+		return;
+	}
+
+
+	// Hide Prompt
+	UE_LOG(LogTemp, Error, TEXT("Hide Prompt"));
 }
 
 // End IInteractable

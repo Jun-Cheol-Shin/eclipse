@@ -140,6 +140,14 @@ void AEpCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void AEpCharacter::OnRep_Controller()
+{
+	if (false == CachedPlayerController.IsValid())
+	{
+		CachedPlayerController = Cast<AEpPlayerController>(GetController());
+	}
+}
+
 // 클라이언트만
 void AEpCharacter::OnRep_PlayerState()
 {

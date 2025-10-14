@@ -59,18 +59,19 @@ void IInteractable::SetContext(UInputMappingContext* InContext)
 
 void IInteractable::SetAction(APlayerController* OtherController)
 {
-	OwningController = OtherController;
-
-	AActor* MyActor = Cast<AActor>(this);
-	if (!ensure(MyActor))
-	{
-		UE_LOG(LogTemp, Error, TEXT("interface is not inherited to actor class!!"))
-	}
-
 	if (nullptr == OtherController)
 	{
 		return;
 	}
+
+	OwningController = OtherController;
+
+	if (ENetMode::NM_DedicatedServer == OwningController->GetNetMode())
+	{
+		UE_LOG(LogTemp, Display, TEXT("Dedicated Server : %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+
 
 	// Set Input Context.
 	ULocalPlayer* LocalPlayer = OtherController->GetLocalPlayer();
@@ -87,8 +88,13 @@ void IInteractable::SetAction(APlayerController* OtherController)
 		}
 	}
 
-
 	// Enable Actor Input
+	AActor* MyActor = Cast<AActor>(this);
+	if (!ensure(MyActor))
+	{
+		UE_LOG(LogTemp, Error, TEXT("interface is not inherited to actor class!!"))
+	}
+
 	MyActor->EnableInput(OtherController);
 
 
