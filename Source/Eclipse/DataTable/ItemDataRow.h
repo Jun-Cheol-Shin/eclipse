@@ -14,16 +14,16 @@ struct FItemDataRow : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ItemId;
+	int32 ItemId = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString ItemName;
+	FString ItemName = FString();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int64 MaxStackCount;
+	int64 MaxStackCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EItemRarity Rarity;
+	EItemRarity Rarity = EItemRarity::Common;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Bitmask = "", BitmaskEnum = "/Script/Eclipse.EClassType"))
 	uint8 Class = 1;

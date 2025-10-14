@@ -16,12 +16,12 @@ struct FItemResourceDataRow : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ItemId;
+	int32 ItemId = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FSoftObjectPath StaticMeshPath;
+	FSoftObjectPath StaticMeshPath = FSoftObjectPath();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FSoftObjectPath ThumbnailImagePath;
+	FSoftObjectPath ThumbnailImagePath = FSoftObjectPath();
 
 };
