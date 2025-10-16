@@ -6,6 +6,8 @@
 
 #include "CommonActivatableWidget.h"
 
+#include "NLUISystemSettings.h"
+
 void UNLUIManagerSubsystem::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
 {
     // After UGameInstance::AddLocalPlayer()
@@ -80,18 +82,12 @@ void UNLUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	UE_LOG(LogTemp, Warning, TEXT("Initialize UIManager."));
 
 	PlayerViewportGameLayouts.Reset();
-	//TSubclassOf<ULayerWidgetRegistryAsset> RegistryAssetSubClass = WidgetRegistryAssetSoftPtr.LoadSynchronous();
 
-	if (WidgetRegistryAssetSoftPtr.ToSoftObjectPath().IsValid())
-	{
-		RegistryAsset = WidgetRegistryAssetSoftPtr.LoadSynchronous();
+	const UNLUISystemSettings* Settings = GetDefault<UNLUISystemSettings>();
+	check(Settings);
 
-		/*if (ensure(RegistryAsset && RegistryAsset->GetLayerWidgetNum(EEclipseGameLayer::System) > 0))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Success"));
-		}*/
-	}
-
+	RegistryAsset = Settings->WidgetRegistryAssetSoftPtr.LoadSynchronous();
+	CachedLayoutClass = Settings->LayoutClass;
 }
 
 void UNLUIManagerSubsystem::Deinitialize()
@@ -116,7 +112,7 @@ void UNLUIManagerSubsystem::CreateGameLayout(APlayerController* InNewController)
 {
 	if (!ensure(InNewController)) return;
 	
-	TSubclassOf<UNLGameLayout> LayoutWidgetClass = LayoutClass.LoadSynchronous();
+	TSubclassOf<UNLGameLayout> LayoutWidgetClass = CachedLayoutClass.LoadSynchronous();
 	if (LayoutWidgetClass)
 	{
 		UNLGameLayout* NewLayoutWidget = CreateWidget<UNLGameLayout>(InNewController, LayoutWidgetClass);
@@ -130,6 +126,11 @@ void UNLUIManagerSubsystem::CreateGameLayout(APlayerController* InNewController)
 		AddLayoutInViewport(InNewController->GetLocalPlayer(), NewLayoutWidget);
 
 		UE_LOG(LogTemp, Log, TEXT("Player [%s]'s root layout [%s] Added from the viewport, but other references to its underlying Slate widget still exist. Noting in case we leak it."), *GetNameSafe(NewLayoutInfo.LocalPlayer), *GetNameSafe(NewLayoutWidget));
+	}
+
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid NLGameLayout Class. %s"), ANSI_TO_TCHAR(__FUNCTION__));
 	}
 	
 }

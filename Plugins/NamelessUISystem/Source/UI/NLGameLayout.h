@@ -40,21 +40,26 @@ enum class EAsyncWidgetState : uint8
 };
 
 
-UCLASS(meta = (DisableNativeTick), MinimalAPI)
-class UNLGameLayout : public UCommonUserWidget
+UCLASS(meta = (DisableNativeTick))
+class NAMELESSUISYSTEM_API UNLGameLayout : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(const FGameplayTag& LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc);
 	UCommonActivatableWidget* PushWidgetToLayerStack(const FGameplayTag& LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc);
-
 	void RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget);
 
 	UCommonActivatableWidget* GetTopWidget(const FGameplayTag& InLayerType) const;
 
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
-private:
+protected:
+	UFUNCTION(BlueprintCallable)
+	void RegistGameLayer(FGameplayTag InLayerType, UNLGameLayer* InLayer);
+
 	// InputSubSystem Callback
 	void OnDetectedTouch();
 	void OnDetectedMouseAndKeyboard();
@@ -64,20 +69,9 @@ private:
 	void OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UNLGameLayer* InLayer, bool bIsActivated);
 	void RefreshGameLayerInputMode();
 
-private:
-	UCommonActivatableWidgetContainerBase* GetLayout(const FGameplayTag& InLayer);
+	UCommonActivatableWidgetContainerBase* GetLayout(const FGameplayTag& InLayer); 
 
 protected:
-	UFUNCTION(BlueprintCallable)
-	void RegistGameLayer(FGameplayTag InLayerType, UNLGameLayer* InLayer);
-	
-private:
 	TMap<FGameplayTag, UNLGameLayer*> Layers;
 	TMap<FGameplayTag, bool> InputModeChecker;
-
-
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-	
 };

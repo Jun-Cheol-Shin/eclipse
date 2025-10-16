@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonTileView.h"
-#include "GridBasedTileView.generated.h"
+#include "Subsystems/NLUIManagerSubsystem.h"
+#include "EpUIManagerSubsystem.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ECLIPSE_API UGridBasedTileView : public UCommonTileView
+class ECLIPSE_API UEpUIManagerSubsystem : public UNLUIManagerSubsystem
 {
 	GENERATED_BODY()
 	

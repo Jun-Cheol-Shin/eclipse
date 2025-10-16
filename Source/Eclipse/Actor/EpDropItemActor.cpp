@@ -114,6 +114,11 @@ AEpDropItemActor::AEpDropItemActor()
 	Mesh->SetCastShadow(false);
 	Mesh->SetCollisionProfileName(TEXT("Trigger"));
 	Mesh->AttachToComponent(Particle, FAttachmentTransformRules::KeepRelativeTransform, FName("NiagaraComponent"));
+}
+
+void AEpDropItemActor::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
 
 	SetReplicates(true);
 }
@@ -193,7 +198,7 @@ void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)
 
 
 	// Show Prompt
-	UE_LOG(LogTemp, Error, TEXT("Show Prompt"));
+	UE_LOG(LogTemp, Display, TEXT("Show Prompt"));
 
 }
 
@@ -206,7 +211,7 @@ void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
 
 
 	// Hide Prompt
-	UE_LOG(LogTemp, Error, TEXT("Hide Prompt"));
+	UE_LOG(LogTemp, Display, TEXT("Hide Prompt"));
 }
 
 // End IInteractable

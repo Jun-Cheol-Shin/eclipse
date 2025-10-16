@@ -46,7 +46,7 @@ public:
 
 
 
-UCLASS(Config = NamelessUISystem, MinimalAPI)
+UCLASS(Config = Game, MinimalAPI, Abstract)
 class UNLUIManagerSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
@@ -158,16 +158,16 @@ public:
 	}
 
 
-	void ShowLayerWidget(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature());
-	void HideLayerWidget(UCommonActivatableWidget* InWidget);
+	NAMELESSUISYSTEM_API void ShowLayerWidget(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature());
+	NAMELESSUISYSTEM_API void HideLayerWidget(UCommonActivatableWidget* InWidget);
 
-	UCommonActivatableWidget* GetTopLayerWidget(const FGameplayTag& InLayerType);
+	NAMELESSUISYSTEM_API UCommonActivatableWidget* GetTopLayerWidget(const FGameplayTag& InLayerType);
 
-	UNLGameLayout* GetPlayerGameLayout(const ULocalPlayer* InPlayer) const;
+	NAMELESSUISYSTEM_API UNLGameLayout* GetPlayerGameLayout(const ULocalPlayer* InPlayer) const;
 
 protected:
-	void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);
-	void OnPlayerControllerChanged(APlayerController* InController);
+	NAMELESSUISYSTEM_API void OnChangedPlatformUserId(FPlatformUserId InNewId, FPlatformUserId InOldId);
+	NAMELESSUISYSTEM_API void OnPlayerControllerChanged(APlayerController* InController);
 
 private:
 	friend class UNLGameInstance;
@@ -176,13 +176,13 @@ private:
 	void NotifyPlayerRemoved(ULocalPlayer* LocalPlayer);
 
 protected:
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	NAMELESSUISYSTEM_API virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
 	/** Implement this for initialization of instances of the system */
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	NAMELESSUISYSTEM_API virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	/** Implement this for deinitialization of instances of the system */
-	virtual void Deinitialize() override;
+	NAMELESSUISYSTEM_API virtual void Deinitialize() override;
 
 
 private:
@@ -197,10 +197,15 @@ private:
 	UPROPERTY()
 	ULayerWidgetRegistryAsset* RegistryAsset = nullptr;
 
+	UPROPERTY()
+	TSoftClassPtr<UNLGameLayout> CachedLayoutClass = nullptr;
+
 protected:
+	/*
 	UPROPERTY(Config, EditAnywhere)
 	TSoftClassPtr<UNLGameLayout> LayoutClass;
 	
 	UPROPERTY(Config, EditAnywhere)
 	TSoftObjectPtr<ULayerWidgetRegistryAsset> WidgetRegistryAssetSoftPtr;
+	*/
 };
