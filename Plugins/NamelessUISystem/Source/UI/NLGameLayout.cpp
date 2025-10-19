@@ -81,32 +81,49 @@ void UNLGameLayout::RefreshGameLayerInputMode()
 		UNLGameLayer* Layer = Layers.FindRef(Tag);
 		if (false == ensure(Layer)) continue;
 
-
 		if (true == IsVisible)
 		{
-			if (true == Layer->IsNeedUIOnlyInputMode())
+			switch (Layer->GetInputMode())
+			{
+			case ELayerInputMode::GameAndUI:
+			{
+				bActivatedUILayer = true;
+			}
+				break;
+
+			case ELayerInputMode::UIOnly:
 			{
 				PlayerController->SetInputMode(FInputModeUIOnly());
 				PlayerController->SetShowMouseCursor(true);
 				return;
 			}
+				break;
 
-			bActivatedUILayer = true;
-			break;
+			default:
+			case ELayerInputMode::GameOnly:
+				break;
+			}
+
+			if (bActivatedUILayer)
+			{
+				break;
+			}
 		}
 	}
 
-	if (false == bActivatedUILayer)
+	if (bActivatedUILayer)
 	{
-		PlayerController->SetInputMode(FInputModeGameOnly());
-		PlayerController->SetShowMouseCursor(false);
-		FSlateApplication::Get().SetUserFocusToGameViewport(0);
+		PlayerController->SetInputMode(FInputModeGameAndUI());
+		PlayerController->SetShowMouseCursor(true);
 	}
 
 	else
 	{
-		PlayerController->SetInputMode(FInputModeGameAndUI());
-		PlayerController->SetShowMouseCursor(true);
+		// All Layer is collapsed or Activated GameOnly Layer.
+		PlayerController->SetInputMode(FInputModeGameOnly());
+		PlayerController->SetShowMouseCursor(false);
+		//FSlateApplication::Get().SetUserFocusToGameViewport(0);
+
 	}
 }
 
@@ -208,16 +225,58 @@ UCommonActivatableWidget* UNLGameLayout::PushWidgetToLayerStack(const FGameplayT
 	return nullptr;
 }
 
-void UNLGameLayout::RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget)
+void UNLGameLayout::RemoveWidgetToLayerStack(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetPtr)
+{
+	if (!ensureAlways(InWidgetPtr)) return;
+
+	if (Layers.Contains(InLayerType))
+	{
+		UNLGameLayer* Layer = Layers[InLayerType];
+		if (!ensureAlways(Layer))
+		{
+			return;
+		}
+
+		UCommonActivatableWidgetContainerBase* Container = Layer->GetActivatableWidgetContainer();
+		if (!ensureAlways(Container))
+		{
+			return;
+		}
+
+		for (auto& Widget : Container->GetWidgetList())
+		{
+			if (!ensureAlways(Widget)) continue;
+
+			const FSoftClassPath ThisPath(Widget->GetClass());
+			const FSoftObjectPath TargetPath = InWidgetPtr.ToSoftObjectPath();
+
+			if (ThisPath == TargetPath)
+			{
+				Container->RemoveWidget(*Widget);
+				return;
+			}
+		}
+
+	}
+}
+
+void UNLGameLayout::RemoveWidgetToLayerStack(const FGameplayTag& InLayerType, UCommonActivatableWidget* InWidget)
 {
 	if (nullptr == InWidget) return;
 
-	for (auto& Iter : Layers)
+	if (Layers.Contains(InLayerType))
 	{
-		if (nullptr == Iter.Value) continue;
+		UNLGameLayer* Layer = Layers[InLayerType];
+		if (!ensureAlways(Layer))
+		{
+			return;
+		}
 
-		UCommonActivatableWidgetContainerBase* Container = Iter.Value->GetActivatableWidgetContainer();
-		if (nullptr == Container) continue;
+		UCommonActivatableWidgetContainerBase* Container = Layer->GetActivatableWidgetContainer();
+		if (!ensureAlways(Container))
+		{
+			return;
+		}
 
 		Container->RemoveWidget(*InWidget);
 	}

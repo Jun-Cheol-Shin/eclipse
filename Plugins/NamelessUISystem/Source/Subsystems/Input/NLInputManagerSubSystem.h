@@ -51,14 +51,13 @@ private:
 private:
 	void SetCurrentInputType(ECommonInputType InputType);
 
-private:
-	TSharedPtr<FNLInputProcessor> InputProcessor = nullptr;
-
+protected:
 	UPROPERTY(Transient)
 	ECommonInputType CurrentInputType = ECommonInputType::Count;
 
-	/**  */
 	UPROPERTY(Transient)
 	FName GamepadInputType;
 
+private:
+	TSharedPtr<FNLInputProcessor> InputProcessor = nullptr;
 };

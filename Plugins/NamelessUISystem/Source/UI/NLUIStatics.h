@@ -35,10 +35,10 @@ public:
 	static void ShowLayerWidgetFromPlayerController(const APlayerController* InController, const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
-	static void HideLayerWidget(const ULocalPlayer* InLocalPlayer, UCommonActivatableWidget* InLayerWidget);
+	static void HideLayerWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType, UCommonActivatableWidget* InLayerWidget);
 
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")
-	static void HideLayerWidgetFromPlayerController(const APlayerController* InController, UCommonActivatableWidget* InLayerWidget);
+	static void HideLayerWidgetFromPlayerController(const APlayerController* InController, const FGameplayTag& InLayerType, UCommonActivatableWidget* InLayerWidget);
 
 	
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Eclipse UI Helper Function")

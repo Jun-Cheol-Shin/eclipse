@@ -14,19 +14,21 @@ public class Eclipse : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"EnhancedInput",
-			"NamelessUISystem"
-			});
+			"NamelessUISystem",
+
+            });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
-			"CommonUI", 
 			"UMG", 
-			"ApplicationCore", 
-			"CommonInput",
+			"ApplicationCore",
             "GameplayTags",
             "GameplayTasks",
             "GameplayAbilities",
 			"NetCore",
-            "Niagara"
+            "Niagara",
+            "CommonUI",
+            "CommonInput",
+            "DeveloperSettings"
             });
 
 		// Uncomment if you are using Slate UI

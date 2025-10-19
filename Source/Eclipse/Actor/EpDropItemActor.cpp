@@ -17,6 +17,9 @@
 
 #include "../PlayerCore/EpPlayerState.h"
 
+#include "../GameModes/EpGameInstance.h"
+#include "../Subsystems/EpUIManagerSubsystem.h"
+#include "../UI/Game/Interact/InteractPrompt.h"
 
 void AEpDropItemActor::Set(UEclipseInventoryItem* InItem)
 {
@@ -166,7 +169,7 @@ void AEpDropItemActor::Tick(float DeltaTime)
 }
 
 // IInteractable
-void AEpDropItemActor::BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions)
+void AEpDropItemActor::BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>>& OutActions)
 {
 	check(InConfig);
 
@@ -200,6 +203,42 @@ void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)
 	// Show Prompt
 	UE_LOG(LogTemp, Display, TEXT("Show Prompt"));
 
+	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
+	if (!ensure(GameInst))
+	{
+		return;
+	}
+
+	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
+	if (ensure(UISubSystem))
+	{
+		TArray<FInteractActionParam> ParamList;
+
+		for (int i = 0; i < Handles.Num(); ++i)
+		{
+			FInteractActionParam NewParam;
+
+			if (!ensureAlways(Handles[i].Value.IsValid()))
+			{
+				continue;
+			}
+
+			NewParam.InputAction = Handles[i].Value.Get();
+			NewParam.DisplayText = FText::FromString(TEXT("TEST"));
+
+			ParamList.Emplace(NewParam);
+		}
+
+		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [Params = MoveTemp(ParamList)](UCommonActivatableWidget* InPrompt)
+			{
+				if (UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt))
+				{
+					Prompt->Set(Params);
+				}
+			}));
+	}
+
+
 }
 
 void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
@@ -212,6 +251,18 @@ void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
 
 	// Hide Prompt
 	UE_LOG(LogTemp, Display, TEXT("Hide Prompt"));
+
+	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
+	if (!ensure(GameInst))
+	{
+		return;
+	}
+
+	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
+	if (ensure(UISubSystem))
+	{
+		UISubSystem->HideLayerWidget<UInteractPrompt>();
+	}
 }
 
 // End IInteractable

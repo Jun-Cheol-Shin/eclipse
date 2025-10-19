@@ -65,7 +65,7 @@ public:
 		TSoftClassPtr<UCommonActivatableWidget> WidgetSoftPtr;
 		FGameplayTag GameLayerType;
 
-		if (false == RegistryAsset->GetWidget(T::StaticClass()->GetPathName(), OUT GameLayerType, OUT WidgetSoftPtr))
+		if (false == RegistryAsset->GetWidget(T::StaticClass()->GetName(), OUT GameLayerType, OUT & WidgetSoftPtr))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Invalid User Widget In Asset %s"), ANSI_TO_TCHAR(__FUNCTION__));
 			return;
@@ -80,7 +80,7 @@ public:
 
 		if (ensure(MyLayoutInfo.RootLayout))
 		{
-			TSharedPtr<FStreamableHandle> Handle = MyLayoutInfo.RootLayout->PushWidgetToLayerStackAsync(GameLayerType, true, WidgetSoftPtr, [InCompleteLoadedFunc](EAsyncWidgetState InState, T* InLoadingWidget)
+			TSharedPtr<FStreamableHandle> Handle = MyLayoutInfo.RootLayout->PushWidgetToLayerStackAsync(GameLayerType, true, WidgetSoftPtr, [InCompleteLoadedFunc](EAsyncWidgetState InState, UCommonActivatableWidget* InLoadingWidget)
 				{
 					switch (InState)
 					{
@@ -92,13 +92,13 @@ public:
 
 					case EAsyncWidgetState::Initialize:
 					{
-						UE_LOG(LogTemp, Warning, TEXT("Initialize Load Widget. %s"), *GetNameSafe(InLoadingWidget));
+						UE_LOG(LogTemp, Warning, TEXT("Initialize Load Widget. %s"), *GetNameSafe(Cast<UUserWidget>(InLoadingWidget)));
 					}
 					break;
 
 					case EAsyncWidgetState::AfterPush:
 					{
-						UE_LOG(LogTemp, Warning, TEXT("Complete Load Widget. %s"), *GetNameSafe(InLoadingWidget));
+						UE_LOG(LogTemp, Warning, TEXT("Complete Load Widget. %s"), *GetNameSafe(Cast<UUserWidget>(InLoadingWidget)));
 
 						if (InCompleteLoadedFunc.IsBound())
 						{
@@ -132,16 +132,16 @@ public:
 	template <typename T = UCommonActivatableWidget>
 	void HideLayerWidget()
 	{
-		if (false == ensure(RegistryAsset))
+		if (!ensure(RegistryAsset))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Invalid Registry Asset %s"), ANSI_TO_TCHAR(__FUNCTION__));
 			return;
 		}
 
 		TSoftClassPtr<UCommonActivatableWidget> WidgetSoftPtr;
-		EEclipseGameLayer GameLayerType;
+		FGameplayTag GameLayerType;
 
-		if (false == RegistryAsset->GetWidget(T::StaticClass()->GetPathName(), OUT GameLayerType, OUT WidgetSoftPtr))
+		if (false == RegistryAsset->GetWidget(T::StaticClass()->GetName(), OUT GameLayerType, OUT &WidgetSoftPtr))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Invalid User Widget In Asset %s"), ANSI_TO_TCHAR(__FUNCTION__));
 			return;
@@ -154,12 +154,15 @@ public:
 			return;
 		}
 		
-		MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(GameLayerType, T::StaticClass()->GetPathName());
+		if (ensureAlways(WidgetSoftPtr.IsValid()))
+		{
+			MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(GameLayerType, WidgetSoftPtr);
+		}
 	}
 
 
 	NAMELESSUISYSTEM_API void ShowLayerWidget(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetClass, FOnCompleteLoadedWidgetSignature InCompleteLoadedFunc = FOnCompleteLoadedWidgetSignature());
-	NAMELESSUISYSTEM_API void HideLayerWidget(UCommonActivatableWidget* InWidget);
+	NAMELESSUISYSTEM_API void HideLayerWidget(const FGameplayTag& InLayerType, UCommonActivatableWidget* InWidget);
 
 	NAMELESSUISYSTEM_API UCommonActivatableWidget* GetTopLayerWidget(const FGameplayTag& InLayerType);
 
@@ -188,7 +191,8 @@ protected:
 private:
 	void CreateGameLayout(APlayerController* InNewController);
 	void AddLayoutInViewport(ULocalPlayer* InLocalPlayer, UNLGameLayout* InLayout);
-	bool GetOwningLayoutInfo(OUT FRootViewportLayoutInfo& OutInfo) const;
+
+	NAMELESSUISYSTEM_API bool GetOwningLayoutInfo(OUT FRootViewportLayoutInfo& OutInfo) const;
 
 private:
 	UPROPERTY(Transient)

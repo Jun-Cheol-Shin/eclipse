@@ -20,6 +20,8 @@ class ECLIPSE_API UEpInputManagerSubSystem : public UNLInputManagerSubSystem
 	GENERATED_BODY()
 
 public:
+	ECommonInputType GetInputType() const { return CurrentInputType; }
+	const FName& GetGamepadName() const { return GamepadInputType;  }
 
 	// Start NLInputSystem 
 	// 

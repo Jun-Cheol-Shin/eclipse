@@ -23,7 +23,7 @@ enum class EEclipseGameLayer : uint8
 	Modal,				// Modal Popup Layer													( Input Mode Is UIOnly )
 	Left_Sheet,			// NPC Interaction UI													( Input Mode Is GameAndUI )
 	Right_Sheet,		// Diablo Inventory Layer												( Input Mode Is GameAndUI )
-	Bottom_Sheet,		//																		( Input Mode Is GameAndUI )
+	Bottom_Sheet,		//																		( Input Mode Is GameOnly )
 	Window,				// Contents Window Widget												( Input Mode Is UIOnly )
 	MainHUD,			// MainHUD Layer														( Input Mode Is GameOnly )
 
@@ -48,7 +48,9 @@ class NAMELESSUISYSTEM_API UNLGameLayout : public UCommonUserWidget
 public:
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(const FGameplayTag& LayerName, bool bSuspendInputUntilComplete, TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass, TFunction<void(EAsyncWidgetState, UCommonActivatableWidget*)> StateFunc);
 	UCommonActivatableWidget* PushWidgetToLayerStack(const FGameplayTag& LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc);
-	void RemoveWidgetToLayerStack(UCommonActivatableWidget* InWidget);
+
+	void RemoveWidgetToLayerStack(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetPtr);
+	void RemoveWidgetToLayerStack(const FGameplayTag& InLayerType, UCommonActivatableWidget* InWidget);
 
 	UCommonActivatableWidget* GetTopWidget(const FGameplayTag& InLayerType) const;
 

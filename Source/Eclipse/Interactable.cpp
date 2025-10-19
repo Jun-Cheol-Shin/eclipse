@@ -16,8 +16,6 @@
 
 void IInteractable::NativeOnPreInteract(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Execute_OnPreInteract(Cast<UObject>(this), OtherActor);
-
 	APawn* Pawn = Cast<APawn>(OtherActor);
 	if (nullptr == Pawn)
 	{
@@ -31,12 +29,12 @@ void IInteractable::NativeOnPreInteract(UPrimitiveComponent* OverlappedComp, AAc
 	}
 
 	SetAction(PlayerController);
+
+	Execute_OnPreInteract(Cast<UObject>(this), OtherActor);
 }
 
 void IInteractable::NativeOnEndInteract(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Execute_OnEndInteract(Cast<UObject>(this), OtherActor);
-
 	APawn* Pawn = Cast<APawn>(OtherActor);
 	if (nullptr == Pawn)
 	{
@@ -50,6 +48,8 @@ void IInteractable::NativeOnEndInteract(UPrimitiveComponent* OverlappedComp, AAc
 	}
 
 	RemoveAction(PlayerController);
+
+	Execute_OnEndInteract(Cast<UObject>(this), OtherActor);
 }
 
 void IInteractable::SetContext(UInputMappingContext* InContext)

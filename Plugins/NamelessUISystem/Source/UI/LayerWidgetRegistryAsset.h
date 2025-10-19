@@ -9,8 +9,7 @@
 
 
 enum class EEclipseGameLayer : uint8;
-class UCommonUserWidget;
-class UEcpUserWidget;
+class UCommonActivatableWidget;
 
 USTRUCT(BlueprintType)
 struct FSoftClassLayerWidgetAsset
@@ -19,7 +18,7 @@ struct FSoftClassLayerWidgetAsset
 
 public:
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
-	TArray<TSoftClassPtr<UCommonUserWidget>> WidgetSoftPtrList;
+	TArray<TSoftClassPtr<UCommonActivatableWidget>> WidgetSoftPtrList;
 };
 
 USTRUCT()
@@ -29,12 +28,12 @@ struct FRegistWidgetInfo
 
 public:
 	FRegistWidgetInfo() {};
-	FRegistWidgetInfo(const FGameplayTag& InTag, const TSoftClassPtr<UCommonUserWidget>& InSoftPtr) : LayerTag(InTag), WidgetSoftPtr(InSoftPtr) {};
+	FRegistWidgetInfo(const FGameplayTag& InTag, const TSoftClassPtr<UCommonActivatableWidget>& InSoftPtr) : LayerTag(InTag), WidgetSoftPtr(InSoftPtr) {};
 	virtual ~FRegistWidgetInfo() {};
 
 public:
 	FGameplayTag LayerTag;
-	TSoftClassPtr<UCommonUserWidget> WidgetSoftPtr;
+	TSoftClassPtr<UCommonActivatableWidget> WidgetSoftPtr;
 };
 
 
@@ -43,6 +42,10 @@ class ULayerWidgetRegistryAsset : public UDataAsset
 {
 	GENERATED_BODY()
 	
+public:
+	//NAMELESSUISYSTEM_API void Initialize();
+	NAMELESSUISYSTEM_API bool GetWidget(const FString& InPath, OUT FGameplayTag& OutLayerType, OUT TSoftClassPtr<UCommonActivatableWidget>* OutSoftPtr);
+
 private:
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FGameplayTag, FSoftClassLayerWidgetAsset> RegistryWidgets;
@@ -53,6 +56,4 @@ private:
 protected:
 	virtual void PostLoad() override;
 
-public:
-	bool GetWidget(const FString& InPath, OUT FGameplayTag& OutLayerType, OUT TSoftClassPtr<UCommonUserWidget>* OutSoftPtr);
 };

@@ -29,7 +29,7 @@ class ECLIPSE_API IInteractable
 
 protected:
 	// return handle
-	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions) = 0;
+	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>>& OutActions) = 0;
 
 protected:
 	virtual void SetContext(UInputMappingContext* InContext);
@@ -56,10 +56,10 @@ private:
 	void SetAction(APlayerController* OtherController);
 	void RemoveAction(APlayerController* OtherController);
 
-private:
-	TMap<uint32, TWeakObjectPtr<const UInputAction>> Handles;
-	TWeakObjectPtr<UInputMappingContext> InputContext;
-
 protected:
+	TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>> Handles;
 	TWeakObjectPtr<APlayerController> OwningController;
+
+private:
+	TWeakObjectPtr<UInputMappingContext> InputContext;
 };

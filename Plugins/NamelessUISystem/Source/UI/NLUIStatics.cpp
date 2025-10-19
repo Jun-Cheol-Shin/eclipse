@@ -48,7 +48,7 @@ void UNLUIStatics::ShowLayerWidgetFromPlayerController(const APlayerController* 
 	ShowLayerWidget(InController->GetLocalPlayer(), InLayerType, InWidgetClass);
 }
 
-void UNLUIStatics::HideLayerWidget(const ULocalPlayer* InLocalPlayer, UCommonActivatableWidget* InLayerWidget)
+void UNLUIStatics::HideLayerWidget(const ULocalPlayer* InLocalPlayer, const FGameplayTag& InLayerType, UCommonActivatableWidget* InLayerWidget)
 {
 	if (nullptr == InLocalPlayer) return;
 
@@ -58,13 +58,13 @@ void UNLUIStatics::HideLayerWidget(const ULocalPlayer* InLocalPlayer, UCommonAct
 	UNLUIManagerSubsystem* UISubSystem = EcpGameInstance->GetSubsystem<UNLUIManagerSubsystem>();
 	if (nullptr != UISubSystem)
 	{
-		UISubSystem->HideLayerWidget(InLayerWidget);
+		UISubSystem->HideLayerWidget(InLayerType, InLayerWidget);
 	}
 }
 
-void UNLUIStatics::HideLayerWidgetFromPlayerController(const APlayerController* InController, UCommonActivatableWidget* InLayerWidget)
+void UNLUIStatics::HideLayerWidgetFromPlayerController(const APlayerController* InController, const FGameplayTag& InLayerType, UCommonActivatableWidget* InLayerWidget)
 {
-	HideLayerWidget(InController->GetLocalPlayer(), InLayerWidget);
+	HideLayerWidget(InController->GetLocalPlayer(), InLayerType, InLayerWidget);
 }
 
 void UNLUIStatics::SetInputLockFromPlayerController(const APlayerController* InController, bool bLock)

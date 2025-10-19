@@ -52,6 +52,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsNeedUIOnlyInputMode() const;
 
+	UFUNCTION(BlueprintCallable)
+	ELayerInputMode GetInputMode() const { return InputMode; }
+
+
+	const TArray<UCommonActivatableWidget*>& GetWidgetList() const;
+
+
 protected:
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	FEcpLayerUIVariable UIVariable;

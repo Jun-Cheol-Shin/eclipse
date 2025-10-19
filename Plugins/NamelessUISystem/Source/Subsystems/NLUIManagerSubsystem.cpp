@@ -88,6 +88,7 @@ void UNLUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	RegistryAsset = Settings->WidgetRegistryAssetSoftPtr.LoadSynchronous();
 	CachedLayoutClass = Settings->LayoutClass;
+
 }
 
 void UNLUIManagerSubsystem::Deinitialize()
@@ -231,7 +232,7 @@ void UNLUIManagerSubsystem::ShowLayerWidget(const FGameplayTag& InLayerType, TSo
 	}
 }
 
-void UNLUIManagerSubsystem::HideLayerWidget(UCommonActivatableWidget* InWidget)
+void UNLUIManagerSubsystem::HideLayerWidget(const FGameplayTag& InLayerType, UCommonActivatableWidget* InWidget)
 {
 	FRootViewportLayoutInfo MyLayoutInfo;
 	if (false == GetOwningLayoutInfo(OUT MyLayoutInfo))
@@ -242,7 +243,7 @@ void UNLUIManagerSubsystem::HideLayerWidget(UCommonActivatableWidget* InWidget)
 	
 	if (ensure(MyLayoutInfo.RootLayout))
 	{
-		MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(InWidget);
+		MyLayoutInfo.RootLayout->RemoveWidgetToLayerStack(InLayerType, InWidget);
 	}
 }
 

@@ -12,7 +12,7 @@ class ULayerWidgetRegistryAsset;
 /**
  * 
  */
-UCLASS()
+UCLASS(Config = Game, DefaultConfig)
 class UNLUISystemSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -20,15 +20,15 @@ class UNLUISystemSettings : public UDeveloperSettings
 private:
 	friend class UNLUIManagerSubsystem;
 
-	UPROPERTY(EditAnywhere, meta = (AllowedClasses = "/Script/NamelessUISystem.NLGameLayout"))
+	UPROPERTY(EditAnywhere, Config, meta = (AllowedClasses = "/Script/NamelessUISystem.NLGameLayout"))
 	TSoftClassPtr<UNLGameLayout> LayoutClass;
 
-	UPROPERTY(EditAnywhere, meta = (AllowedClasses = "/Script/NamelessUISystem.LayerWidgetRegistryAsset"))
+	UPROPERTY(EditAnywhere, Config, meta = (AllowedClasses = "/Script/NamelessUISystem.LayerWidgetRegistryAsset"))
 	TSoftObjectPtr<ULayerWidgetRegistryAsset> WidgetRegistryAssetSoftPtr;
 	
 	// 섹션 이름 고정(모듈 바뀌어도 동일 섹션)
 	virtual FName GetContainerName() const override { return TEXT("Project"); }
 	virtual FName GetCategoryName()  const override { return TEXT("Plugins"); }
-	virtual FName GetSectionName()   const override { return TEXT("Nameless UI System Setting"); }
+	virtual FName GetSectionName()   const override { return TEXT("NLUISystem Settings"); }
 
 };

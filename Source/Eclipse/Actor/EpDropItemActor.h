@@ -36,7 +36,7 @@ private:
 
 protected:
 	// IInteractable
-	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TMap<uint32, TWeakObjectPtr<const UInputAction>>& OutActions) override;
+	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>>& OutActions) override;
 
 	virtual void OnPreInteract_Implementation(AActor* OtherActor) override;
 	virtual void OnEndInteract_Implementation(AActor* OtherActor) override;

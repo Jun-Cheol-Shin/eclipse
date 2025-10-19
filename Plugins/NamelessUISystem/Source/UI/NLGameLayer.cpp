@@ -175,6 +175,18 @@ FReply UNLGameLayer::NativeOnTouchEnded(const FGeometry& InGeometry, const FPoin
 	return NativeOnTouchEnded(InGeometry, InGestureEvent);
 }
 
+const TArray<UCommonActivatableWidget*>& UNLGameLayer::GetWidgetList() const
+{
+	if (nullptr != UIVariable.WidgetQueue)
+	{
+		return UIVariable.WidgetQueue->GetWidgetList();
+	}
+
+
+	check(UIVariable.WidgetStack);
+	return UIVariable.WidgetStack->GetWidgetList();
+}
+
 
 // DEPRECATED
 /*
