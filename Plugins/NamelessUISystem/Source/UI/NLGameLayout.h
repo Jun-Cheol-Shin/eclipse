@@ -75,5 +75,5 @@ protected:
 
 protected:
 	TMap<FGameplayTag, UNLGameLayer*> Layers;
-	TMap<FGameplayTag, bool> InputModeChecker;
+	TMap<FGameplayTag, bool> VisibleChecker;
 };

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "InteractPromptEntry.h"
+#include "Input/UIActionBindingHandle.h"
 #include "InteractPrompt.generated.h"
 
 /**
@@ -25,8 +26,9 @@ public:
 protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
-	
-	
+
+	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
+
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UDynamicEntryBox> EntryBox = nullptr;

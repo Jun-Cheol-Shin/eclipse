@@ -48,14 +48,6 @@ public:
 	int GetActivatedWidgetNum() const;
 	bool IsOnlyOneWidget(UCommonActivatableWidget* InWidget);
 
-	
-	UFUNCTION(BlueprintCallable)
-	bool IsNeedUIOnlyInputMode() const;
-
-	UFUNCTION(BlueprintCallable)
-	ELayerInputMode GetInputMode() const { return InputMode; }
-
-
 	const TArray<UCommonActivatableWidget*>& GetWidgetList() const;
 
 
@@ -95,8 +87,4 @@ private:
 
 private:
 	bool bTouchStart = false;
-
-private:
-	UPROPERTY(EditInstanceOnly, meta = (Category = "Eclipse Layer Setting", DisplayPriority = 1, AllowPrivateAccess = true))
-	ELayerInputMode InputMode;
 };

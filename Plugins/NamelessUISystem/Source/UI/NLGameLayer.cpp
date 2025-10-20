@@ -104,11 +104,6 @@ bool UNLGameLayer::IsOnlyOneWidget(UCommonActivatableWidget* InWidget)
 	return false;
 }
 
-bool UNLGameLayer::IsNeedUIOnlyInputMode() const
-{
-	return InputMode == ELayerInputMode::UIOnly;
-}
-
 void UNLGameLayer::OnDisplayedWidgetChanged(UCommonActivatableWidget* InWidget)
 {
 	if (nullptr == InWidget) return;

@@ -28,7 +28,10 @@ public class Eclipse : ModuleRules
             "Niagara",
             "CommonUI",
             "CommonInput",
-            "DeveloperSettings"
+            "DeveloperSettings",
+            "GameInputBase",
+            "GameInputBaseEditor",
+            "GameInputWindows",
             });
 
 		// Uncomment if you are using Slate UI

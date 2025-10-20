@@ -59,70 +59,37 @@ void UNLGameLayout::OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget,
 		InLayer->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	if (ensure(InputModeChecker.Contains(*TagPtr)))
+	if (ensure(VisibleChecker.Contains(*TagPtr)))
 	{
-		InputModeChecker[*TagPtr] = InLayer->GetVisibility() != ESlateVisibility::Collapsed;
+		VisibleChecker[*TagPtr] = InLayer->GetVisibility() != ESlateVisibility::Collapsed;
 		RefreshGameLayerInputMode();
 	}
 
 }
 
+
 void UNLGameLayout::RefreshGameLayerInputMode()
 {
-	APlayerController* PlayerController = GetOwningPlayer();
-	if (nullptr == PlayerController) return;
+	bool bIsVisible = false;
 
-	bool bActivatedUILayer = false;
-
-	for (auto& [Tag, IsVisible] : InputModeChecker)
+	for (auto& [Tag, IsVisible] : VisibleChecker)
 	{
-		if (false == ensure(Layers.Contains(Tag))) continue;
-
-		UNLGameLayer* Layer = Layers.FindRef(Tag);
-		if (false == ensure(Layer)) continue;
-
 		if (true == IsVisible)
 		{
-			switch (Layer->GetInputMode())
-			{
-			case ELayerInputMode::GameAndUI:
-			{
-				bActivatedUILayer = true;
-			}
-				break;
-
-			case ELayerInputMode::UIOnly:
-			{
-				PlayerController->SetInputMode(FInputModeUIOnly());
-				PlayerController->SetShowMouseCursor(true);
-				return;
-			}
-				break;
-
-			default:
-			case ELayerInputMode::GameOnly:
-				break;
-			}
-
-			if (bActivatedUILayer)
-			{
-				break;
-			}
+			bIsVisible = true;
+			break;
 		}
 	}
 
-	if (bActivatedUILayer)
+	if (false == bIsVisible)
 	{
-		PlayerController->SetInputMode(FInputModeGameAndUI());
-		PlayerController->SetShowMouseCursor(true);
-	}
+		/*
+		*   TODO
+			UI에서 모든 위젯을 비활성화하면 범용 UI는 비활성화된 마지막 위젯의 입력 구성을 기본값으로 사용합니다.
+			UI의 모든 위젯을 비활성화해야 하는 사용 사례의 경우 마지막으로 비활성화한 위젯이 소프트락 방지를 위해 합리적인 입력 처리 상태를 다시 적용하도록 해야 합니다.
+		*/
 
-	else
-	{
-		// All Layer is collapsed or Activated GameOnly Layer.
-		PlayerController->SetInputMode(FInputModeGameOnly());
-		PlayerController->SetShowMouseCursor(false);
-		//FSlateApplication::Get().SetUserFocusToGameViewport(0);
+
 
 	}
 }
@@ -145,7 +112,7 @@ void UNLGameLayout::RegistGameLayer(FGameplayTag InLayerType, UNLGameLayer* InLa
 		{
 			InLayer->OnCompleteDisplayedWidgetDelegate.AddUObject(this, &UNLGameLayout::OnChangedDisplayedWidget);
 			Layers.Emplace(InLayerType, InLayer);
-			InputModeChecker.Emplace(InLayerType, false);
+			VisibleChecker.Emplace(InLayerType, false);
 
 			InLayer->SetVisibility(ESlateVisibility::Collapsed);
 		}

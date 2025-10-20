@@ -3,6 +3,7 @@
 
 #include "InteractPrompt.h"
 #include "Components/DynamicEntryBox.h"
+#include "Misc/Optional.h"
 
 void UInteractPrompt::Set(const TArray<FInteractActionParam>& InParams)
 {
@@ -37,4 +38,9 @@ void UInteractPrompt::NativeOnDeactivated()
 
 
 	Super::NativeOnDeactivated();
+}
+
+TOptional<FUIInputConfig> UInteractPrompt::GetDesiredInputConfig() const
+{
+	return FUIInputConfig(ECommonInputMode::Game, EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown, EMouseLockMode::LockOnCapture);
 }
