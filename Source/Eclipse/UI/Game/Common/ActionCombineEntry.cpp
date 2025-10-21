@@ -2,7 +2,7 @@
 
 
 #include "ActionCombineEntry.h"
-#include "CommonActionWidget.h"
+#include "CommonLazyImage.h"
 #include "CommonTextBlock.h"
 #include "../../../Subsystems/EpInputManagerSubSystem.h"
 
@@ -30,11 +30,19 @@ void UActionCombineEntry::SetKey(const FKey& Key)
 	ECommonInputType KeyInputType = Subsystem->GetInputType();
 	FSlateBrush InputBrush;
 
+	/*
+	const UCommonInputPlatformSettings* PlatformSetting =
+		UPlatformSettingsManager::Get().GetSettingsForPlatform<UCommonInputPlatformSettings>();
+
+	TArray<const UCommonInputBaseControllerData*> ControllerDataList =
+		PlatformSetting->GetControllerDataForInputType(KeyInputType, PlatformSetting->GetDefaultGamepadName());*/
+
+
 	bool bSucess = UCommonInputPlatformSettings::Get()->TryGetInputBrush(InputBrush, TArray<FKey> { Key }, KeyInputType, GamepadName);
 
-	if (ensure(bSucess) && nullptr != ActionWidget)
+	if (ensure(bSucess) && nullptr != ActionImage)
 	{
-		ActionWidget->SetIconRimBrush(InputBrush);
+		ActionImage->SetBrush(InputBrush);
 	}
 }
 

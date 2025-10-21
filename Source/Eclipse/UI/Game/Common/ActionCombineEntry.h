@@ -11,7 +11,7 @@
  */
 
 class UCommonTextBlock;
-class UCommonActionWidget;
+class UCommonLazyImage;
 class UInputAction;
 
 UCLASS()
@@ -33,6 +33,6 @@ private:
 	TObjectPtr<UCommonTextBlock> PlusText = nullptr;
 
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	TObjectPtr<UCommonActionWidget> ActionWidget = nullptr;
+	TObjectPtr<UCommonLazyImage> ActionImage = nullptr;
 
 };

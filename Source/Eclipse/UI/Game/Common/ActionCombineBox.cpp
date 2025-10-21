@@ -73,9 +73,10 @@ void UActionCombineBox::SetAction(const UInputAction* InputAction)
 			NewEntry->SetKey(Keys[i]);
 			NewEntry->SetEnableSign(i > 0);
 		}
+
+
+		EntryBox->SetVisibility(EntryBox->GetAllEntries().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
-
-
 }
 
 void UActionCombineBox::NativeConstruct()

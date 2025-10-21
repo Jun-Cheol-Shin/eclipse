@@ -83,6 +83,6 @@ Content/Effects/*
 Content/Resource/Mesh/*
 Content/Resource/Texture/*
 Content/Resource/Material/*
-
+Content/Blueprint/Input/ControllerData
 
 /Content/Resource/Mesh/SM_Sword01.uasset
