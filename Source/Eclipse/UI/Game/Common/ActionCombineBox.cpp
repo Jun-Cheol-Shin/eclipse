@@ -79,6 +79,12 @@ void UActionCombineBox::SetAction(const UInputAction* InputAction)
 	}
 }
 
+void UActionCombineBox::SetCombinedAction(const UInputAction* InputAction, const UInputAction* InChordedAction)
+{
+	// TODO
+
+}
+
 void UActionCombineBox::NativeConstruct()
 {
 	Super::NativeConstruct();

@@ -13,34 +13,38 @@
 #include "Engine/AssetManager.h"
 
 
-void UNLGameLayout::OnDetectedTouch()
+void UNLGameLayout::OnChangedInputType(ECommonInputType InType)
 {
-	// todo : change mobile main hud
-
-	if (GEngine)
+	switch (InType)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Touch!"));
+	case ECommonInputType::MouseAndKeyboard:
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Mouse And Keyboard!"));
+		}
 	}
-}
-
-void UNLGameLayout::OnDetectedMouseAndKeyboard()
-{
-	// todo : change pc main hud
-
-	if (GEngine)
+	break;
+	case ECommonInputType::Gamepad:
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Mouse And Keyboard!"));
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Gamepad!"));
+		}
 	}
-
-}
-
-void UNLGameLayout::OnDetectedGamepad()
-{
-	// todo : change console main hud
-
-	if (GEngine)
+	break;
+	case ECommonInputType::Touch:
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Gamepad!"));
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Detected Touch!"));
+		}
+	}
+	break;
+	case ECommonInputType::Count:
+		break;
+	default:
+		break;
 	}
 }
 
@@ -119,6 +123,7 @@ void UNLGameLayout::RegistGameLayer(FGameplayTag InLayerType, UNLGameLayer* InLa
 	}
 }
 
+
 void UNLGameLayout::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -129,9 +134,7 @@ void UNLGameLayout::NativeConstruct()
 	UNLInputManagerSubSystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
 	if (ensure(InputSubSystem))
 	{
-		InputSubSystem->OnChangedDetectTouch.AddUObject(this, &UNLGameLayout::OnDetectedTouch);
-		InputSubSystem->OnChangedDetectMouseAndKeyboard.AddUObject(this, &UNLGameLayout::OnDetectedMouseAndKeyboard);
-		InputSubSystem->OnChangedDetectGamePad.AddUObject(this, &UNLGameLayout::OnDetectedGamepad);
+		InputSubSystem->OnInputMethodChangedNative.AddUObject(this, &UNLGameLayout::OnChangedInputType);
 	}
 
 
@@ -145,9 +148,7 @@ void UNLGameLayout::NativeDestruct()
 	UNLInputManagerSubSystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
 	if (ensure(InputSubSystem))
 	{
-		InputSubSystem->OnChangedDetectGamePad.RemoveAll(this);
-		InputSubSystem->OnChangedDetectMouseAndKeyboard.RemoveAll(this);
-		InputSubSystem->OnChangedDetectTouch.RemoveAll(this);
+		InputSubSystem->OnInputMethodChangedNative.RemoveAll(this);
 	}
 
 	Super::NativeDestruct();

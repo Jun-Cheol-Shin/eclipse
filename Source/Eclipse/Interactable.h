@@ -13,6 +13,8 @@ class UShapeComponent;
 
 class UEpInputConfig;
 
+enum class ECommonInputType : uint8;
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UInteractable : public UInterface
@@ -36,6 +38,7 @@ protected:
 	void Clear();
 
 protected:
+	void NativeOnChangedInputType(ECommonInputType InType);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact", DisplayName = "On Interact")
 	void OnInteract();

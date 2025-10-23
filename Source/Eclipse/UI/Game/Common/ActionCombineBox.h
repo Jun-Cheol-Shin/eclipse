@@ -20,6 +20,7 @@ class ECLIPSE_API UActionCombineBox : public UCommonUserWidget
 
 public:
 	void SetAction(const UInputAction* InputAction);
+	void SetCombinedAction(const UInputAction* InputAction, const UInputAction* InChordedAction);
 	
 protected:
 	virtual void NativeConstruct() override;	

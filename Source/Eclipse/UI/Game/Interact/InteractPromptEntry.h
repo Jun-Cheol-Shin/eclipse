@@ -20,7 +20,7 @@ struct FInteractActionParam
 	GENERATED_BODY()
 
 public:
-	const UInputAction* InputAction = nullptr;
+	const UInputAction* Action = nullptr;
 	FText DisplayText = {};
 };
 
@@ -31,6 +31,8 @@ class ECLIPSE_API UInteractPromptEntry : public UCommonUserWidget
 
 public:
 	void Set(const FInteractActionParam& InParam);
+
+	//void SetCombinedAction(const FInteractActionParam& InParam);
 	
 	
 private:

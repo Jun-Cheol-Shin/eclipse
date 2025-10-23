@@ -11,14 +11,16 @@
 #include "../PlayerCore/EpPlayerController.h"
 #include "../PlayerCore/Component/Inventory/EpInventoryComponent.h"
 #include "../PlayerCore/Component/Inventory/EclipseInventoryItem.h"
-#include "../Subsystems/EpResourceSubSystem.h"
 
 #include "../Option/EpInputConfig.h"
 
 #include "../PlayerCore/EpPlayerState.h"
 
 #include "../GameModes/EpGameInstance.h"
+
+#include "../Subsystems/EpInputManagerSubSystem.h"
 #include "../Subsystems/EpUIManagerSubsystem.h"
+#include "../Subsystems/EpResourceSubSystem.h"
 #include "../UI/Game/Interact/InteractPrompt.h"
 
 void AEpDropItemActor::Set(UEclipseInventoryItem* InItem)
@@ -62,11 +64,11 @@ void AEpDropItemActor::Reset()
 	Trigger->OnComponentEndOverlap.RemoveAll(this);
 }
 
-void AEpDropItemActor::OnInteract()
+void AEpDropItemActor::OnInteract(APlayerController* InOwningController)
 {
-	if (ensure(ItemData.IsValid() && OwningController.IsValid()))
+	if (ensure(ItemData.IsValid() && InOwningController))
 	{	
-		if (AEpPlayerState* PlayerState = OwningController->GetPlayerState<AEpPlayerState>())
+		if (AEpPlayerState* PlayerState = InOwningController->GetPlayerState<AEpPlayerState>())
 		{
 			if (UEpInventoryComponent* InventoryComponent = PlayerState->GetInventoryComponent())
 			{
@@ -92,9 +94,64 @@ void AEpDropItemActor::OnPing()
 	UE_LOG(LogTemp, Display, TEXT("Ping!"));
 }
 
-void AEpDropItemActor::OnDirectUse()
+void AEpDropItemActor::OnUseDirect()
 {
 	UE_LOG(LogTemp, Display, TEXT("Use Direct!"));
+}
+
+void AEpDropItemActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (ENetMode::NM_DedicatedServer == GetNetMode())
+	{
+		return;
+	}
+
+
+	// Show Prompt
+	UE_LOG(LogTemp, Display, TEXT("Show Prompt"));
+
+	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
+	if (!ensure(GameInst))
+	{
+		return;
+	}
+
+	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
+	if (ensure(UISubSystem))
+	{
+		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [WeakOwner = TWeakObjectPtr(this)](UCommonActivatableWidget* InPrompt)
+			{
+				UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt);
+				if (Prompt && WeakOwner.IsValid())
+				{
+					Prompt->Set(WeakOwner.Get());
+				}
+			}));
+	}
+
+}
+
+void AEpDropItemActor::OnEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (ENetMode::NM_DedicatedServer == GetNetMode())
+	{
+		return;
+	}
+
+	// Hide Prompt
+	UE_LOG(LogTemp, Display, TEXT("Hide Prompt"));
+
+	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
+	if (!ensure(GameInst))
+	{
+		return;
+	}
+
+	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
+	if (ensure(UISubSystem))
+	{
+		UISubSystem->HideLayerWidget<UInteractPrompt>();
+	}
 }
 
 // Sets default values
@@ -143,9 +200,8 @@ void AEpDropItemActor::BeginPlay()
 	case ENetMode::NM_Standalone:
 	case ENetMode::NM_Client:
 	{
-		Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnPreInteract);
-		Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::NativeOnEndInteract);
-		SetContext(InputMapping.LoadSynchronous());
+		Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::OnBeginOverlap);
+		Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::OnEndOverlap);
 	}
 	break;
 
@@ -156,7 +212,6 @@ void AEpDropItemActor::BeginPlay()
 
 void AEpDropItemActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	IInteractable::Clear();
 	Reset();
 
 	Super::EndPlay(EndPlayReason);
@@ -167,102 +222,3 @@ void AEpDropItemActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-
-// IInteractable
-void AEpDropItemActor::BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>>& OutActions)
-{
-	check(InConfig);
-
-	if (nullptr != InComponent)
-	{
-		const UInputAction* InteractAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact"), true));
-		const UInputAction* PingAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact.Ping"), true));
-
-		FEnhancedInputActionEventBinding& InteractHandle = InComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AEpDropItemActor::OnInteract);
-		FEnhancedInputActionEventBinding& PingHandle = InComponent->BindAction(PingAction, ETriggerEvent::Started, this, &AEpDropItemActor::OnPing);
-
-		OutActions.Emplace(InteractHandle.GetHandle(), InteractHandle.GetAction());
-		OutActions.Emplace(PingHandle.GetHandle(), PingHandle.GetAction());
-
-		// TODO : 바로 사용 가능한 아이템인지 체크 (바로 사용 액션)
-		//int32 ItemId = ItemData->GetItemId();
-		//const UInputAction* UseDirectAction = InConfig->FindNativeInputActionForTag(FGameplayTag::RequestGameplayTag(FName("InputTag.Interact.UseDirect"), true));
-		//InComponent->BindAction(UseDirec)
-
-	}
-}
-
-void AEpDropItemActor::OnPreInteract_Implementation(AActor* OtherActor)
-{
-	if (ENetMode::NM_DedicatedServer == GetNetMode())
-	{
-		return;
-	}
-
-
-	// Show Prompt
-	UE_LOG(LogTemp, Display, TEXT("Show Prompt"));
-
-	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
-	if (!ensure(GameInst))
-	{
-		return;
-	}
-
-	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
-	if (ensure(UISubSystem))
-	{
-		TArray<FInteractActionParam> ParamList;
-
-		for (int i = 0; i < Handles.Num(); ++i)
-		{
-			FInteractActionParam NewParam;
-
-			if (!ensureAlways(Handles[i].Value.IsValid()))
-			{
-				continue;
-			}
-
-			NewParam.InputAction = Handles[i].Value.Get();
-			NewParam.DisplayText = FText::FromString(TEXT("TEST"));
-
-			ParamList.Emplace(NewParam);
-		}
-
-		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [Params = MoveTemp(ParamList)](UCommonActivatableWidget* InPrompt)
-			{
-				if (UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt))
-				{
-					Prompt->Set(Params);
-				}
-			}));
-	}
-
-
-}
-
-void AEpDropItemActor::OnEndInteract_Implementation(AActor* OtherActor)
-{
-	if (ENetMode::NM_DedicatedServer == GetNetMode())
-	{
-		return;
-	}
-
-
-	// Hide Prompt
-	UE_LOG(LogTemp, Display, TEXT("Hide Prompt"));
-
-	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
-	if (!ensure(GameInst))
-	{
-		return;
-	}
-
-	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
-	if (ensure(UISubSystem))
-	{
-		UISubSystem->HideLayerWidget<UInteractPrompt>();
-	}
-}
-
-// End IInteractable

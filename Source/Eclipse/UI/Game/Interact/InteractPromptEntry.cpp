@@ -9,7 +9,7 @@ void UInteractPromptEntry::Set(const FInteractActionParam& InParam)
 {
 	if (nullptr != ActionCombineBox)
 	{
-		ActionCombineBox->SetAction(InParam.InputAction);
+		ActionCombineBox->SetAction(InParam.Action);
 	}
 
 	if (nullptr != ActionDisplayText)

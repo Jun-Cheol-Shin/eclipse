@@ -14,7 +14,7 @@ class UEclipseInventoryItem;
 class UEpInputConfig;
 
 UCLASS()
-class ECLIPSE_API AEpDropItemActor : public AActor, public IInteractable
+class ECLIPSE_API AEpDropItemActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -28,19 +28,17 @@ public:
 	void Set(UEclipseInventoryItem* InItem);
 	void Reset();
 
+
 private:
-	// Interact
-	void OnInteract();
+	void OnInteract(APlayerController* InOwningController);
 	void OnPing();
-	void OnDirectUse();
+	void OnUseDirect();
 
-protected:
-	// IInteractable
-	virtual void BindAction(const UEpInputConfig* InConfig, UEnhancedInputComponent* InComponent, OUT TArray<TPair<uint32, TWeakObjectPtr<const UInputAction>>>& OutActions) override;
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	virtual void OnPreInteract_Implementation(AActor* OtherActor) override;
-	virtual void OnEndInteract_Implementation(AActor* OtherActor) override;
-	// End IInteractable
+	UFUNCTION()
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -60,8 +58,4 @@ protected:
 
 private:
 	TWeakObjectPtr<UEclipseInventoryItem> ItemData = nullptr;
-
-private:
-	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true"))
-	TSoftObjectPtr<UInputMappingContext> InputMapping;
 };

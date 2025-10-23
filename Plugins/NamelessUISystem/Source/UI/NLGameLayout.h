@@ -39,6 +39,8 @@ enum class EAsyncWidgetState : uint8
 	AfterPush
 };
 
+enum class ECommonInputType : uint8;
+
 
 UCLASS(meta = (DisableNativeTick))
 class NAMELESSUISYSTEM_API UNLGameLayout : public UCommonUserWidget
@@ -63,9 +65,7 @@ protected:
 	void RegistGameLayer(FGameplayTag InLayerType, UNLGameLayer* InLayer);
 
 	// InputSubSystem Callback
-	void OnDetectedTouch();
-	void OnDetectedMouseAndKeyboard();
-	void OnDetectedGamepad();
+	void OnChangedInputType(ECommonInputType InType);
 
 	// EcpLayer CallBack
 	void OnChangedDisplayedWidget(UCommonActivatableWidget* InWidget, UNLGameLayer* InLayer, bool bIsActivated);

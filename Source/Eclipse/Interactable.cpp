@@ -13,6 +13,13 @@
 
 // Add default functionality here for any IInteractable functions that are not pure virtual.
 
+void IInteractable::NativeOnChangedInputType(ECommonInputType InType)
+{
+	if (OwningController.IsValid())
+	{
+		SetAction(OwningController.Get());
+	}
+}
 
 void IInteractable::NativeOnPreInteract(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

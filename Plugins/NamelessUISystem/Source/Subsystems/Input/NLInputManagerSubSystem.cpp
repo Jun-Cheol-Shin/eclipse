@@ -67,25 +67,9 @@ void UNLInputManagerSubSystem::SetCurrentInputType(ECommonInputType InputType)
 {
 	if (CurrentInputType != InputType)
 	{
-		switch (InputType)
-		{
-		case ECommonInputType::MouseAndKeyboard:
-			OnChangedDetectMouseAndKeyboard.Broadcast();
-			break;
-		case ECommonInputType::Gamepad:
-			OnChangedDetectGamePad.Broadcast();
-			break;
-		case ECommonInputType::Touch:
-			OnChangedDetectTouch.Broadcast();
-			break;
-
-		default:		
-		case ECommonInputType::Count:
-			break;
-		}
+		CurrentInputType = InputType;
+		OnInputMethodChangedNative.Broadcast(CurrentInputType);
 	}
-
-	CurrentInputType = InputType;
 }
 
 void UNLInputManagerSubSystem::SetGamepadInputType(const FName& InGamepadType)

@@ -13,7 +13,7 @@
 class FNLInputProcessor;
 
 DECLARE_EVENT_OneParam(FNLInputProcessor, FChangedGamepadDetectedEvent, FName);
-DECLARE_MULTICAST_DELEGATE(FChangedInputTypeDetectedEvent)
+DECLARE_MULTICAST_DELEGATE_OneParam(FChangedInputTypeDetectedEvent, ECommonInputType)
 
 UCLASS(MinimalAPI, Abstract)
 class UNLInputManagerSubSystem : public UEnhancedInputLocalPlayerSubsystem
@@ -30,12 +30,8 @@ public:
 	DECLARE_EVENT_OneParam(UNLInputManagerSubSystem, FInputMethodChangedEvent, ECommonInputType);
 	FInputMethodChangedEvent OnInputMethodChangedNative;
 
+	// XSX, PS5...
 	FChangedGamepadDetectedEvent& GetOnGamepadChangeDetected();
-
-	FChangedInputTypeDetectedEvent OnChangedDetectMouseAndKeyboard;
-	FChangedInputTypeDetectedEvent OnChangedDetectTouch;
-	FChangedInputTypeDetectedEvent OnChangedDetectGamePad;
-
 
 	
 protected:

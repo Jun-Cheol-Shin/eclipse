@@ -2,42 +2,96 @@
 
 
 #include "InteractPrompt.h"
-#include "Components/DynamicEntryBox.h"
+
 #include "Misc/Optional.h"
+#include "Input/CommonUIInputTypes.h"
+#include "Input/UIActionBindingHandle.h"
 
-void UInteractPrompt::Set(const TArray<FInteractActionParam>& InParams)
+#include "../../../Subsystems/EpInputManagerSubSystem.h"
+#include "../../../Actor/EpDropItemActor.h"
+
+#include "Components/DynamicEntryBox.h"
+#include "Components/Image.h"
+#include "Components/WidgetSwitcher.h"
+
+
+void UInteractPrompt::Set(AEpDropItemActor* InActor)
 {
-	if (nullptr != EntryBox)
+	DropItemActor = InActor;
+}
+
+void UInteractPrompt::OnShow()
+{
+	if (InputComponent.IsValid())
 	{
-		EntryBox->Reset();
-
-		for (int i = 0; i < InParams.Num(); ++i)
-		{
-			UInteractPromptEntry* NewEntry = EntryBox->CreateEntry<UInteractPromptEntry>();
-			if (!ensure(NewEntry)) continue;
-
-			NewEntry->Set(InParams[i]);
-		}
+		InputComponent->BindAction(InputActions[0], ETriggerEvent::Started, this, &UInteractPrompt::OnInteract);
 	}
 }
 
-void UInteractPrompt::NativeOnActivated()
+void UInteractPrompt::OnHide()
 {
-	Super::NativeOnActivated();
+	DropItemActor.Reset();
+	ActionHandles.Reset();
+}
 
-	if (nullptr != EntryBox)
+void UInteractPrompt::OnChangedInputDevice(ECommonInputType InType)
+{
+	switch (InType)
 	{
-		EntryBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+	case ECommonInputType::MouseAndKeyboard:
+	{
+		SetKeyboardMouseUI();
+	}
+		break;
+	case ECommonInputType::Gamepad:
+	{
+		SetGamepadUI();
+	}
+		break;
+
+	default:
+	case ECommonInputType::Touch:
+	case ECommonInputType::Count:
+		break;
 	}
 
 }
 
-void UInteractPrompt::NativeOnDeactivated()
+void UInteractPrompt::OnInteract()
+{
+	UE_LOG(LogTemp, Error, TEXT("Interact!!!!!!!!!"));
+}
+
+void UInteractPrompt::OnPing()
 {
 
+}
+
+void UInteractPrompt::OnUseDirect()
+{
+
+}
+
+void UInteractPrompt::OnHoldAction()
+{
+
+}
 
 
-	Super::NativeOnDeactivated();
+void UInteractPrompt::SetGamepadUI()
+{
+	// Show Hold
+	if (nullptr != DisableImage)			{ DisableImage->SetVisibility(ESlateVisibility::Collapsed); }
+	if (nullptr != ExpandSwitcher)			{ ExpandSwitcher->SetActiveWidgetIndex(0); }
+	//	if (nullptr != InteractEntry)		{ InteractEntry->Set(); }
+
+}
+
+void UInteractPrompt::SetKeyboardMouseUI()
+{
+	if (nullptr != DisableImage) { DisableImage->SetVisibility(ESlateVisibility::Collapsed); }
+	if (nullptr != ExpandSwitcher) { ExpandSwitcher->SetActiveWidgetIndex(1); }
+	//	if (nullptr != InteractEntry)		{ InteractEntry->Set(); }
 }
 
 TOptional<FUIInputConfig> UInteractPrompt::GetDesiredInputConfig() const
