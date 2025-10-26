@@ -5,49 +5,44 @@
 #include "ActionCombineEntry.h"
 
 #include "Components/DynamicEntryBox.h"
-#include "../../../Subsystems/EpInputManagerSubSystem.h"
 
-void UActionCombineBox::SetAction(const UInputAction* InputAction)
+void UActionCombineBox::SetAction(const FKey& InKey)
 {
-	ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
-	if (!ensure(LocalPlayer))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid Local Player! %s"), ANSI_TO_TCHAR(__FUNCTION__));
-		return;
-	}
+	
+	Refresh({ InKey });
+}
 
-	UEpInputManagerSubSystem* InputManager = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>();
-	if (!ensure(InputManager))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid Input Manager! %s"), ANSI_TO_TCHAR(__FUNCTION__));
-		return;
-	}
-
-	TArray<FKey> Keys = InputManager->QueryKeysMappedToAction(InputAction);
-	const ECommonInputType CurType = InputManager->GetInputType();
+void UActionCombineBox::SetCombinedAction(const FKey& InKey, const TArray<FKey>& InChordedKeys)
+{
 
 
-	Keys.RemoveAll([CurType](const FKey& InKey)
-		{ 
-			switch (CurType)
+	Add(InChordedKeys);
+	Add({ InKey });
+}
+
+void UActionCombineBox::Add(const TArray<FKey>& InKeys)
+{
+	/*TArray<FKey> FilteredKeys = InKeys.FilterByPredicate([InputType](const FKey& InKey)
+		{
+			switch (InputType)
 			{
 			case ECommonInputType::MouseAndKeyboard:
 			{
 				return InKey.IsTouch() || InKey.IsGamepadKey();
 			}
-				break;
+			break;
 
 			case ECommonInputType::Gamepad:
 			{
 				return false == InKey.IsGamepadKey();
 			}
-				break;
+			break;
 
 			case ECommonInputType::Touch:
 			{
 				return false == InKey.IsTouch();
 			}
-				break;
+			break;
 
 			default:
 				break;
@@ -55,34 +50,54 @@ void UActionCombineBox::SetAction(const UInputAction* InputAction)
 
 			return true;
 		});
-
-
+	*/
 
 	if (nullptr != EntryBox)
 	{
-		EntryBox->Reset();
-		for (int i = 0; i < Keys.Num(); ++i)
+		for (int i = 0; i < InKeys.Num(); ++i)
 		{
 			UActionCombineEntry* NewEntry = EntryBox->CreateEntry<UActionCombineEntry>();
-			
+
 			if (!ensure(NewEntry))
 			{
 				continue;
 			}
 
-			NewEntry->SetKey(Keys[i]);
+			NewEntry->SetKey(InKeys[i]);
+			NewEntry->SetEnableSign(EntryBox->GetAllEntries().Num() > 1);
+		}
+
+		EntryBox->SetVisibility(EntryBox->GetAllEntries().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	}
+}
+
+void UActionCombineBox::Refresh(const TArray<FKey>& InKeys)
+{
+	/* TArray<FKey> FilteredKeys = InKeys.FilterByPredicate([InputType](const FKey& InKey)
+		{
+			
+		});
+	*/
+
+	if (nullptr != EntryBox)
+	{
+		EntryBox->Reset();
+		for (int i = 0; i < InKeys.Num(); ++i)
+		{
+			UActionCombineEntry* NewEntry = EntryBox->CreateEntry<UActionCombineEntry>();
+
+			if (!ensure(NewEntry))
+			{
+				continue;
+			}
+
+			NewEntry->SetKey(InKeys[i]);
 			NewEntry->SetEnableSign(i > 0);
 		}
 
 
 		EntryBox->SetVisibility(EntryBox->GetAllEntries().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
-}
-
-void UActionCombineBox::SetCombinedAction(const UInputAction* InputAction, const UInputAction* InChordedAction)
-{
-	// TODO
-
 }
 
 void UActionCombineBox::NativeConstruct()

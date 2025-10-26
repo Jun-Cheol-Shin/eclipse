@@ -13,17 +13,24 @@
 class UInputAction;
 class UDynamicEntryBox;
 
+enum class ECommonInputType : uint8;
+
 UCLASS()
 class ECLIPSE_API UActionCombineBox : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	void SetAction(const UInputAction* InputAction);
-	void SetCombinedAction(const UInputAction* InputAction, const UInputAction* InChordedAction);
-	
+	void SetAction(const FKey& InKey);
+	void SetCombinedAction(const FKey& InKey, const TArray<FKey>& InChordedKeys);
+
+private:
+	void Add(const TArray<FKey>& InKeys);
+	void Refresh(const TArray<FKey>& InKeys);
+
 protected:
 	virtual void NativeConstruct() override;	
+
 
 private:
 

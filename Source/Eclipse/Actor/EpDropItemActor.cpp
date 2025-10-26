@@ -116,15 +116,20 @@ void AEpDropItemActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActo
 		return;
 	}
 
+	//if (nullptr == GetItemInstance()) return;
+
+	// todo
+	//int32 ItemId = GetItemInstance()->GetItemId();
+
 	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
 	if (ensure(UISubSystem))
 	{
-		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [WeakOwner = TWeakObjectPtr(this)](UCommonActivatableWidget* InPrompt)
+		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [](UCommonActivatableWidget* InPrompt)
 			{
 				UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt);
-				if (Prompt && WeakOwner.IsValid())
+				if (Prompt)
 				{
-					Prompt->Set(WeakOwner.Get());
+					Prompt->SetItem(0);
 				}
 			}));
 	}

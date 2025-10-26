@@ -22,13 +22,29 @@ class AEpDropItemActor;
 
 enum class ECommonInputType : uint8;
 
+
+
 UCLASS()
 class ECLIPSE_API UInteractPrompt : public UEpActivatableWidget
 {
 	GENERATED_BODY()
 	
 public:
-	void Set(AEpDropItemActor* InActor);
+	DECLARE_MULTICAST_DELEGATE(FOnInteractSignature)
+	FOnInteractSignature OnInteractDelegate;
+
+	DECLARE_MULTICAST_DELEGATE(FOnPingSignature)
+	FOnPingSignature OnPingDelegate;
+
+	DECLARE_MULTICAST_DELEGATE(FOnUseItemSignature)
+	FOnUseItemSignature OnUseDirectDelegate;
+
+
+	void SetItem(int32 InItemId);
+
+	// TODO
+	//void SetInteractObject();
+
 
 protected:
 	virtual void OnShow() override;
@@ -41,9 +57,13 @@ private:
 	//void SetMobileUI();
 
 protected:
+	UFUNCTION()
 	void OnInteract();
+	UFUNCTION()
 	void OnUseDirect();
+	UFUNCTION()
 	void OnPing();
+	UFUNCTION()
 	void OnHoldAction();
 
 protected:
@@ -63,12 +83,16 @@ private:
 	UCommonActionWidget* HoldActionWidget = nullptr;
 
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	UDynamicEntryBox* ExpandInteractBox = nullptr;
+	UInteractPromptEntry* PingEntry = nullptr;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UInteractPromptEntry* UseDirectEntry = nullptr;
 	
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	UWidgetSwitcher* ExpandSwitcher = nullptr;
 
+
 private:
-	TWeakObjectPtr<AEpDropItemActor> DropItemActor = nullptr;
-	TArray<int32> ActionHandles;
+	int32 ItemId = 0;
+
 };

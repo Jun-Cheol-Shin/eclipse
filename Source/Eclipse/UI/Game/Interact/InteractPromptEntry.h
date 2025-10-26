@@ -9,7 +9,7 @@
 /**
  * 
  */
-
+class UInputMappingContext;
 class UActionCombineBox;
 class UCommonTextBlock;
 class UInputAction;
@@ -20,7 +20,13 @@ struct FInteractActionParam
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere)
+	const UInputMappingContext* Context = nullptr;
+
+	UPROPERTY(EditAnywhere)
 	const UInputAction* Action = nullptr;
+
+	UPROPERTY(EditAnywhere)
 	FText DisplayText = {};
 };
 
@@ -31,10 +37,11 @@ class ECLIPSE_API UInteractPromptEntry : public UCommonUserWidget
 
 public:
 	void Set(const FInteractActionParam& InParam);
+	void Refresh();
 
-	//void SetCombinedAction(const FInteractActionParam& InParam);
-	
-	
+private:
+	bool IsCorrectInputType(FKey InKey) const;
+
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UCommonTextBlock> ActionDisplayText = nullptr;
@@ -42,4 +49,7 @@ private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UActionCombineBox> ActionCombineBox = nullptr;
 
+protected:
+	UPROPERTY(EditInstanceOnly, meta = (Category = "Setting"))
+	FInteractActionParam Parameter;
 };

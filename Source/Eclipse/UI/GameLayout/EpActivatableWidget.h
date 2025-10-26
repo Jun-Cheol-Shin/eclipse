@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "InputTriggers.h"
+#include "EnhancedInputComponent.h"
 #include "EpActivatableWidget.generated.h"
 
 /**
@@ -20,25 +22,33 @@ class ECLIPSE_API UEpActivatableWidget : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 public:
-	const TArray<const UInputAction*>& GetRegistedInputActions() const { return InputActions; }
+	void BindUIAction(const FName& InActionAssetName, ETriggerEvent TriggerEvent, UObject* InObject, FName InFunctionName);
+	void RemoveUIAction(const FName& InActionAssetName);
+
+
+	const UInputAction* GetAction(const FName& InActionAssetName);
 
 protected:
 	virtual void OnShow() {};
 	virtual void OnHide() {};
+	virtual void OnDestroy() {};
+	virtual void OnCreate() {};
 	virtual void OnChangedInputDevice(ECommonInputType InInputType) {};
 
 private:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
 
 protected:
-	UPROPERTY(VisibleDefaultsOnly, Category = "Eclipe Activatable Widget Settings")
-	TArray<const UInputAction*> InputActions;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Eclipe Activatable Widget Settings")
+	TMap<FName, const UInputAction*> InputActions;
 
 	TWeakObjectPtr<UEnhancedInputComponent> InputComponent;
 
 private:
-	//UPROPERTY(EditDefaultsOnly, Category = "Eclipse Activatable Widget Settings", meta = (AllowPrivateAccess = "true"))
-	//TArray<FName> ActionKeys;
+	TArray<FEnhancedInputActionEventBinding*> ActionHandles;
 };
