@@ -129,6 +129,10 @@ void AEpDropItemActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActo
 				UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt);
 				if (Prompt)
 				{
+					Prompt->OnUseDirectDelegate;
+					Prompt->OnPingDelegate;
+					Prompt->OnInteractDelegate;
+
 					Prompt->SetItem(0);
 				}
 			}));

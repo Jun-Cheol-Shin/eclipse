@@ -27,8 +27,12 @@ void UInteractPrompt::OnShow()
 
 void UInteractPrompt::OnHide()
 {
+	ItemId = 0;
 
-	//DropItemActor.Reset();
+	OnInteractDelegate.Clear();
+	OnUseDirectDelegate.Clear();
+	OnPingDelegate.Clear();
+
 }
 
 void UInteractPrompt::OnChangedInputDevice(ECommonInputType InType)
@@ -113,7 +117,11 @@ void UInteractPrompt::SetGamepadUI()
 {
 	// Show Hold
 	if (nullptr != DisableImage)			{ DisableImage->SetVisibility(ESlateVisibility::Collapsed); }
-	if (nullptr != ExpandSwitcher)			{ ExpandSwitcher->SetActiveWidgetIndex(0); }
+	if (nullptr != ExpandSwitcher)			
+	{ 
+		ExpandSwitcher->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		ExpandSwitcher->SetActiveWidgetIndex(0); 
+	}
 	if (nullptr != InteractEntry)			{ InteractEntry->Refresh(); }
 }
 
