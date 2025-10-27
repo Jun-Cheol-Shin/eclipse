@@ -7,6 +7,7 @@
 
 #include "InputMappingContext.h"
 #include "../../../Subsystems/EpInputManagerSubSystem.h"
+#include "CommonUITypes.h"
 
 void UInteractPromptEntry::Set(const FInteractActionParam& InParam)
 {
@@ -18,6 +19,20 @@ void UInteractPromptEntry::Refresh()
 {
 	if (!ensure(Parameter.Action)) return;
 
+	ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
+	if (!ensure(LocalPlayer))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Local Player! %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+
+	UEpInputManagerSubSystem* InputManager = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>();
+	if (!ensure(InputManager))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Input Manager! %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		return;
+	}
+
 	TArray<const UInputAction*> ChordedActions;
 
 	TArray<FKey> ChordedKeys;
@@ -28,7 +43,7 @@ void UInteractPromptEntry::Refresh()
 		const TArray<FEnhancedActionKeyMapping>& Mappings = Parameter.Context->GetMappings();
 		for (auto& Map : Mappings)
 		{
-			if (Parameter.Action != Map.Action || false == IsCorrectInputType(Map.Key)) { continue; }
+			if (Parameter.Action != Map.Action || false == CommonUI::IsKeyValidForInputType(Map.Key, InputManager->GetInputType())) { continue; }
 
 			ActionKey = Map.Key;
 			TArray<TObjectPtr<UInputTrigger>> InputTriggers = Map.Triggers;
@@ -41,8 +56,6 @@ void UInteractPromptEntry::Refresh()
 				ChordedActions.Emplace(ChordedAction->ChordAction);
 			}
 		}
-
-
 
 
 		for (auto& ChordedAction : ChordedActions)
@@ -79,47 +92,4 @@ void UInteractPromptEntry::Refresh()
 	{
 		ActionDisplayText->SetText(Parameter.DisplayText);
 	}
-}
-
-bool UInteractPromptEntry::IsCorrectInputType(FKey InKey) const
-{
-	ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
-	if (!ensure(LocalPlayer))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid Local Player! %s"), ANSI_TO_TCHAR(__FUNCTION__));
-		return false;
-	}
-
-	UEpInputManagerSubSystem* InputManager = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>();
-	if (!ensure(InputManager))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid Input Manager! %s"), ANSI_TO_TCHAR(__FUNCTION__));
-		return false;
-	}
-
-	switch (InputManager->GetInputType())
-	{
-	case ECommonInputType::MouseAndKeyboard:
-	{
-		return false == InKey.IsTouch() && false == InKey.IsGamepadKey();
-	}
-	break;
-
-	case ECommonInputType::Gamepad:
-	{
-		return true == InKey.IsGamepadKey();
-	}
-	break;
-
-	case ECommonInputType::Touch:
-	{
-		return true == InKey.IsTouch();
-	}
-	break;
-
-	default:
-		break;
-	}
-
-	return false;
 }

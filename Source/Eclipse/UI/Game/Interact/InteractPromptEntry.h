@@ -40,9 +40,6 @@ public:
 	void Refresh();
 
 private:
-	bool IsCorrectInputType(FKey InKey) const;
-
-private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UCommonTextBlock> ActionDisplayText = nullptr;
 

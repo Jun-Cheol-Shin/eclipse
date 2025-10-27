@@ -7,15 +7,12 @@
 #include "Components/DynamicEntryBox.h"
 
 void UActionCombineBox::SetAction(const FKey& InKey)
-{
-	
+{	
 	Refresh({ InKey });
 }
 
 void UActionCombineBox::SetCombinedAction(const FKey& InKey, const TArray<FKey>& InChordedKeys)
 {
-
-
 	Add(InChordedKeys);
 	Add({ InKey });
 }
