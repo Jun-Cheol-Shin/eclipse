@@ -7,8 +7,12 @@
 #include "CommonHierarchicalScrollBox.h"
 
 #include "Components/SizeBox.h"
-#include "Components/GridPanel.h"
-#include "Components/GridSlot.h"
+#include "Components/Border.h"
+
+void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
+{
+
+}
 
 void UGridBasedInventoryList::NativeConstruct()
 {
@@ -31,32 +35,8 @@ void UGridBasedInventoryList::NativeConstruct()
 		SlotPool.ReleaseAll();
 	}
 
-	if (nullptr != InventorySizeBox)
-	{
-		InventorySizeBox->SetWidthOverride(SlotWidth * SlotRow);
-		InventorySizeBox->SetHeightOverride(SlotHeight * SlotColumn);
-	}
-
-	if (EntryClass && nullptr != GridPanel)
-	{
-		for (int i = 0; i < SlotWidth; ++i)
-		{
-			for (int j = 0; j < SlotColumn; ++j)
-			{
-				UGridBasedInventoryEntry* Entry = SlotPool.GetOrCreateInstance(EntryClass);
-				if (!ensure(Entry)) continue;
-
-				Entry->SetSize(FVector2D(SlotWidth, SlotHeight));
-
-				if (UGridSlot* GridSlot = GridPanel->AddChildToGrid(Entry))
-				{
-					GridSlot->SetRow(i);
-					GridSlot->SetColumn(j);
-				}
-			}
-		}
-	}
-
+	SetInventorySize();
+	SetMaterial();
 }
 
 void UGridBasedInventoryList::NativeDestruct()
@@ -67,41 +47,32 @@ void UGridBasedInventoryList::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
+void UGridBasedInventoryList::SynchronizeProperties()
 {
+	Super::SynchronizeProperties();
 
+	SetInventorySize();
+	SetMaterial();	
 }
 
-void UGridBasedInventoryList::DebugInventoryList()
+void UGridBasedInventoryList::SetMaterial()
 {
-	if (IsDesignTime())
+	if (nullptr != InventoryBG)
 	{
-		if (nullptr != InventorySizeBox)
+		if (UMaterialInstanceDynamic* Material = InventoryBG->GetDynamicMaterial())
 		{
-			InventorySizeBox->SetWidthOverride(SlotWidth * SlotRow);
-			InventorySizeBox->SetHeightOverride(SlotHeight * SlotColumn);
+			Material->SetScalarParameterValue(TEXT("CellX"), RowCount);
+			Material->SetScalarParameterValue(TEXT("CellY"), ColumnCount);
+			Material->SetTextureParameterValue(TEXT("Texture"), SlotTexture);
 		}
+	}
+}
 
-		if (EntryClass && nullptr != GridPanel)
-		{
-			GridPanel->ClearChildren();
-
-			for (int i = 0; i < SlotWidth; ++i)
-			{
-				for (int j = 0; j < SlotColumn; ++j)
-				{
-					UGridBasedInventoryEntry* Entry = CreateWidget<UGridBasedInventoryEntry>(this, EntryClass);
-					if (!ensure(Entry)) continue;
-
-					Entry->SetSize(FVector2D(SlotWidth, SlotHeight));
-
-					if (UGridSlot* GridSlot = GridPanel->AddChildToGrid(Entry))
-					{
-						GridSlot->SetRow(j);
-						GridSlot->SetColumn(i);
-					}
-				}
-			}
-		}
+void UGridBasedInventoryList::SetInventorySize()
+{
+	if (nullptr != InventorySizeBox)
+	{
+		InventorySizeBox->SetWidthOverride(SlotSize * RowCount);
+		InventorySizeBox->SetHeightOverride(SlotSize * ColumnCount);
 	}
 }
