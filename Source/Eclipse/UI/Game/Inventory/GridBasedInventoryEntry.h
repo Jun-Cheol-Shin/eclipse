@@ -18,6 +18,7 @@ class ECLIPSE_API UGridBasedInventoryEntry : public UCommonUserWidget
 	GENERATED_BODY()
 	
 public:
+	void Set(int32 InItemId);
 	void SetSize(const FVector2D& InSize);
 	
 	

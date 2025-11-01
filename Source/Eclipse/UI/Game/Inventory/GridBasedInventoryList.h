@@ -10,18 +10,6 @@
 /**
  * 
  */
-
-
-UCLASS()
-class ECLIPSE_API UGridBasedInventoryListItem : public UObject
-{
-	GENERATED_BODY()
-
-public:
-
-
-};
-
 class UCanvasPanel;
 class UBorder;
 class USizeBox;
@@ -29,18 +17,45 @@ class UGridPanel;
 class UCommonHierarchicalScrollBox;
 
 UCLASS()
+class UGridBasedInventoryItem : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	// Top Left Info
+	uint32 Row = 0;
+	uint32 Column = 0;
+
+	// Size
+	FVector2D Size = FVector2D();
+};
+
+
+UCLASS()
 class ECLIPSE_API UGridBasedInventoryList : public UCommonUserWidget
 {
 	GENERATED_BODY()
 	
-	
+public:
+	void AddItem(UGridBasedInventoryItem* InItem);
+	void RemoveItem(UGridBasedInventoryItem* InItem);
+
+	UUserWidget* GetEntry(UGridBasedInventoryItem* InItem);
+	UGridBasedInventoryItem* GetItemFromListEntry(UUserWidget* InWidget);
+	void RefreshList();	
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-
 	virtual void SynchronizeProperties() override;
 
 private:
+	void AddWidget(UGridBasedInventoryItem* InItem);
+
+	// Get Top Left Index
+	int32 MakeKey(uint32 InRow, uint32 InColumn);
+	int32 GetBlankedSpaceIndex(uint32 InSlotW, uint32 InSlotH);
+	FVector2D GetPosition(uint32 InSlotW, uint32 InSlotH);
 
 	void SetMaterial();
 	void SetInventorySize();
@@ -50,23 +65,22 @@ private:
 	void OnChangedScrollOffset(float InScrollOffset);
 
 private:
-	FUserWidgetPool SlotPool {};
-	int32 CurrentScrollOffset = 0;
+	FUserWidgetPool ItemPool {};
 
 private:
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 SlotSize = 0;
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 RowCount = 0;
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 ColumnCount = 0;
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TObjectPtr<UTexture> SlotTexture = nullptr;
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TSubclassOf<UGridBasedInventoryEntry> ItemWidgetClass = nullptr;
 	
 private:
@@ -86,5 +100,15 @@ private:
 
 private:
 	UPROPERTY(Transient)
-	TArray<UGridBasedInventoryListItem*> ListItems;
+	TArray<UGridBasedInventoryItem*> Grid;
+
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UGridBasedInventoryItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
+
+
+#if WITH_EDITOR
+private:
+	IConsoleObject* MyCmdHandle = nullptr;
+
+#endif
 };
