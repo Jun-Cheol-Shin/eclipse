@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../Interactable.h"
 #include "EpDropItemActor.generated.h"
 
 class UCapsuleComponent;

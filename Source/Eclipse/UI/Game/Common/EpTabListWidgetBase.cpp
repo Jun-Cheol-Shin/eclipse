@@ -22,9 +22,18 @@ void UEpTabListWidgetBase::SetEnableButton(FName InTabId, bool bIsEnable)
 	}
 }
 
+void UEpTabListWidgetBase::SetHiddenButton(FName InTabId, bool bIsVisible)
+{
+	UCommonButtonBase* ButtonBase = GetTabButtonBaseByID(InTabId);
+	if (nullptr != ButtonBase)
+	{
+		SetTabVisibility(InTabId, true == bIsVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+}
+
 bool UEpTabListWidgetBase::RegisterDynamicTab(const FEpTabParameter& InTabParams)
 {
-	PendingTabLabelInfoMap.Add(InTabParams.TabId, InTabParams);
+	PendingTabLabelInfoMap.Add(InTabParams.TabActionTag.GetTagName(), InTabParams);
 
 	UCommonAnimatedSwitcher* CurrentLinkedSwitcher = GetLinkedSwitcher();
 	if (!ensure(CurrentLinkedSwitcher)) return false;
@@ -46,9 +55,9 @@ bool UEpTabListWidgetBase::RegisterDynamicTab(const FEpTabParameter& InTabParams
 					CurrentLinkedSwitcher->AddChild(TabContentWidget);
 				}
 
-				if (GetTabButtonBaseByID(InTabParams.TabId) == nullptr)
+				if (GetTabButtonBaseByID(InTabParams.TabActionTag.GetTagName()) == nullptr)
 				{
-					RegisterTab(InTabParams.TabId, InTabParams.TabButton, TabContentWidget);
+					RegisterTab(InTabParams.TabActionTag.GetTagName(), InTabParams.TabButton, TabContentWidget);
 				}
 			}
 		}));
@@ -56,14 +65,16 @@ bool UEpTabListWidgetBase::RegisterDynamicTab(const FEpTabParameter& InTabParams
 	return true;
 }
 
+
 void UEpTabListWidgetBase::OnSelectedTabButton(UCommonButtonBase* SelectedTabButton, int32 ButtonIndex)
 {
-	if (UEpBoundActionButton* ActionButton = Cast<UEpBoundActionButton>(SelectedTabButton))
+	/*if (UEpBoundActionButton* ActionButton = Cast<UEpBoundActionButton>(SelectedTabButton))
 	{
 
 
-	}
+	}*/
 }
+
 
 void UEpTabListWidgetBase::CreateTabs()
 {
@@ -91,9 +102,9 @@ void UEpTabListWidgetBase::CreateTabs()
 						CurrentLinkedSwitcher->AddChild(TabContentWidget);
 					}
 
-					if (GetTabButtonBaseByID(Param.TabId) == nullptr)
+					if (GetTabButtonBaseByID(Param.TabActionTag.GetTagName()) == nullptr)
 					{
-						RegisterTab(Param.TabId, Param.TabButton, TabContentWidget);
+						RegisterTab(Param.TabActionTag.GetTagName(), Param.TabButton, TabContentWidget);
 					}
 				}
 			}));
@@ -105,7 +116,7 @@ bool UEpTabListWidgetBase::GetPreregisteredTabInfo(const FName TabNameId, FEpTab
 {
 	const FEpTabParameter* const FoundTabInfo = PreregisteredTabInfoArray.FindByPredicate([&](FEpTabParameter& TabInfo) -> bool
 		{
-			return TabInfo.TabId == TabNameId;
+			return TabInfo.TabActionTag.GetTagName() == TabNameId;
 		});
 
 	if (!FoundTabInfo)
@@ -116,6 +127,7 @@ bool UEpTabListWidgetBase::GetPreregisteredTabInfo(const FName TabNameId, FEpTab
 	OutTabInfo = *FoundTabInfo;
 	return true;
 }
+
 
 void UEpTabListWidgetBase::NativeConstruct()
 {
@@ -141,7 +153,29 @@ void UEpTabListWidgetBase::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
+#if WITH_EDITOR
+	TabButtonBox->ClearChildren();
 
+	if (bDebugPreview && TabButtonBox)
+	{
+		for (int i = 0; i < PreregisteredTabInfoArray.Num(); ++i)
+		{
+			FEpTabParameter Param = PreregisteredTabInfoArray[i];
+
+			if (nullptr == Param.TabButton) continue;
+
+			if (UCommonButtonBase* Button = WidgetTree->ConstructWidget(Param.TabButton))
+			{
+				NativeOnCreatedTabButton(i, Button, TabButtonBox);
+
+				if (UEpBoundActionButton* ActionButton = Cast<UEpBoundActionButton>(Button))
+				{
+					ActionButton->SetButtonState(Param.PreviewButtonState);
+				}
+			}
+		}
+	}
+#endif
 }
 
 void UEpTabListWidgetBase::HandleTabCreation_Implementation(FName TabId, UCommonButtonBase* TabButton)
@@ -158,25 +192,30 @@ void UEpTabListWidgetBase::HandleTabCreation_Implementation(FName TabId, UCommon
 		TabInfoPtr = PendingTabLabelInfoMap.Find(TabId);
 	}
 
-	if (IEclipseTabButtonInterface* TabButtonInterface = Cast<IEclipseTabButtonInterface>(TabButton))
+	if (ensure(TabInfoPtr))
 	{
-		TabButtonInterface->NativeOnSetTabInfo(TabInfo);
-	}
+		if (IEclipseTabButtonInterface* TabButtonInterface = Cast<IEclipseTabButtonInterface>(TabButton))
+		{
+			TabButtonInterface->NativeOnSetTabInfo(*TabInfoPtr);
+		}
 
-	PendingTabLabelInfoMap.Remove(TabId);
+		PendingTabLabelInfoMap.Remove(TabId);
 
-	if (TabButtonBox)
-	{
-		TabButtonBox->AddChild(TabButton);
+
+		int Index = PreregisteredTabInfoArray.IndexOfByPredicate([TabInfo = TabInfoPtr](const FEpTabParameter& InTabInfo) -> bool
+			{
+				return TabInfo && InTabInfo.TabActionTag.GetTagName() == TabInfo->TabActionTag.GetTagName();
+			});
+
+
+		NativeOnCreatedTabButton(Index, TabButton, TabButtonBox);
 	}
 }
 
-void UEpTabListWidgetBase::DebugPreviewTab()
-{
-	TabButtonGroup = NewObject<UCommonButtonGroupBase>(this);
 
-	for (FEpTabParameter& Param : PreregisteredTabInfoArray)
-	{
-		RegisterTab(Param.TabId, Param.TabButton, nullptr);
-	}
+void UEpTabListWidgetBase::NativeOnCreatedTabButton(uint8 Index, UCommonButtonBase* InButton, UPanelWidget* InPanelWidget)
+{
+	if (!ensure(TabButtonBox)) return;
+
+	OnCreatedTabButton(Index, InButton, InPanelWidget);
 }

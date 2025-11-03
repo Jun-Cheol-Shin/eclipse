@@ -3,9 +3,66 @@
 
 #include "EpBoundActionButton.h"
 
+#include "CommonLazyImage.h"
+#include "CommonTextBlock.h"
+
+void UEpBoundActionButton::NativeOnChangedTabState(EEpButtonState InState)
+{
+	SetButtonState(InState);
+}
+
 void UEpBoundActionButton::NativeOnSetTabInfo(const FEpTabParameter& TabDescriptor)
 {
+	if (nullptr != TabButtonIcon)
+	{
+		TabButtonIcon->SetBrushFromLazyTexture(TabDescriptor.TabIcon);
+	}
 
+	if (nullptr != Text_ActionName)
+	{
+		Text_ActionName->SetText(TabDescriptor.TabText);
+	}
+}
+
+void UEpBoundActionButton::SetButtonState(EEpButtonState InState)
+{
+	if (ButtonState == InState) return;
+
+	ButtonState = InState;
+
+	switch (ButtonState)
+	{
+	case EEpButtonState::Disable:
+	{
+		SetIsEnabled(false);
+	}
+	break;
+	case EEpButtonState::Enable:
+	{
+		SetIsEnabled(true);
+	}
+	break;
+	case EEpButtonState::Selected:
+	{
+		SetIsEnabled(true);
+		SetIsSelectable(true);
+		SetIsSelected(true);
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+void UEpBoundActionButton::NativeOnClicked()
+{
+	Super::NativeOnClicked();
+
+	if (ButtonState == EEpButtonState::Disable)
+	{
+		// Show System Msg..
+
+	}
 }
 
 void UEpBoundActionButton::SynchronizeProperties()
@@ -17,22 +74,31 @@ void UEpBoundActionButton::SynchronizeProperties()
 	case EEpButtonState::Disable:
 	{
 		SetIsEnabled(false);
-		//SetIsSelected(false);
+		SetIsSelectable(false);
+		SetIsSelected(false);
 	}
-		break;
+	break;
 	case EEpButtonState::Enable:
 	{
 		SetIsEnabled(true);
-		//SetIsSelected(false);
+		if (IsDesignTime())
+		{
+			SetIsSelectable(false);
+		}
+		else
+		{
+			SetIsSelectable(true);
+		}
+		SetIsSelected(false);
 	}
-		break;
+	break;
 	case EEpButtonState::Selected:
 	{
 		SetIsEnabled(true);
-
-		//SetStyle(ButtonStyle);
+		SetIsSelectable(true);
+		SetIsSelected(true);
 	}
-		break;
+	break;
 	default:
 		break;
 	}

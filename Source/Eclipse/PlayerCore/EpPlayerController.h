@@ -16,6 +16,9 @@ class ECLIPSE_API AEpPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+private:
+	void OnInventory();
+
 public:
 	FORCEINLINE UEpInputConfig* GetInputConfig() const { return EclipseInputConfig; }
 	

@@ -11,22 +11,24 @@ class UCommonLazyImage;
 class UCommonActionWidget;
 class UCommonTextBlock;
 
-UENUM(BlueprintType)
-enum class EEpButtonState : uint8
-{
-	Disable = 0,
-	Enable,
-	Selected, 
-};
-
 UCLASS()
 class ECLIPSE_API UEpBoundActionButton : public UCommonBoundActionButton, public IEclipseTabButtonInterface
 {
 	GENERATED_BODY()
 
+public:
+	void SetButtonState(EEpButtonState InState);
 	
 protected:
+	// CommonButton Func
+	virtual void NativeOnClicked() override;
+	// End CommonButton Func
+
+	// IEclipseTabButtonInterface
+	virtual void NativeOnChangedTabState(EEpButtonState InState) override;
 	virtual void NativeOnSetTabInfo(const FEpTabParameter& TabDescriptor) override;
+	// End IEclipseTabButtonInterface
+
 	virtual void SynchronizeProperties() override;
 
 private:
