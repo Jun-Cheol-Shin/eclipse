@@ -13,6 +13,13 @@
 
 #include "Components/HorizontalBox.h"
 
+#include "CommonActionWidget.h"
+
+void UEpTabListWidgetBase::SelectTab(const FGameplayTag& InTag)
+{
+	SelectTabByID(InTag.GetTagName());
+}
+
 void UEpTabListWidgetBase::SetEnableButton(FName InTabId, bool bIsEnable)
 {
 	UCommonButtonBase* ButtonBase = GetTabButtonBaseByID(InTabId);
@@ -128,17 +135,54 @@ bool UEpTabListWidgetBase::GetPreregisteredTabInfo(const FName TabNameId, FEpTab
 	return true;
 }
 
+void UEpTabListWidgetBase::RefreshTabAction()
+{
+	if (nullptr != NextTabActionWidget)
+	{
+		if (NextTabEnhancedInputAction)
+		{
+			NextTabActionWidget->SetEnhancedInputAction(NextTabEnhancedInputAction);
+		}
+
+		else if (false == NextTabInputActionData.IsNull())
+		{
+			NextTabActionWidget->SetInputAction(NextTabInputActionData);
+		}
+	}
+
+
+	if (nullptr != PrevTabActionWidget)
+	{
+		if (PreviousTabEnhancedInputAction)
+		{
+			PrevTabActionWidget->SetEnhancedInputAction(PreviousTabEnhancedInputAction);
+		}
+
+		else if (false == PreviousTabInputActionData.IsNull())
+		{
+			PrevTabActionWidget->SetInputAction(PreviousTabInputActionData);
+		}
+	}
+}
+
 
 void UEpTabListWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (TabButtonBox)
+	{
+		TabButtonBox->ClearChildren();
+	}
 
 	if (TabButtonGroup)
 	{
 		TabButtonGroup->OnSelectedButtonBaseChanged.AddDynamic(this, &UEpTabListWidgetBase::OnSelectedTabButton);
 	}
 
+	SetListeningForInput(true);
 	CreateTabs();
+	RefreshTabAction();
 }
 
 void UEpTabListWidgetBase::NativeDestruct()
@@ -167,6 +211,11 @@ void UEpTabListWidgetBase::SynchronizeProperties()
 			if (UCommonButtonBase* Button = WidgetTree->ConstructWidget(Param.TabButton))
 			{
 				NativeOnCreatedTabButton(i, Button, TabButtonBox);
+
+				if (IEclipseTabButtonInterface* TabButtonInterface = Cast<IEclipseTabButtonInterface>(Button))
+				{
+					TabButtonInterface->NativeOnSetTabInfo(Param);
+				}
 
 				if (UEpBoundActionButton* ActionButton = Cast<UEpBoundActionButton>(Button))
 				{

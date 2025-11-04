@@ -185,12 +185,23 @@ TSharedPtr<FStreamableHandle> UNLGameLayout::PushWidgetToLayerStackAsync(const F
 
 UCommonActivatableWidget* UNLGameLayout::PushWidgetToLayerStack(const FGameplayTag& LayerName, UClass* ActivatableWidgetClass, TFunctionRef<void(UCommonActivatableWidget&)> InitInstanceFunc)
 {
-	if (UCommonActivatableWidgetContainerBase* Layer = GetLayout(LayerName))
+	UCommonActivatableWidgetContainerBase* Layer = GetLayout(LayerName);
+	if (!ensure(Layer)) return nullptr;
+	
+	UCommonActivatableWidget* const* FoundWidget = Layer->GetWidgetList().FindByPredicate([ActivatableWidgetClass](const UCommonActivatableWidget* InWidget) -> bool
+		{
+			return InWidget->GetClass() == ActivatableWidgetClass;
+		});
+
+	if (FoundWidget && *FoundWidget)
+	{
+		return *FoundWidget;
+	}
+
+	else
 	{
 		return Layer->AddWidget<UCommonActivatableWidget>(ActivatableWidgetClass, InitInstanceFunc);
 	}
-
-	return nullptr;
 }
 
 void UNLGameLayout::RemoveWidgetToLayerStack(const FGameplayTag& InLayerType, TSoftClassPtr<UCommonActivatableWidget> InWidgetPtr)

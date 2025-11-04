@@ -38,4 +38,7 @@ private:
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UCommonLazyImage> TabButtonIcon;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	TObjectPtr<UCommonActionWidget> ActionWidget;
 };

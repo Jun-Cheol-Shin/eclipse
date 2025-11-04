@@ -19,10 +19,7 @@ class ECLIPSE_API UGridBasedInventoryEntry : public UCommonUserWidget
 	
 public:
 	void Set(int32 InItemId);
-	void SetSize(const FVector2D& InSize);
-	
-	
+
 private:
-	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	USizeBox* SlotSizeBox = nullptr;
+
 };

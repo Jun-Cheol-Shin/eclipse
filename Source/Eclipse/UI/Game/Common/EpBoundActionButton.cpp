@@ -5,6 +5,7 @@
 
 #include "CommonLazyImage.h"
 #include "CommonTextBlock.h"
+#include "CommonActionWidget.h"
 
 void UEpBoundActionButton::NativeOnChangedTabState(EEpButtonState InState)
 {
@@ -16,6 +17,11 @@ void UEpBoundActionButton::NativeOnSetTabInfo(const FEpTabParameter& TabDescript
 	if (nullptr != TabButtonIcon)
 	{
 		TabButtonIcon->SetBrushFromLazyTexture(TabDescriptor.TabIcon);
+	}
+
+	if (nullptr != ActionWidget)
+	{
+		ActionWidget->SetEnhancedInputAction(TabDescriptor.InputAction);
 	}
 
 	if (nullptr != Text_ActionName)

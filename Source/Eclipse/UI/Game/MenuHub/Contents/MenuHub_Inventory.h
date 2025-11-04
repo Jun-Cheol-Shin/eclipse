@@ -10,19 +10,31 @@
 /**
  * 
  */
+class UGridBasedInventoryList;
+
 UCLASS()
 class ECLIPSE_API UMenuHub_Inventory : public UCommonUserWidget, public IEclipseTabContentInterface
 {
 	GENERATED_BODY()
 	
 	
-public:
-
 
 protected:
 	// IEclipseTabContentInterface
-	virtual void NativeOnCreatedContentWidget() override;
 	virtual void NativeOnActiveContent() override;
 	virtual void NativeOnInactiveContent() override;
 	// End IEclipseTabContentInterface
+
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+
+private:
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	TObjectPtr<UGridBasedInventoryList> InventoryList;
+
+#if WITH_EDITOR
+private:
+	IConsoleCommand* InventoryCheatHandle = nullptr;
+#endif
 };

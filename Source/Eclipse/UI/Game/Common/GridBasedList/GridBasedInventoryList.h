@@ -23,8 +23,7 @@ class UGridBasedInventoryItem : public UObject
 
 public:
 	// Top Left Info
-	uint32 Row = 0;
-	uint32 Column = 0;
+	FVector2D TopLeft = FVector2D();
 
 	// Size
 	FVector2D Size = FVector2D();
@@ -55,10 +54,12 @@ private:
 	// Get Top Left Index
 	int32 MakeKey(uint32 InRow, uint32 InColumn);
 	int32 GetBlankedSpaceIndex(uint32 InSlotW, uint32 InSlotH);
-	FVector2D GetPosition(uint32 InSlotW, uint32 InSlotH);
+	FVector2D ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH);
 
 	void SetMaterial();
 	void SetInventorySize();
+
+	bool IsOverScroll(int32 InTopLeftKey) const;
 
 private:
 	UFUNCTION()
@@ -80,8 +81,8 @@ private:
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TObjectPtr<UTexture> SlotTexture = nullptr;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
-	TSubclassOf<UGridBasedInventoryEntry> ItemWidgetClass = nullptr;
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "GridBasedObjectListEntry"))
+	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
 	
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
@@ -105,10 +106,4 @@ private:
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<UGridBasedInventoryItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
 
-
-#if WITH_EDITOR
-private:
-	IConsoleObject* MyCmdHandle = nullptr;
-
-#endif
 };

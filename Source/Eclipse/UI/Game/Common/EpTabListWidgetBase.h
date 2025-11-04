@@ -8,6 +8,7 @@
 #include "EpTabListWidgetBase.generated.h"
 
 class UHorizontalBox;
+class UCommonActionWidget;
 
 UENUM(BlueprintType)
 enum class EEpButtonState : uint8
@@ -89,11 +90,6 @@ class IEclipseTabContentInterface
 	GENERATED_BODY()
 
 public:
-	virtual void NativeOnCreatedContentWidget() { OnCreatedContentWidget(); }
-
-	UFUNCTION(BlueprintImplementableEvent, Category = ObjectListEntry, meta = (DisplayName = "On Entry Item Object Set"))
-	void OnCreatedContentWidget();
-
 	virtual void NativeOnActiveContent() { OnActiveContent(); }
 
 	UFUNCTION(BlueprintImplementableEvent, Category = ObjectListEntry, meta = (DisplayName = "On Entry Item Object Set"))
@@ -114,6 +110,10 @@ class ECLIPSE_API UEpTabListWidgetBase : public UCommonTabListWidgetBase
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
+	void SelectTab(const FGameplayTag& InTag);
+
+
+	UFUNCTION(BlueprintCallable, Category = "Tab List")
 	void SetEnableButton(FName InTabId, bool bIsEnable);
 
 	UFUNCTION(BlueprintCallable, Category = "Tab List")
@@ -123,7 +123,9 @@ public:
 	bool RegisterDynamicTab(const FEpTabParameter& InTabParams);
 
 private:
+	UFUNCTION()
 	void OnSelectedTabButton(UCommonButtonBase* SelectedTabButton, int32 ButtonIndex);
+
 	virtual void HandleTabCreation_Implementation(FName TabId, UCommonButtonBase* TabButton) override;
 
 protected:
@@ -141,6 +143,7 @@ protected:
 private:
 	void CreateTabs();
 	bool GetPreregisteredTabInfo(const FName TabNameId, FEpTabParameter& OutTabInfo);
+	void RefreshTabAction();
 
 private:
 	/**
@@ -149,6 +152,14 @@ private:
 	 */
 	UPROPERTY()
 	TMap<FName, FEpTabParameter> PendingTabLabelInfoMap;
+
+
+private:
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UCommonActionWidget* PrevTabActionWidget = nullptr;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	UCommonActionWidget* NextTabActionWidget = nullptr;
 
 
 private:

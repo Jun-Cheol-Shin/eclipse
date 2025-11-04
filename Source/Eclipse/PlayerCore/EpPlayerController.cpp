@@ -10,10 +10,28 @@
 
 #include "../Subsystems/EpInputManagerSubSystem.h"
 #include "../Subsystems/EpUIManagerSubsystem.h"
+#include "../UI/Game/MenuHub/MenuHubSheet.h"
 
 void AEpPlayerController::OnInventory()
 {
 	UE_LOG(LogTemp, Error, TEXT("Show Inventory!"));
+
+	UEpUIManagerSubsystem* UIManager = UGameInstance::GetSubsystem<UEpUIManagerSubsystem>(GetGameInstance());
+	if (!ensure(UIManager))
+	{
+		return;
+	}
+
+	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("InputTag.Inventory"), true);
+
+	UIManager->ShowLayerWidget<UMenuHubSheet>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [Tag](UCommonActivatableWidget* InActivatableWidget)
+		{
+			if (UMenuHubSheet* MenuHub = Cast<UMenuHubSheet>(InActivatableWidget))
+			{
+				MenuHub->SelectTab(Tag);
+			}
+		}));
+
 }
 
 void AEpPlayerController::SetupInputComponent()
