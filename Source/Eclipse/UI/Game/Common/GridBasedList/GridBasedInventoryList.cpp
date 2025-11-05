@@ -21,8 +21,9 @@ void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
 	{
 		return;
 	}
-
-	int32 PossibleTopLeftKey = GetBlankedSpaceIndex(InItem->Size.X, InItem->Size.Y);
+	
+	TArray<int32> GridList;
+	int32 PossibleTopLeftKey = GetBlankedSpaceIndex(OUT GridList, InItem->Size.X, InItem->Size.Y);
 	if (INDEX_NONE == PossibleTopLeftKey)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not enough empty space.."));
@@ -32,17 +33,9 @@ void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
 	int32 TopLeftX = PossibleTopLeftKey % RowCount;
 	int32 TopLeftY = PossibleTopLeftKey / RowCount;
 
-	for (int i = 0; i < InItem->Size.Y; ++i)
+	for (int32 Index : GridList)
 	{
-		for (int j = 0; j < InItem->Size.X; ++j)
-		{
-			int32 NewIndex = (TopLeftX + j) + ((TopLeftY + i) * RowCount);
-
-			if (ensureAlways(Grid.IsValidIndex(NewIndex)))
-			{
-				Grid[NewIndex] = InItem;
-			}
-		}
+		Grid[Index] = InItem;
 	}
 
 	InItem->TopLeft = FVector2D(TopLeftX, TopLeftY);
@@ -71,63 +64,63 @@ UGridBasedInventoryItem* UGridBasedInventoryList::GetItemFromListEntry(UUserWidg
 
 void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 {
-	int32 BottomScrollOffset = FMath::RoundToInt32(InScrollOffset);
-	int32 TopScrollOffset = BottomScrollOffset - ColumnCount;
+	const float InventorySize = InventorySizeBox->GetHeightOverride();
 
-	// remove item widget
-	for (int i = 0; i < RowCount; ++i)
+	const int32 LastPageIndex = FMath::CeilToInt32((InScrollOffset + InventorySize) / SlotSize);
+	const int32 FirstPageIndex = LastPageIndex - ColumnCount;
+
+	const int32 NewCurrentPageIndex = InScrollOffset / SlotSize;
+
+	if (CurrentPage != NewCurrentPageIndex)
 	{
-		int NewKey = MakeKey(i, TopScrollOffset);
-		if (!Grid.IsValidIndex(NewKey)) { continue; }
+		int32 RemovePage = 0;
+		int32 NewPage = 0;
 
-		UGridBasedInventoryItem* Item = Grid[NewKey];
-		if (nullptr != Item && Item->Size.Y <= 1 && ActiveWidgets.Contains(Item))
+		if (CurrentPage < NewCurrentPageIndex)
 		{
-			TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[Item];
-			if (ActivedWidget.IsValid())
-			{
-				IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget);
-				if (ensure(InterfaceEntry))
-				{
-					InterfaceEntry->NativeOnEntryReleased();
-				}
+			RemovePage = CurrentPage;
+			NewPage = LastPageIndex;
+		}
 
-				ItemPool.Release(ActivedWidget.Get());
-				ActiveWidgets.Remove(Item);
+		else
+		{
+			RemovePage = LastPageIndex + (CurrentPage - NewCurrentPageIndex);
+			NewPage = NewCurrentPageIndex;
+		}
+
+		// remove widget
+		for (int i = 0; i < RowCount; ++i)
+		{
+			int NewKey = MakeKey(i, RemovePage);
+			if (!Grid.IsValidIndex(NewKey)) { continue; }
+
+			UGridBasedInventoryItem* Item = Grid[NewKey];
+			if (nullptr != Item && Item->Size.Y <= (RemovePage + 1) && ActiveWidgets.Contains(Item))
+			{
+				RemoveWidget(Item);
 			}
 		}
-	}
 
-	// add item widget
-	for (int i = 0; i < RowCount; ++i)
-	{
-		int NewKey = MakeKey(i, BottomScrollOffset);
-		if (!Grid.IsValidIndex(NewKey)) { continue; }
-
-		UGridBasedInventoryItem* Item = Grid[NewKey];
-		if (nullptr != Item && false == ActiveWidgets.Contains(Item))
+		// add item widget
+		for (int i = 0; i < RowCount; ++i)
 		{
-			UUserWidget* ActivedWidget = ItemPool.GetOrCreateInstance(ItemWidgetClass);
-			if (ensure(nullptr != ActivedWidget))
-			{
-				IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget);
-				if (ensure(InterfaceEntry))
-				{
-					InterfaceEntry->NativeOnListItemObjectSet(Item);
-				}
-			}
+			int NewKey = MakeKey(i, NewPage);
+			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
-			if (InventoryPanel)
+			UGridBasedInventoryItem* Item = Grid[NewKey];
+			if (nullptr != Item && false == ActiveWidgets.Contains(Item))
 			{
-				UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
-				if (ensure(PanelSlot))
-				{
-					PanelSlot->SetPosition(ConvertCanvasPosition(Item->TopLeft.X, Item->TopLeft.Y));
-				}
+				AddWidget(Item);
 			}
 		}
-	}
 
+		CurrentPage = NewCurrentPageIndex;
+	}
+	
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Current Height = %d, Active Widget Num = %d"), NewCurrentPageIndex, ActiveWidgets.Num()));
+	}
 }
 
 void UGridBasedInventoryList::NativeConstruct()
@@ -144,11 +137,11 @@ void UGridBasedInventoryList::NativeConstruct()
 	{
 		ScrollBox->OnUserScrolled.AddDynamic(this, &UGridBasedInventoryList::OnChangedScrollOffset);
 		ScrollBox->SetScrollOffset(0);
+		CurrentPage = 0;
 	}
 
 	SetInventorySize();
 	SetMaterial();
-
 }
 
 void UGridBasedInventoryList::NativeDestruct()
@@ -184,18 +177,40 @@ void UGridBasedInventoryList::AddWidget(UGridBasedInventoryItem* InItem)
 		{
 			IGridBasedObjectListEntry::Execute_OnListItemObjectSet(ActivedWidget, InItem);
 		}
-	}
 
-	if (InventoryPanel)
-	{
-		UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
-		if (ensure(PanelSlot))
+		if (InventoryPanel)
 		{
-			PanelSlot->SetPosition(ConvertCanvasPosition(InItem->TopLeft.X, InItem->TopLeft.Y));
+			UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
+			if (ensure(PanelSlot))
+			{
+				PanelSlot->SetPosition(ConvertCanvasPosition(InItem->TopLeft.X, InItem->TopLeft.Y));
 
-			FVector2D Size = FVector2D(InItem->Size.X * SlotSize, InItem->Size.Y * SlotSize);
-			PanelSlot->SetSize(Size);
+				FVector2D Size = FVector2D(InItem->Size.X * SlotSize, InItem->Size.Y * SlotSize);
+				PanelSlot->SetSize(Size);
+			}
 		}
+
+		ActiveWidgets.Emplace(InItem, ActivedWidget);
+	}
+}
+
+void UGridBasedInventoryList::RemoveWidget(UGridBasedInventoryItem* InItem)
+{
+	TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[InItem];
+	if (ensure(ActivedWidget.IsValid()))
+	{
+		if (IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget.Get()))
+		{
+			InterfaceEntry->NativeOnEntryReleased();
+		}
+
+		else if (ActivedWidget.Get()->GetClass() && ActivedWidget.Get()->GetClass()->ImplementsInterface(UGridBasedObjectListEntry::StaticClass()))
+		{
+			IGridBasedObjectListEntry::Execute_OnEntryReleased(ActivedWidget.Get());
+		}
+
+		ItemPool.Release(ActivedWidget.Get());
+		ActiveWidgets.Remove(InItem);
 	}
 }
 
@@ -204,10 +219,13 @@ int32 UGridBasedInventoryList::MakeKey(uint32 InRow, uint32 InColumn)
 	return InRow + (InColumn * RowCount);
 }
 
-int32 UGridBasedInventoryList::GetBlankedSpaceIndex(uint32 InSlotW, uint32 InSlotH)
+FVector2D UGridBasedInventoryList::ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH)
 {
-	// TODO : 2차원 배열과 실제 인벤토리 타일과 동기화 필요 (12번째 인덱스가 끝 타일 이라면 -> 13,14 참조하면 안됨
+	return FVector2D(SlotSize * InSlotW, SlotSize * InSlotH);
+}
 
+int32 UGridBasedInventoryList::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight)
+{
 	TQueue<int32> Queue;
 
 	for (int i = 0; i < Grid.Num(); ++i)
@@ -218,49 +236,53 @@ int32 UGridBasedInventoryList::GetBlankedSpaceIndex(uint32 InSlotW, uint32 InSlo
 		}
 	}
 
+	OutGridList.Reserve(InWidth * InHeight);
+
 	while (false == Queue.IsEmpty())
 	{
 		int32 TopLeft;
 		Queue.Dequeue(OUT TopLeft);
 
-		TArray<int32> Indexes;
-
-		int Row = TopLeft % RowCount;
-		int Column = TopLeft / RowCount;
-
-		bool IsEmpty = true;
-
-		for (uint32 i = 0; i <= InSlotH - 1; ++i)
+		int Level = TopLeft / RowCount;
+		if (Level != (TopLeft + InWidth - 1) / RowCount)
 		{
-			for (uint32 j = 0; j <= InSlotW - 1; ++j)
-			{
-				int NewIndex = (Row + j) + ((Column + i) * RowCount);
+			continue;
+		}
 
-				if (Grid.IsValidIndex(NewIndex) && nullptr != Grid[NewIndex])
+		OutGridList.Reset();
+
+		bool flag = false;
+
+		for (int i = 0; i < InHeight; ++i)
+		{
+			int Height = i * RowCount;
+
+			for (int j = 0; j < InWidth; ++j)
+			{
+				int Index = TopLeft + j + Height;
+				OutGridList.Emplace(Index);
+
+				if (false == Grid.IsValidIndex(Index) ||
+					nullptr != Grid[Index])
 				{
-					IsEmpty = false;
+					flag = true;
 					break;
 				}
 			}
 
-			if (false == IsEmpty)
+			if (true == flag)
 			{
 				break;
 			}
 		}
 
-		if (true == IsEmpty)
+		if (OutGridList.Num() == InWidth * InHeight)
 		{
-			return TopLeft;
+			return OutGridList.IsValidIndex(0) ? OutGridList[0] : INDEX_NONE;
 		}
 	}
 
 	return INDEX_NONE;
-}
-
-FVector2D UGridBasedInventoryList::ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH)
-{
-	return FVector2D(SlotSize * InSlotW, SlotSize * InSlotH);
 }
 
 void UGridBasedInventoryList::SetMaterial()
@@ -289,13 +311,15 @@ void UGridBasedInventoryList::SetInventorySize()
 
 bool UGridBasedInventoryList::IsOverScroll(int32 InTopLeftKey) const
 {
-	if (!ensure(ScrollBox)) { return false; }
+	if (!ensure(ScrollBox && InventorySizeBox)) { return false; }
 
-	const float View = ScrollBox->GetCachedGeometry().GetLocalSize().Y;
-	const float ScrollOffset = ScrollBox->GetScrollOffset();
+	const float CurrentScrollOffset = ScrollBox->GetScrollOffset();
+	const float InventorySize = InventorySizeBox->GetHeightOverride();
 
-	const float CellOffset = ScrollBox->GetOrientation() == Orient_Vertical ? ScrollBox->GetScrollOffsetOfEnd() / ColumnCount : ScrollBox->GetScrollOffsetOfEnd() / RowCount;
-	const int Level = ScrollBox->GetOrientation() == Orient_Vertical ? InTopLeftKey / RowCount : InTopLeftKey / ColumnCount;
+	const int32 LastPageIndex = FMath::CeilToInt32((CurrentScrollOffset + InventorySize) / SlotSize);
+	const int32 FirstPageIndex = LastPageIndex - ColumnCount;
+	
+	const int32 CurrentPageIndex = InTopLeftKey / RowCount;
 
-	return (CellOffset * Level) + View < ScrollOffset + View;
+	return FirstPageIndex > CurrentPageIndex;
 }

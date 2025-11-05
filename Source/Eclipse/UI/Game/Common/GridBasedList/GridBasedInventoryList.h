@@ -50,11 +50,12 @@ protected:
 
 private:
 	void AddWidget(UGridBasedInventoryItem* InItem);
+	void RemoveWidget(UGridBasedInventoryItem* InItem);
 
 	// Get Top Left Index
 	int32 MakeKey(uint32 InRow, uint32 InColumn);
-	int32 GetBlankedSpaceIndex(uint32 InSlotW, uint32 InSlotH);
 	FVector2D ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH);
+	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight);
 
 	void SetMaterial();
 	void SetInventorySize();
@@ -66,6 +67,7 @@ private:
 	void OnChangedScrollOffset(float InScrollOffset);
 
 private:
+	int32 CurrentPage = 0;
 	FUserWidgetPool ItemPool {};
 
 private:
