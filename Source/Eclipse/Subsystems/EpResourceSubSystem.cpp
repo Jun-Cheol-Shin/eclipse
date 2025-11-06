@@ -4,6 +4,7 @@
 #include "EpResourceSubSystem.h"
 #include "EpGameDataSubSystem.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/TopLevelAssetPath.h" 
 #include "Engine/ObjectLibrary.h"
 
 namespace ResourcePath
@@ -20,23 +21,31 @@ void UEpResourceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
     AssetLibrary = UObjectLibrary::CreateLibrary(UObject::StaticClass(), true, GIsEditor);
     AssetLibrary->LoadAssetDataFromPaths(TArray<FString>(
         {
-            ResourcePath::DataAssetPath,
             ResourcePath::DataTablePath,
+            ResourcePath::DataAssetPath,
             ResourcePath::SpawnPath,
-            ResourcePath::MaterialPath,
             ResourcePath::StaticMeshPath,
         }
         ));
 
     AssetLibrary->LoadAssetsFromAssetData();
-
     TArray<FAssetData> DataList;
     AssetLibrary->GetAssetDataList(DataList);
 
-    Algo::Transform(DataList, CachedAssetDataList, [](const FAssetData& InAssetData) -> TPair<FName, FAssetData>
+    Algo::Transform(DataList, CachedAssetDataList, [](const FAssetData& InAssetData) -> TPair<FTopLevelAssetPath, FAssetData>
         {
-            return { InAssetData.AssetName, InAssetData };
+            if (InAssetData.IsInstanceOf(UDataTable::StaticClass()))
+            {
+                const FName TagName("RowStructure");
+                FAssetTagValueRef TagValue = InAssetData.TagsAndValues.FindTag(TagName);
+                FSoftObjectPath SoftPath = TagValue.GetValue();
+
+                return { SoftPath.GetAssetPath(), InAssetData };
+            }
+
+            return { InAssetData.AssetClassPath, InAssetData };
         });
+
 }
 
 void UEpResourceSubSystem::Deinitialize()
@@ -45,32 +54,15 @@ void UEpResourceSubSystem::Deinitialize()
     ColorPalette = nullptr;
 }
 
-UDataTable* UEpResourceSubSystem::GetDataTable(const FString& InDataName) const
-{
-    FName DataTableName = FName(TEXT("DT_") + InDataName);
-
-    if (CachedAssetDataList.Contains(DataTableName))
-    {
-        return Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(DataTableName), true));
-    }
-
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
-    }
-
-    return nullptr;
-}
-
 const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
 {
     if (nullptr == ColorPalette)
     {
-        FName ColorPaletteName = FName(TEXT("DA_ColorPalette"));
+        FTopLevelAssetPath ClassPath = UColorPaletteDataAsset::StaticClass()->GetClassPathName();
 
-        if (CachedAssetDataList.Contains(ColorPaletteName))
+        if (CachedAssetDataList.Contains(ClassPath))
         {
-            ColorPalette = Cast<UColorPaletteDataAsset>(SyncLoadObject(CachedAssetDataList.FindRef(ColorPaletteName), true));
+            ColorPalette = Cast<UColorPaletteDataAsset>(SyncLoadObject(CachedAssetDataList.FindRef(ClassPath), true));
         }
 
         else
@@ -80,32 +72,6 @@ const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
     }
 
     return ColorPalette;
-}
-
-TSubclassOf<AEpDropItemActor> UEpResourceSubSystem::GetDropItemActor() const
-{
-    FName DropItemActorName = TEXT("BP_DropItemActor");
-    if (CachedAssetDataList.Contains(DropItemActorName))
-    {
-        FAssetData AssetData = CachedAssetDataList.FindRef(DropItemActorName);
-
-        if (UBlueprintGeneratedClass* BPGenClass = Cast<UBlueprintGeneratedClass>(SyncLoadObject(AssetData, true)))
-        {
-            return BPGenClass->GetDefaultObject()->GetClass();
-        }
-
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Invalid BPGenClass.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
-        }
-    }
-    
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
-    }
-
-    return nullptr;
 }
 
 TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const

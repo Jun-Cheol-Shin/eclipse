@@ -29,18 +29,19 @@ public:
 	const T* GetGameData(int32 GameDataId)
 	{
 		const UScriptStruct* RowStruct = T::StaticStruct();
-		FString RowName = RowStruct->GetName();
-		RowName.RemoveFromEnd(TEXT("Row"));
+		//FString RowName = RowStruct->GetName();
+		//RowName.RemoveFromEnd(TEXT("Row"));
 
-		if (ensureAlways(DataTables.Contains(RowName)))
+		FTopLevelAssetPath Path = RowStruct->GetStructPathName();
+
+		if (ensureAlways(DataTables.Contains(Path)))
 		{
-			// find
-			UDataTable* DataTable = DataTables[RowName];
+			UDataTable* DataTable = DataTables.FindRef(Path);
 			const T* FoundRow = DataTable->FindRow<T>(FName(FString::FormatAsNumber(GameDataId)), FString(""));
 
 			if (nullptr == FoundRow)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("UDataTable::FindRow : requested row '%s' not in DataTable '%s'."), *RowName, *GetNameSafe(DataTable));
+				//UE_LOG(LogTemp, Warning, TEXT("UDataTable::FindRow : requested row '%s' not in DataTable '%s'."), Path.GetAssetName(), *GetNameSafe(DataTable));
 				return nullptr;
 			}
 
@@ -55,14 +56,13 @@ private:
 	void AddGameData(UEpResourceSubSystem* InResourceManager)
 	{
 		const UScriptStruct* RowStruct = T::StaticStruct();
-		FString RowName = RowStruct->GetName();           // ex) "ItemDatRow -> ItemData"
-		RowName.RemoveFromEnd(TEXT("Row"));
+		//FString RowName = RowStruct->GetName();           // ex) "ItemDatRow -> ItemData"
+		//RowName.RemoveFromEnd(TEXT("Row"));
 
-		UDataTable* NewDataTable = InResourceManager->GetDataTable(RowName);
-
+		UDataTable* NewDataTable = InResourceManager->GetDataTable<T>();
 		if (ensureAlways(nullptr != NewDataTable))
 		{
-			DataTables.Emplace(RowName, NewDataTable);
+			DataTables.Emplace(RowStruct->GetStructPathName(), NewDataTable);
 		}
 	}
 	
@@ -72,5 +72,5 @@ protected:
 	virtual void Deinitialize() override;
 
 private:
-	TMap<FString, TObjectPtr<UDataTable>> DataTables;
+	TMap<FTopLevelAssetPath, TObjectPtr<UDataTable>> DataTables;
 };

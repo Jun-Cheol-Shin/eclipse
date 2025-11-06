@@ -47,15 +47,55 @@ private:
 	friend class UEpGameDataSubSystem;
 
 public:
-	// Async Load..
-	
-	// End Async Load
-
 	// Sync Load
-	TSubclassOf<AEpDropItemActor> GetDropItemActor() const;
-	UDataTable* GetDataTable(const FString& InDataName) const;
+	template<typename T = AActor>
+	TSubclassOf<T> GetActor() const
+	{
+		FTopLevelAssetPath ClassPath = T::StaticClass()->GetClassPathName();
+
+		if (CachedAssetDataList.Contains(ClassPath))
+		{
+			FAssetData AssetData = CachedAssetDataList.FindRef(ClassPath);
+
+			if (UBlueprintGeneratedClass* BPGenClass = Cast<UBlueprintGeneratedClass>(SyncLoadObject(AssetData, true)))
+			{
+				return BPGenClass->GetDefaultObject()->GetClass();
+			}
+
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Invalid BPGenClass.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+			}
+		}
+
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		}
+
+		return nullptr;
+	}
+
+	template<typename T = FTableRowBase>
+	UDataTable* GetDataTable() const
+	{
+		const UScriptStruct* RowStruct = T::StaticStruct();
+		FTopLevelAssetPath ClassPath = RowStruct->GetStructPathName();
+
+		if (CachedAssetDataList.Contains(ClassPath))
+		{
+			return Cast<UDataTable>(SyncLoadObject(CachedAssetDataList.FindRef(ClassPath), true));
+		}
+
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid Resource.. %s"), ANSI_TO_TCHAR(__FUNCTION__));
+		}
+
+		return nullptr;
+	}
+
 	const UColorPaletteDataAsset* GetColorPalette();
-	// End Sync Load
 
 protected:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
@@ -72,6 +112,6 @@ private:
 	UPROPERTY() 
 	UObjectLibrary* AssetLibrary = nullptr;
 
-	UPROPERTY() 
-	TMap<FName, FAssetData> CachedAssetDataList;
+	UPROPERTY()
+	TMap<FTopLevelAssetPath /* AssetName */, FAssetData> CachedAssetDataList {};
 };
