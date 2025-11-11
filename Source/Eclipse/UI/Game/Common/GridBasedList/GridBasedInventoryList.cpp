@@ -95,9 +95,16 @@ void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
 			UGridBasedInventoryItem* Item = Grid[NewKey];
-			if (nullptr != Item && Item->Size.Y <= (RemovePage + 1) && ActiveWidgets.Contains(Item))
+
+			// TODO : 아이템의 TopLeft.Y + Size.Y가 아이템이 차지하는 공간의 밑부분
+			// TopLeft : 0 , Size.Y = 5라면, 5열이 아이템의 밑부분이다.
+			if (nullptr != Item)
 			{
-				RemoveWidget(Item);
+				int ItemBottomYIndex = Item->TopLeft.Y + (Item->Size.Y - 1);
+				if (ItemBottomYIndex <= RemovePage && ActiveWidgets.Contains(Item))
+				{
+					RemoveWidget(Item);
+				}
 			}
 		}
 
@@ -117,9 +124,9 @@ void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 		CurrentPage = NewCurrentPageIndex;
 	}
 	
-	if (GEngine)
+	if (GEngine && InventoryPanel)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Current Height = %d, Active Widget Num = %d"), NewCurrentPageIndex, ActiveWidgets.Num()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Current Height = %d, Active Widget Num = %d"), NewCurrentPageIndex, InventoryPanel->GetChildrenCount()));
 	}
 }
 
@@ -207,6 +214,11 @@ void UGridBasedInventoryList::RemoveWidget(UGridBasedInventoryItem* InItem)
 		else if (ActivedWidget.Get()->GetClass() && ActivedWidget.Get()->GetClass()->ImplementsInterface(UGridBasedObjectListEntry::StaticClass()))
 		{
 			IGridBasedObjectListEntry::Execute_OnEntryReleased(ActivedWidget.Get());
+		}
+
+		if (InventoryPanel)
+		{
+			InventoryPanel->RemoveChild(ActivedWidget.Get());
 		}
 
 		ItemPool.Release(ActivedWidget.Get());

@@ -108,4 +108,6 @@ private:
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<UGridBasedInventoryItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
 
+	UPROPERTY(Transient)
+	TMap<TWeakObjectPtr<UUserWidget>, TObjectPtr<UGridBasedInventoryItem>> ActiveItems;
 };
