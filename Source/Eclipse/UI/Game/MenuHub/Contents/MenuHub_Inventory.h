@@ -10,7 +10,7 @@
 /**
  * 
  */
-class UGridBasedInventoryList;
+class UGridBasedListView;
 
 UCLASS()
 class ECLIPSE_API UMenuHub_Inventory : public UCommonUserWidget, public IEclipseTabContentInterface
@@ -31,7 +31,7 @@ protected:
 
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	TObjectPtr<UGridBasedInventoryList> InventoryList;
+	TObjectPtr<UGridBasedListView> InventoryList;
 
 #if WITH_EDITOR
 private:

@@ -3,7 +3,8 @@
 
 #include "MenuHub_Inventory.h"
 
-#include "../../Common/GridBasedList/GridBasedInventoryList.h"
+#include "../../Common/GridBasedList/GridBasedListView.h"
+#include "../../Common/GridBasedList/GridBasedListEntry.h"
 
 void UMenuHub_Inventory::NativeOnActiveContent()
 {
@@ -37,9 +38,9 @@ void UMenuHub_Inventory::NativeConstruct()
 				int Row = FCString::Atoi(*InArgs[0]);
 				int Column = FCString::Atoi(*InArgs[1]);
 
-				if (UGridBasedInventoryItem* NewItem = NewObject<UGridBasedInventoryItem>())
+				if (UGridBasedListItem* NewItem = NewObject<UGridBasedListItem>())
 				{
-					NewItem->Size = FVector2D(Row, Column);
+					NewItem->TileSize = FDoubleArrayIndexes(Row, Column);
 					InventoryList->AddItem(NewItem);
 				}
 

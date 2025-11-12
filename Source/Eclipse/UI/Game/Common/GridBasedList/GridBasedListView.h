@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
 #include "Blueprint/UserWidgetPool.h"
-#include "GridBasedInventoryList.generated.h"
+#include "GridBasedListEntry.h"
+#include "GridBasedListView.generated.h"
 
 /**
  * 
@@ -16,45 +17,34 @@ class USizeBox;
 class UGridPanel;
 class UCommonHierarchicalScrollBox;
 
-UCLASS()
-class UGridBasedInventoryItem : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	// Top Left Info
-	FVector2D TopLeft = FVector2D();
-
-	// Size
-	FVector2D Size = FVector2D();
-};
-
 
 UCLASS()
-class ECLIPSE_API UGridBasedInventoryList : public UCommonUserWidget
+class ECLIPSE_API UGridBasedListView : public UCommonUserWidget
 {
 	GENERATED_BODY()
 	
 public:
-	void AddItem(UGridBasedInventoryItem* InItem);
-	void RemoveItem(UGridBasedInventoryItem* InItem);
+	void AddItem(UGridBasedListItem* InItem);
+	void RemoveItem(UGridBasedListItem* InItem);
 
-	UUserWidget* GetEntry(UGridBasedInventoryItem* InItem);
-	UGridBasedInventoryItem* GetItemFromListEntry(UUserWidget* InWidget);
+	UUserWidget* GetEntry(UGridBasedListItem* InItem);
+	UGridBasedListItem* GetItemFromListEntry(UUserWidget* InWidget);
 	void RefreshList();	
 
+	float GetSlotSize() const;
+		 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
 
 private:
-	void AddWidget(UGridBasedInventoryItem* InItem);
-	void RemoveWidget(UGridBasedInventoryItem* InItem);
+	void AddWidget(UGridBasedListItem* InItem);
+	void RemoveWidget(UGridBasedListItem* InItem);
 
 	// Get Top Left Index
 	int32 MakeKey(uint32 InRow, uint32 InColumn);
-	FVector2D ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH);
+	FVector2D IndexToLocalSize(uint32 InSlotW, uint32 InSlotH);
 	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight);
 
 	void SetMaterial();
@@ -85,7 +75,12 @@ private:
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "GridBasedObjectListEntry"))
 	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	TArray<FDoubleArrayIndexes> HiddenIndex{};
 	
+
+
 private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<USizeBox> InventorySizeBox = nullptr;
@@ -103,11 +98,11 @@ private:
 
 private:
 	UPROPERTY(Transient)
-	TArray<UGridBasedInventoryItem*> Grid;
+	TArray<UGridBasedListItem*> Grid;
 
 	UPROPERTY(Transient)
-	TMap<TObjectPtr<UGridBasedInventoryItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
+	TMap<TObjectPtr<UGridBasedListItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
 
 	UPROPERTY(Transient)
-	TMap<TWeakObjectPtr<UUserWidget>, TObjectPtr<UGridBasedInventoryItem>> ActiveItems;
+	TMap<TWeakObjectPtr<UUserWidget>, TObjectPtr<UGridBasedListItem>> ActiveItems;
 };

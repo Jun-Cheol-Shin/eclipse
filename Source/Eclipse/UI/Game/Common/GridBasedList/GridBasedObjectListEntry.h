@@ -7,6 +7,8 @@
 
 #include "GridBasedObjectListEntry.generated.h"
 
+class UGridBasedListItem;
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UGridBasedObjectListEntry : public UInterface
@@ -17,21 +19,21 @@ class UGridBasedObjectListEntry : public UInterface
 /**
  * 
  */
-class ECLIPSE_API IGridBasedObjectListEntry
+class IGridBasedObjectListEntry
 {
 	GENERATED_BODY()
 
-	friend class UGridBasedInventoryList;
+	friend class UGridBasedListView;
 
 protected:
 	/** Follows the same pattern as the NativeOn[X] methods in UUserWidget - super calls are expected in order to route the event to BP. */
-	virtual void NativeOnListItemObjectSet(UObject* ListItemObject);
+	virtual void NativeOnListItemObjectSet(UGridBasedListItem* ListItemObject);
 	virtual void NativeOnItemSelectionChanged(bool bIsSelected);
 	virtual void NativeOnEntryReleased();
 
 	/** Called when this entry is assigned a new item object to represent by the owning list view */
 	UFUNCTION(BlueprintImplementableEvent, Category = ObjectListEntry, meta = (DisplayName = "On Entry Item Object Set"))
-	void OnListItemObjectSet(UObject* ListItemObject);
+	void OnListItemObjectSet(UGridBasedListItem* ListItemObject);
 
 	/** Called when the selection state of the item represented by this entry changes. */
 	UFUNCTION(BlueprintImplementableEvent, Category = ObjectListEntry, meta = (DisplayName = "On Item Selection Changed"))
@@ -41,7 +43,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = ObjectListEntry, meta = (DisplayName = "On Entry Released"))
 	void OnEntryReleased();
 
+	UGridBasedListView* GetOwningListView() const;
+
+	float GetSlotSize() const;
+
 private:
-	FVector2D ItemPosition;
-	FVector2D ItemSize;	
+	TWeakObjectPtr<UGridBasedListView> OwningListView = nullptr;
 };

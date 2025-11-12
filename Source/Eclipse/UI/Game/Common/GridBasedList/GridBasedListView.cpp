@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GridBasedInventoryList.h"
-#include "GridBasedInventoryEntry.h"
+#include "GridBasedListView.h"
+
 
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -15,7 +15,7 @@
 
 #include "HAL/IConsoleManager.h"
 
-void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
+void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 {
 	if (!ensure(InItem))
 	{
@@ -23,7 +23,7 @@ void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
 	}
 	
 	TArray<int32> GridList;
-	int32 PossibleTopLeftKey = GetBlankedSpaceIndex(OUT GridList, InItem->Size.X, InItem->Size.Y);
+	int32 PossibleTopLeftKey = GetBlankedSpaceIndex(OUT GridList, InItem->TileSize.X, InItem->TileSize.Y);
 	if (INDEX_NONE == PossibleTopLeftKey)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not enough empty space.."));
@@ -38,7 +38,7 @@ void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
 		Grid[Index] = InItem;
 	}
 
-	InItem->TopLeft = FVector2D(TopLeftX, TopLeftY);
+	InItem->TopLeftPos = FDoubleArrayIndexes(TopLeftX, TopLeftY);
 
 	if (false == IsOverScroll(PossibleTopLeftKey))
 	{
@@ -46,23 +46,27 @@ void UGridBasedInventoryList::AddItem(UGridBasedInventoryItem* InItem)
 	}
 }
 
-void UGridBasedInventoryList::RemoveItem(UGridBasedInventoryItem* InItem)
+void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 {
+	// TODO
 
 }
 
-UUserWidget* UGridBasedInventoryList::GetEntry(UGridBasedInventoryItem* InItem)
+UUserWidget* UGridBasedListView::GetEntry(UGridBasedListItem* InItem)
 {
+	// TODO
+
 	return nullptr;
 }
 
-UGridBasedInventoryItem* UGridBasedInventoryList::GetItemFromListEntry(UUserWidget* InWidget)
+UGridBasedListItem* UGridBasedListView::GetItemFromListEntry(UUserWidget* InWidget)
 {
+	// TODO
 	return nullptr;
 }
 
 
-void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
+void UGridBasedListView::OnChangedScrollOffset(float InScrollOffset)
 {
 	const float InventorySize = InventorySizeBox->GetHeightOverride();
 
@@ -94,13 +98,13 @@ void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 			int NewKey = MakeKey(i, RemovePage);
 			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
-			UGridBasedInventoryItem* Item = Grid[NewKey];
+			UGridBasedListItem* Item = Grid[NewKey];
 
 			// TODO : 아이템의 TopLeft.Y + Size.Y가 아이템이 차지하는 공간의 밑부분
 			// TopLeft : 0 , Size.Y = 5라면, 5열이 아이템의 밑부분이다.
 			if (nullptr != Item)
 			{
-				int ItemBottomYIndex = Item->TopLeft.Y + (Item->Size.Y - 1);
+				int ItemBottomYIndex = Item->TopLeftPos.Y + (Item->TileSize.Y - 1);
 				if (ItemBottomYIndex <= RemovePage && ActiveWidgets.Contains(Item))
 				{
 					RemoveWidget(Item);
@@ -114,7 +118,7 @@ void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 			int NewKey = MakeKey(i, NewPage);
 			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
-			UGridBasedInventoryItem* Item = Grid[NewKey];
+			UGridBasedListItem* Item = Grid[NewKey];
 			if (nullptr != Item && false == ActiveWidgets.Contains(Item))
 			{
 				AddWidget(Item);
@@ -130,7 +134,7 @@ void UGridBasedInventoryList::OnChangedScrollOffset(float InScrollOffset)
 	}
 }
 
-void UGridBasedInventoryList::NativeConstruct()
+void UGridBasedListView::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -142,7 +146,7 @@ void UGridBasedInventoryList::NativeConstruct()
 
 	if (nullptr != ScrollBox)
 	{
-		ScrollBox->OnUserScrolled.AddDynamic(this, &UGridBasedInventoryList::OnChangedScrollOffset);
+		ScrollBox->OnUserScrolled.AddDynamic(this, &UGridBasedListView::OnChangedScrollOffset);
 		ScrollBox->SetScrollOffset(0);
 		CurrentPage = 0;
 	}
@@ -151,7 +155,7 @@ void UGridBasedInventoryList::NativeConstruct()
 	SetMaterial();
 }
 
-void UGridBasedInventoryList::NativeDestruct()
+void UGridBasedListView::NativeDestruct()
 {
 	ItemPool.ReleaseAll(true);
 	ItemPool.ResetPool();
@@ -162,7 +166,7 @@ void UGridBasedInventoryList::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UGridBasedInventoryList::SynchronizeProperties()
+void UGridBasedListView::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
@@ -170,7 +174,7 @@ void UGridBasedInventoryList::SynchronizeProperties()
 	SetMaterial();	
 }
 
-void UGridBasedInventoryList::AddWidget(UGridBasedInventoryItem* InItem)
+void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 {
 	UUserWidget* ActivedWidget = ItemPool.GetOrCreateInstance(ItemWidgetClass);
 	if (ensure(nullptr != ActivedWidget))
@@ -178,6 +182,7 @@ void UGridBasedInventoryList::AddWidget(UGridBasedInventoryItem* InItem)
 		if (IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget))
 		{
 			InterfaceEntry->NativeOnListItemObjectSet(InItem);
+			InterfaceEntry->OwningListView = this;
 		}
 
 		else if (ItemWidgetClass->ImplementsInterface(UGridBasedObjectListEntry::StaticClass()))
@@ -190,9 +195,9 @@ void UGridBasedInventoryList::AddWidget(UGridBasedInventoryItem* InItem)
 			UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
 			if (ensure(PanelSlot))
 			{
-				PanelSlot->SetPosition(ConvertCanvasPosition(InItem->TopLeft.X, InItem->TopLeft.Y));
+				PanelSlot->SetPosition(IndexToLocalSize(InItem->TopLeftPos.X, InItem->TopLeftPos.Y));
 
-				FVector2D Size = FVector2D(InItem->Size.X * SlotSize, InItem->Size.Y * SlotSize);
+				FVector2D Size = FVector2D(InItem->TileSize.X * SlotSize, InItem->TileSize.Y * SlotSize);
 				PanelSlot->SetSize(Size);
 			}
 		}
@@ -201,7 +206,7 @@ void UGridBasedInventoryList::AddWidget(UGridBasedInventoryItem* InItem)
 	}
 }
 
-void UGridBasedInventoryList::RemoveWidget(UGridBasedInventoryItem* InItem)
+void UGridBasedListView::RemoveWidget(UGridBasedListItem* InItem)
 {
 	TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[InItem];
 	if (ensure(ActivedWidget.IsValid()))
@@ -226,17 +231,17 @@ void UGridBasedInventoryList::RemoveWidget(UGridBasedInventoryItem* InItem)
 	}
 }
 
-int32 UGridBasedInventoryList::MakeKey(uint32 InRow, uint32 InColumn)
+int32 UGridBasedListView::MakeKey(uint32 InRow, uint32 InColumn)
 {
 	return InRow + (InColumn * RowCount);
 }
 
-FVector2D UGridBasedInventoryList::ConvertCanvasPosition(uint32 InSlotW, uint32 InSlotH)
+FVector2D UGridBasedListView::IndexToLocalSize(uint32 InSlotW, uint32 InSlotH)
 {
 	return FVector2D(SlotSize * InSlotW, SlotSize * InSlotH);
 }
 
-int32 UGridBasedInventoryList::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight)
+int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight)
 {
 	TQueue<int32> Queue;
 
@@ -297,20 +302,64 @@ int32 UGridBasedInventoryList::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridLi
 	return INDEX_NONE;
 }
 
-void UGridBasedInventoryList::SetMaterial()
+void UGridBasedListView::SetMaterial()
 {
 	if (nullptr != InventoryBG)
 	{
 		if (UMaterialInstanceDynamic* Material = InventoryBG->GetDynamicMaterial())
 		{
-			Material->SetScalarParameterValue(TEXT("CellX"), RowCount);
-			Material->SetScalarParameterValue(TEXT("CellY"), ColumnCount);
-			Material->SetTextureParameterValue(TEXT("Texture"), SlotTexture);
+			Material->SetScalarParameterValue(TEXT("TileX"), RowCount);
+			Material->SetScalarParameterValue(TEXT("TileY"), ColumnCount);
+			Material->SetTextureParameterValue(TEXT("Pattern"), SlotTexture);
+
+			TArray<int> Index;
+			for (FDoubleArrayIndexes& Indexes : HiddenIndex)
+			{
+				int X = FMath::Clamp(Indexes.X, 0, RowCount);
+				int Y = FMath::Clamp(Indexes.Y, 0, ColumnCount);
+
+				Index.Emplace(X + RowCount * Y);
+			}
+
+			// 0~127 = 32비트*4 = RGBA
+			uint32 W0 = 0, W1 = 0, W2 = 0, W3 = 0;
+
+			for (int32 i : Index)
+			{
+				if (i < 0 || i >= 128) continue;       // A만 쓰므로 범위를 0..127로 제한
+				const uint32 word = (uint32)i >> 5;    // 0..3 (각 32칸)
+				const uint32 bit = (uint32)i & 31u;   // 0..31
+				const uint32 m = 1u << bit;
+
+				switch (word)
+				{
+				case 0: W0 |= m; break; // 0..31   -> R
+				case 1: W1 |= m; break; // 32..63  -> G
+				case 2: W2 |= m; break; // 64..95  -> B
+				case 3: W3 |= m; break; // 96..127 -> A
+				default: break;
+				}
+			}
+
+			// uint32를 float로 비트 재해석해 Vector4로 패킹
+			auto PackToFColor = [](uint32 a, uint32 b, uint32 c, uint32 d) -> FLinearColor
+				{
+					return FLinearColor(
+						*reinterpret_cast<float*>(&a),
+						*reinterpret_cast<float*>(&b),
+						*reinterpret_cast<float*>(&c),
+						*reinterpret_cast<float*>(&d));
+				};
+
+			Material->SetVectorParameterValue(TEXT("ExcludedBitsA"), PackToFColor(W0, W1, W2, W3));
+			Material->SetScalarParameterValue(TEXT("TileX"), RowCount);
+			Material->SetScalarParameterValue(TEXT("TileY"), ColumnCount);
+			Material->SetVectorParameterValue(TEXT("ExcludedBitsB"), FLinearColor::Black);
 		}
 	}
 }
 
-void UGridBasedInventoryList::SetInventorySize()
+void UGridBasedListView::SetInventorySize()
 {
 	if (nullptr != InventorySizeBox)
 	{
@@ -321,7 +370,7 @@ void UGridBasedInventoryList::SetInventorySize()
 	Grid.SetNumZeroed(RowCount * ColumnCount);
 }
 
-bool UGridBasedInventoryList::IsOverScroll(int32 InTopLeftKey) const
+bool UGridBasedListView::IsOverScroll(int32 InTopLeftKey) const
 {
 	if (!ensure(ScrollBox && InventorySizeBox)) { return false; }
 
@@ -334,4 +383,9 @@ bool UGridBasedInventoryList::IsOverScroll(int32 InTopLeftKey) const
 	const int32 CurrentPageIndex = InTopLeftKey / RowCount;
 
 	return FirstPageIndex > CurrentPageIndex;
+}
+
+float UGridBasedListView::GetSlotSize() const
+{
+	return SlotSize;
 }

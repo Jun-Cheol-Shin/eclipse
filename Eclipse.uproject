@@ -12,7 +12,8 @@
 				"Engine",
 				"CommonUI",
 				"NamelessUISystem",
-				"CoreUObject"
+				"CoreUObject",
+				"UMG"
 			]
 		}
 	],

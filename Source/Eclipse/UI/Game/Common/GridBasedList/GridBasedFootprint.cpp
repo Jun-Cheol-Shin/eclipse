@@ -1,20 +1,34 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GridBasedInventoryEntry.h"
+#include "GridBasedFootprint.h"
 
-#include "Components/SizeBox.h"
 #include "Components/Image.h"
-#include "Materials/MaterialInstanceDynamic.h"
 
-void UGridBasedInventoryEntry::Set(int32 InRow, int32 InColumn, float InSlotSize, const TArray<int32>& InHidden)
+void UGridBasedFootprint::SetStyle(const FFootprintStyle& InStyle)
+{
+    if (CachedInstance)
+    {
+        if (InStyle.FootprintTexture)
+        {
+            CachedInstance->SetTextureParameterValue(TEXT("Pattern"), InStyle.FootprintTexture);
+        }
+
+        if (FootprintImage)
+        {
+            FootprintImage->SetBrushTintColor(InStyle.FootprintColor);
+        }
+    }
+}
+
+void UGridBasedFootprint::SetFootprint(int InRow, int InColumn, const TArray<int>& InHiddenIndex)
 {
     if (!CachedInstance) return;
 
     // 0~127 = 32비트*4 = RGBA
     uint32 W0 = 0, W1 = 0, W2 = 0, W3 = 0;
 
-    for (int32 i : InHidden)
+    for (int32 i : InHiddenIndex)
     {
         if (i < 0 || i >= 128) continue;       // A만 쓰므로 범위를 0..127로 제한
         const uint32 word = (uint32)i >> 5;    // 0..3 (각 32칸)
@@ -45,36 +59,25 @@ void UGridBasedInventoryEntry::Set(int32 InRow, int32 InColumn, float InSlotSize
     CachedInstance->SetScalarParameterValue(TEXT("TileX"), InRow);
     CachedInstance->SetScalarParameterValue(TEXT("TileY"), InColumn);
     CachedInstance->SetVectorParameterValue(TEXT("ExcludedBitsB"), FLinearColor::Black);
-
-    if (SizeBox)
-    {
-        SizeBox->SetHeightOverride(InSlotSize * Column);
-        SizeBox->SetWidthOverride(InSlotSize * Row);
-    }
 }
 
-void UGridBasedInventoryEntry::NativeConstruct()
+void UGridBasedFootprint::NativeConstruct()
 {
-    Super::NativeConstruct();
+	Super::NativeConstruct();
 
-    ExcludeHiddenIdx.Reset();
 }
 
-void UGridBasedInventoryEntry::SynchronizeProperties()
+void UGridBasedFootprint::SynchronizeProperties()
 {
-    Super::SynchronizeProperties();
+	Super::SynchronizeProperties();
 
-    if (nullptr == CachedInstance && nullptr != GridWidget)
+    if (nullptr == CachedInstance && nullptr != FootprintImage)
     {
-        CachedInstance = GridWidget->GetDynamicMaterial();
-    }
-
-    if (CachedInstance)
-    {
-        CachedInstance->SetTextureParameterValue(TEXT("Pattern"), SlotTexture);
+        CachedInstance = FootprintImage->GetDynamicMaterial();
     }
 
 
+#if WITH_EDITOR
     if (IsDesignTime())
     {
         TArray<int> HiddenIndexList;
@@ -87,6 +90,9 @@ void UGridBasedInventoryEntry::SynchronizeProperties()
             HiddenIndexList.Emplace(X + Row * Y);
         }
 
-        Set(Row, Column, SlotSize, HiddenIndexList);
+        SetStyle(PreviewStyle);
+        SetFootprint(Row, Column, HiddenIndexList);
     }
+
+#endif
 }
