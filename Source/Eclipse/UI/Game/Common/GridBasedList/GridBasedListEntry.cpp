@@ -16,13 +16,17 @@ void UGridBasedListEntry::NativeOnListItemObjectSet(UGridBasedListItem* ListItem
 
     IGridBasedObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
-
     if (SizeBox)
     {
-        SizeBox->SetWidthOverride(GetSlotSize() * ListItemObject->TileSize.X);
-        SizeBox->SetHeightOverride(GetSlotSize() * ListItemObject->TileSize.Y);
+        float Width = GetSlotSize() * static_cast<float>(ListItemObject->TileSize.X);
+        float Height = GetSlotSize() * static_cast<float>(ListItemObject->TileSize.Y);
+
+        SizeBox->SetWidthOverride(Width);
+        SizeBox->SetHeightOverride(Height);
     }
 
+    SetWorld(GetWorld());
+    SetEventFromImage(Footprint->FootprintImage);
 }
 
 void UGridBasedListEntry::NativeOnItemSelectionChanged(bool bIsSelected)
@@ -35,6 +39,27 @@ void UGridBasedListEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 void UGridBasedListEntry::NativeOnEntryReleased()
 {
     IGridBasedObjectListEntry::NativeOnEntryReleased();
+
+    Reset();
+}
+
+void UGridBasedListEntry::NativeOnDetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+{
+    IDraggable::NativeOnDetectedDrag(InGeometry, InEvent);
+
+
+}
+
+void UGridBasedListEntry::NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+{
+    IDraggable::NativeOnDrag(InGeometry, InEvent);
+
+
+}
+
+void UGridBasedListEntry::NativeOnDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+{
+    IDraggable::NativeOnDrop(InGeometry, InEvent);
 
 
 }

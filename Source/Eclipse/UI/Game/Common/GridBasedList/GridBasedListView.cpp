@@ -48,23 +48,44 @@ void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 
 void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 {
-	// TODO
+	if (ActiveWidgets.Contains(InItem))
+	{
+		RemoveWidget(InItem);
+		TWeakObjectPtr<UUserWidget> FoundWidget = ActiveWidgets.FindRef(InItem);
+
+		if (FoundWidget.IsValid())
+		{
+			ActiveWidgets.Remove(InItem);
+		}
+
+		ActiveItems.Remove(FoundWidget);
+	}
 
 }
 
-UUserWidget* UGridBasedListView::GetEntry(UGridBasedListItem* InItem)
+const UUserWidget* UGridBasedListView::GetEntry(UGridBasedListItem* InItem) const
 {
-	// TODO
+	if (nullptr != InItem && ActiveWidgets.Contains(InItem))
+	{
+		TWeakObjectPtr<UUserWidget> FoundWidget = ActiveWidgets.FindRef(InItem);
+		if (FoundWidget.IsValid())
+		{
+			return FoundWidget.Get();
+		}
+	}
 
 	return nullptr;
 }
 
-UGridBasedListItem* UGridBasedListView::GetItemFromListEntry(UUserWidget* InWidget)
+const UGridBasedListItem* UGridBasedListView::GetItemFromListEntry(UUserWidget* InWidget) const
 {
-	// TODO
+	if (nullptr != InWidget && ActiveItems.Contains(InWidget))
+	{
+		return ActiveItems.FindRef(InWidget);
+	}
+
 	return nullptr;
 }
-
 
 void UGridBasedListView::OnChangedScrollOffset(float InScrollOffset)
 {
@@ -181,8 +202,8 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 	{
 		if (IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget))
 		{
-			InterfaceEntry->NativeOnListItemObjectSet(InItem);
 			InterfaceEntry->OwningListView = this;
+			InterfaceEntry->NativeOnListItemObjectSet(InItem);
 		}
 
 		else if (ItemWidgetClass->ImplementsInterface(UGridBasedObjectListEntry::StaticClass()))

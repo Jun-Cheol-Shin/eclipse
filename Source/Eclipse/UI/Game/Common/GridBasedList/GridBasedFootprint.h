@@ -51,6 +51,8 @@ class ECLIPSE_API UGridBasedFootprint : public UUserWidget
 {
 	GENERATED_BODY()
 
+	friend class UGridBasedListEntry;
+
 public:
 	void SetStyle(const FFootprintStyle& InStyle);
 	void SetFootprint(int InRow, int InColumn, const TArray<int>& InHiddenIndex);

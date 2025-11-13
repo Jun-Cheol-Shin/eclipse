@@ -27,8 +27,8 @@ public:
 	void AddItem(UGridBasedListItem* InItem);
 	void RemoveItem(UGridBasedListItem* InItem);
 
-	UUserWidget* GetEntry(UGridBasedListItem* InItem);
-	UGridBasedListItem* GetItemFromListEntry(UUserWidget* InWidget);
+	const UUserWidget* GetEntry(UGridBasedListItem* InItem) const;
+	const UGridBasedListItem* GetItemFromListEntry(UUserWidget* InWidget) const;
 	void RefreshList();	
 
 	float GetSlotSize() const;
@@ -61,22 +61,22 @@ private:
 	FUserWidgetPool ItemPool {};
 
 private:
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 SlotSize = 0;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 RowCount = 0;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	int32 ColumnCount = 0;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TObjectPtr<UTexture> SlotTexture = nullptr;
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "GridBasedObjectListEntry"))
 	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TArray<FDoubleArrayIndexes> HiddenIndex{};
 	
 

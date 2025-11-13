@@ -36,7 +36,7 @@ float IGridBasedObjectListEntry::GetSlotSize() const
 {
 	if (OwningListView.IsValid())
 	{
-		OwningListView->GetSlotSize();
+		return OwningListView->GetSlotSize();
 	}
 
 	return 0.f;
