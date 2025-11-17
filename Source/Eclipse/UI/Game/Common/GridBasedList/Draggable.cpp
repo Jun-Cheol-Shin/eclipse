@@ -8,6 +8,8 @@
 #include "Components/Widget.h"
 
 #include "Blueprint/SlateBlueprintLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 
 // Add default functionality here for any IDraggable functions that are not pure virtual.
 
@@ -39,6 +41,7 @@ void IDraggable::Reset()
 			SlateWidget->SetOnMouseDoubleClick(FPointerEventHandler());
 			SlateWidget->SetOnMouseMove(FPointerEventHandler());
 			SlateWidget->SetOnMouseButtonUp(FPointerEventHandler());
+			SlateWidget->SetOnMouseLeave(FSimpleNoReplyPointerEventHandler());
 		}
 	}
 
@@ -69,18 +72,24 @@ FReply IDraggable::DetectedDrag(const FGeometry& InGeometry, const FPointerEvent
 		return FReply::Unhandled();
 	}
 
+	OuterPanelWidget = OuterUserWidget->GetParent();
+
+	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
+	const FVector2D WidgetSize = OuterUserWidget->GetDesiredSize() * DPIScale;
+
+	// 커서 위치
 	FVector2D Cursor_PixelPosition;
 	FVector2D Cursor_ViewportPosition;
 	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), InEvent.GetScreenSpacePosition(), OUT Cursor_PixelPosition, OUT Cursor_ViewportPosition);
 	
+	// 위젯 위치 (Top Left)
 	FVector2D Widget_PixelPosition;
 	FVector2D Widget_ViewportPosition;
 	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterUserWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
-
+	
 	ClickOffset = Widget_PixelPosition - Cursor_PixelPosition;
-	OuterPanelWidget = OuterUserWidget->GetParent();
-
-	FVector2D DesiredSize = OuterUserWidget->GetDesiredSize();
+	
+	FVector2D FinalPos = Cursor_PixelPosition + ClickOffset;
 
 	if (OuterPanelWidget.IsValid())
 	{
@@ -93,17 +102,15 @@ FReply IDraggable::DetectedDrag(const FGeometry& InGeometry, const FPointerEvent
 	}
 
 	OuterUserWidget->AddToViewport(INT_MAX - 1);
-	OuterUserWidget->SetDesiredSizeInViewport(DesiredSize);
-	OuterUserWidget->SetPositionInViewport(Cursor_PixelPosition + ClickOffset);
+	OuterUserWidget->SetDesiredSizeInViewport(OuterUserWidget->GetDesiredSize());
+	OuterUserWidget->SetPositionInViewport(FinalPos);
 
 	bDrag = true;
-
 	NativeOnDetectedDrag(InGeometry, InEvent);
 
-
-	FEventReply Reply;
-	Reply.NativeReply.CaptureMouse(OuterUserWidget->TakeWidget());
-	return Reply.NativeReply.Handled();
+	return FReply::Handled()
+		.CaptureMouse(EventWidget->TakeWidget())
+		.UseHighPrecisionMouseMovement(OuterUserWidget->TakeWidget());
 }
 
 void IDraggable::NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
@@ -123,13 +130,24 @@ FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEven
 	FVector2D Cursor_PixelPosition;
 	FVector2D Cursor_ViewportPosition;
 	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), InEvent.GetScreenSpacePosition(), OUT Cursor_PixelPosition, OUT Cursor_ViewportPosition);
-	OuterUserWidget->SetPositionInViewport(Cursor_PixelPosition + ClickOffset);
+
+	FVector2D Widget_PixelPosition;
+	FVector2D Widget_ViewportPosition;
+	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterUserWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
+	
+	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
+	const FVector2D WidgetSize = OuterUserWidget->GetDesiredSize() * DPIScale;
+	
+	FVector2D FinalPos = Cursor_PixelPosition + ClickOffset;
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(OuterWorld.Get());
+
+	//FinalPos.X = FMath::Clamp(FinalPos.X, 0.0f, ViewportSize.X - WidgetSize.X);
+	//FinalPos.Y = FMath::Clamp(FinalPos.Y, 0.0f, ViewportSize.Y - WidgetSize.Y);
+	OuterUserWidget->SetPositionInViewport(FinalPos);
 
 	NativeOnDrag(InGeometry, InEvent);
 
-	FEventReply Reply;
-	Reply.NativeReply.CaptureMouse(OuterUserWidget->TakeWidget());
-	return Reply.NativeReply.Handled();
+	return FReply::Handled();
 }
 
 void IDraggable::NativeOnDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent)
@@ -139,23 +157,29 @@ void IDraggable::NativeOnDrop(const FGeometry& InGeometry, const FPointerEvent& 
 
 FReply IDraggable::Drop(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	if (false == OuterPanelWidget.IsValid()
-		|| false == OuterUserWidget.IsValid())
+	if (false == OuterUserWidget.IsValid())
 	{
 		return FReply::Unhandled();
 	}
 
 	ClickOffset = FVector2D::Zero();
-	UPanelSlot* PanelSlot = OuterPanelWidget->AddChild(OuterUserWidget.Get());
 
+	if (OuterPanelWidget.IsValid())
+	{
+		UPanelSlot* PanelSlot = OuterPanelWidget->AddChild(OuterUserWidget.Get());
+	}
 	bDrag = false;
 
 	// TODO : PanelSlot을 넘겨주기?
 	NativeOnDrop(InGeometry, InEvent);
 
-	FEventReply Reply;
-	Reply.NativeReply.CaptureMouse(OuterUserWidget->TakeWidget());
-	return Reply.NativeReply.Handled();
+	return FReply::Unhandled()
+		.ReleaseMouseCapture();
+}
+
+void IDraggable::Leave(const FPointerEvent& InEvent)
+{
+	//bDrag = false;
 }
 
 void IDraggable::SetEvent(UWidget* InWidget)
@@ -176,6 +200,7 @@ void IDraggable::SetEvent(UWidget* InWidget)
 		SlateWidget->SetOnMouseDoubleClick(FPointerEventHandler::CreateRaw(this, &IDraggable::DetectedDrag));
 		SlateWidget->SetOnMouseMove(FPointerEventHandler::CreateRaw(this, &IDraggable::Drag));
 		SlateWidget->SetOnMouseButtonUp(FPointerEventHandler::CreateRaw(this, &IDraggable::Drop));
+		SlateWidget->SetOnMouseLeave(FSimpleNoReplyPointerEventHandler::CreateRaw(this, &IDraggable::Leave));
 	}
 
 }

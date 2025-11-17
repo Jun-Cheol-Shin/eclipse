@@ -40,5 +40,5 @@ void UMenuHubSheet::OnChangedInputDevice(ECommonInputType InInputType)
 
 TOptional<FUIInputConfig> UMenuHubSheet::GetDesiredInputConfig() const
 {
-	return FUIInputConfig(ECommonInputMode::All, EMouseCaptureMode::NoCapture, EMouseLockMode::DoNotLock);
+	return FUIInputConfig(ECommonInputMode::All, EMouseCaptureMode::CaptureDuringMouseDown, EMouseLockMode::DoNotLock);
 }

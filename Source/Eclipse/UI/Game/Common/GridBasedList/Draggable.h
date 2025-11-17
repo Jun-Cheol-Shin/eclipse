@@ -61,6 +61,7 @@ private:
 	FReply DetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply Drop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	void Leave(const FPointerEvent& InEvent);
 
 private:
 	void SetEvent(UWidget* InWidget);
