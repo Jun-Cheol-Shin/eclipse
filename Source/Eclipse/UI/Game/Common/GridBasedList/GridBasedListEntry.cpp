@@ -43,9 +43,9 @@ void UGridBasedListEntry::NativeOnEntryReleased()
     Reset();
 }
 
-void UGridBasedListEntry::NativeOnDetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+void UGridBasedListEntry::NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-    IDraggable::NativeOnDetectedDrag(InGeometry, InEvent);
+    IDraggable::NativeOnStartDrag(InGeometry, InEvent);
 
 
 }
@@ -57,9 +57,9 @@ void UGridBasedListEntry::NativeOnDrag(const FGeometry& InGeometry, const FPoint
 
 }
 
-void UGridBasedListEntry::NativeOnDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+void UGridBasedListEntry::NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-    IDraggable::NativeOnDrop(InGeometry, InEvent);
+    IDraggable::NativeOnEndDrag(InGeometry, InEvent);
 
 
 }

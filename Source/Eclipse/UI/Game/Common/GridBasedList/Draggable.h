@@ -39,40 +39,51 @@ public:
 
 	void SetEventFromImage(UImage* InImage);
 	void SetEventFromBorder(UBorder* InBorder);
+	void SetEnableToggle(bool bIsEnable);
 
 
 protected:
-	virtual void NativeOnDetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	virtual void NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Detected Drag")
-	void OnDetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drag Start")
+	void OnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent); 
 
 	virtual void NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drag")
 	void OnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
-	virtual void NativeOnDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	virtual void NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drop")
-	void OnDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	void OnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+
+	virtual void NativeOnDrop(UPanelSlot* InPanelSlot);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drop")
+	void OnDrop(UPanelSlot* InPanelSlot);
 
 private:
-	FReply DetectedDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply DragStart(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	FReply Drop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply DragEnd(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void Leave(const FPointerEvent& InEvent);
+
+	void SetDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
 private:
 	void SetEvent(UWidget* InWidget);
 
 private:
+	bool bUseToogle = false;
 	bool bDrag = false;
+
 	FVector2D ClickOffset {};
 
 	TWeakObjectPtr<UWorld> OuterWorld = nullptr;
 	TWeakObjectPtr<UWidget> EventWidget = nullptr;
-
-	TWeakObjectPtr<UUserWidget> OuterUserWidget = nullptr;
 	TWeakObjectPtr<UPanelWidget> OuterPanelWidget = nullptr;
+
+	TArray<UUserWidget*> DetectableWidgets;
+	UUserWidget* CurrentDetectedWidget = nullptr;
 };
