@@ -86,4 +86,6 @@ private:
 
 	TArray<UUserWidget*> DetectableWidgets;
 	UUserWidget* CurrentDetectedWidget = nullptr;
+
+	FVector2D DragCursorScreenPos = FVector2D();
 };

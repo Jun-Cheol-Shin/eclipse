@@ -6,9 +6,9 @@
 
 // Add default functionality here for any IDropDetectable functions that are not pure virtual.
 
-void IDragDetectable::NativeOnDetectedDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+void IDragDetectable::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
-	Execute_OnDetectedDrag(Cast<UObject>(this), InDraggingWidget, InEvent);
+	Execute_OnStartDetectDrag(Cast<UObject>(this), InDraggingWidget, InEvent);
 }
 
 void IDragDetectable::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)

@@ -42,9 +42,11 @@ protected:
 	virtual void NativeOnEntryReleased() override;
 	// End IGridBasedObjectListEntry
 
+	// IDraggable
 	virtual void NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 	virtual void NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 	virtual void NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
+	// End IDraggable
 
 	// UUserWidget
 	virtual void NativeConstruct() override;
@@ -57,9 +59,4 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	UGridBasedFootprint* Footprint = nullptr;
-
-
-private:
-	UPROPERTY()
-	TMap<FGameplayTag, FFootprintStyle> FootprintStyles;
 };

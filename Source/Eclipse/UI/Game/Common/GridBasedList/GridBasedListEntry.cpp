@@ -9,12 +9,12 @@
 
 void UGridBasedListEntry::NativeOnListItemObjectSet(UGridBasedListItem* ListItemObject)
 {
+    IGridBasedObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
+
     if (nullptr == ListItemObject)
     {
         return;
     }
-
-    IGridBasedObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
     if (SizeBox)
     {

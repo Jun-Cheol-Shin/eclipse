@@ -25,10 +25,10 @@ class ECLIPSE_API IDragDetectable
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 protected:
-	virtual void NativeOnDetectedDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	virtual void NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Detectable Functions", DisplayName = "On Detected Drag")
-	void OnDetectedDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	void OnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
 
 	virtual void NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
 

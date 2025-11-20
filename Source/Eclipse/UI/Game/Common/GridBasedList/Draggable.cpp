@@ -150,8 +150,9 @@ void IDraggable::NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& 
 
 FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	if (bDrag)
+	if (bDrag && DragCursorScreenPos != InEvent.GetScreenSpacePosition())
 	{
+		DragCursorScreenPos = InEvent.GetScreenSpacePosition();
 		UUserWidget* OuterWidget = Cast<UUserWidget>(this);
 
 		if (OuterWidget)
@@ -193,12 +194,12 @@ FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEven
 
 				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 				{
-					DetectableInterface->NativeOnDetectedDrag(OuterWidget, InEvent);
+					DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
 				}
 
 				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 				{
-					IDragDetectable::Execute_OnDetectedDrag(CurrentDetectedWidget, OuterWidget, InEvent);
+					IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
 				}
 			}
 
@@ -219,19 +220,17 @@ FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEven
 
 				else
 				{
-					if (true == CurrentDetectedWidget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
+					if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 					{
-						if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-						{
-							DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
-						}
-
-						else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-						{
-							IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
-						}
+						DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
 					}
 
+					else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
+					{
+						IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
+					}
+
+					CurrentDetectedWidget = nullptr;
 
 					// Find New Detectable Widget....
 					for (auto& Widget : DetectableWidgets)
@@ -249,12 +248,12 @@ FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEven
 					{
 						if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 						{
-							DetectableInterface->NativeOnDetectedDrag(OuterWidget, InEvent);
+							DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
 						}
 
 						else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 						{
-							IDragDetectable::Execute_OnDetectedDrag(CurrentDetectedWidget, OuterWidget, InEvent);
+							IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
 						}
 					}
 				}
@@ -301,6 +300,7 @@ void IDraggable::SetDrop(const FGeometry& InGeometry, const FPointerEvent& InEve
 	{
 		bDrag = false;
 		ClickOffset = FVector2D::Zero();
+		DragCursorScreenPos = FVector2D::Zero();
 
 		NativeOnEndDrag(InGeometry, InEvent);
 

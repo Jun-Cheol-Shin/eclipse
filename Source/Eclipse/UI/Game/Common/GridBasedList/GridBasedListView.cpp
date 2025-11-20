@@ -15,6 +15,92 @@
 
 #include "HAL/IConsoleManager.h"
 
+void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+{
+	IDragDetectable::NativeOnStartDetectDrag(InDraggingWidget, InEvent);
+
+	UE_LOG(LogTemp, Warning, TEXT("On Start Detect! GridBasedListView"));
+
+	if (nullptr == InventoryPanel) { return; }
+
+	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
+	if (nullptr == ListEntry) { return; }
+
+	const UGridBasedListItem* ListItem = GetItemFromListEntry(ListEntry);
+	if (nullptr == ListItem) { return; }
+
+	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
+	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
+
+	uint32 RowIdx = 0;
+	uint32 ColumnIdx = 0;
+
+	if (true == GetIndexFromLocal(InventorySpacePos, OUT RowIdx, OUT ColumnIdx))
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Screen = %.1f, %.1f, Inventory = %.1f, %.1f"), CursorScreenSpacePos.X, CursorScreenSpacePos.Y, InventorySpacePos.X, InventorySpacePos.Y);
+
+		UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), RowIdx, ColumnIdx);
+
+		int32 Key = MakeKey(RowIdx, ColumnIdx);
+
+
+	}
+
+
+
+
+}
+
+void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+{
+	// 포인터 위치 변경 시 계속 호출되는 함수
+	IDragDetectable::NativeOnDetect(InDraggingWidget, InEvent);
+
+	UE_LOG(LogTemp, Warning, TEXT("On Detect! GridBasedListView"));
+
+	if (nullptr == InventoryPanel) { return; }
+
+	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
+	if (nullptr == ListEntry) { return; }
+
+	const UGridBasedListItem* ListItem = GetItemFromListEntry(ListEntry);
+	if (nullptr == ListItem) { return; }
+
+	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
+	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
+
+	uint32 RowIdx = 0;
+	uint32 ColumnIdx = 0;
+
+	if (true == GetIndexFromLocal(InventorySpacePos, OUT RowIdx, OUT ColumnIdx))
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Screen = %.1f, %.1f, Inventory = %.1f, %.1f"), CursorScreenSpacePos.X, CursorScreenSpacePos.Y, InventorySpacePos.X, InventorySpacePos.Y);
+
+		UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), RowIdx, ColumnIdx);
+
+	}
+
+
+}
+
+void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+{
+	// 감지가 끝났을 때 (포인터가 위젯에서 나갔을 때 LeaveWidget)
+	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
+
+	UE_LOG(LogTemp, Warning, TEXT("On End Detect! GridBasedListView"));
+
+}
+
+void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+{
+	// 드래그가 끝났을 때
+	IDragDetectable::NativeOnDrop(InDraggingWidget, InEvent);
+
+	UE_LOG(LogTemp, Warning, TEXT("On Drop! GridBasedListView"));
+
+}
+
 void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 {
 	if (!ensure(InItem))
@@ -56,9 +142,8 @@ void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 		if (FoundWidget.IsValid())
 		{
 			ActiveWidgets.Remove(InItem);
+			ActiveItems.Remove(FoundWidget.Get());
 		}
-
-		ActiveItems.Remove(FoundWidget);
 	}
 
 }
@@ -174,6 +259,11 @@ void UGridBasedListView::NativeConstruct()
 
 	SetInventorySize();
 	SetMaterial();
+
+	if (nullptr != FootprintWidget)
+	{
+		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGridBasedListView::NativeDestruct()
@@ -216,7 +306,7 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 			UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
 			if (ensure(PanelSlot))
 			{
-				PanelSlot->SetPosition(IndexToLocalSize(InItem->TopLeftPos.X, InItem->TopLeftPos.Y));
+				PanelSlot->SetPosition(GetLocalFromIndex(InItem->TopLeftPos.X, InItem->TopLeftPos.Y));
 
 				FVector2D Size = FVector2D(InItem->TileSize.X * SlotSize, InItem->TileSize.Y * SlotSize);
 				PanelSlot->SetSize(Size);
@@ -224,6 +314,7 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 		}
 
 		ActiveWidgets.Emplace(InItem, ActivedWidget);
+		ActiveItems.Emplace(ActivedWidget, InItem);
 	}
 }
 
@@ -248,6 +339,8 @@ void UGridBasedListView::RemoveWidget(UGridBasedListItem* InItem)
 		}
 
 		ItemPool.Release(ActivedWidget.Get());
+		ActiveItems.Remove(ActivedWidget.Get());
+
 		ActiveWidgets.Remove(InItem);
 	}
 }
@@ -257,9 +350,24 @@ int32 UGridBasedListView::MakeKey(uint32 InRow, uint32 InColumn)
 	return InRow + (InColumn * RowCount);
 }
 
-FVector2D UGridBasedListView::IndexToLocalSize(uint32 InSlotW, uint32 InSlotH)
+FVector2D UGridBasedListView::GetLocalFromIndex(uint32 InSlotW, uint32 InSlotH)
 {
 	return FVector2D(SlotSize * InSlotW, SlotSize * InSlotH);
+}
+
+bool UGridBasedListView::GetIndexFromLocal(const FVector2D InPos, OUT uint32& OutWIdx, uint32& OutHIdx)
+{
+	int Width = InPos.X / SlotSize;
+	int Height = InPos.Y / SlotSize;
+
+	if (Width >= 0 && Height >= 0 && Width < RowCount && Height < ColumnCount)
+	{
+		OutWIdx = Width;
+		OutHIdx = Height;
+		return true;
+	}
+
+	return false;
 }
 
 int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight)
@@ -404,6 +512,13 @@ bool UGridBasedListView::IsOverScroll(int32 InTopLeftKey) const
 	const int32 CurrentPageIndex = InTopLeftKey / RowCount;
 
 	return FirstPageIndex > CurrentPageIndex;
+}
+
+bool UGridBasedListView::IsEmptySpace(int32 InTopLeftKey, const UGridBasedListItem* InItem) const
+{
+	// TODO : 아이템의 사이즈만큼 공간이 비어있는지 확인 해야 함.
+
+	return true;
 }
 
 float UGridBasedListView::GetSlotSize() const

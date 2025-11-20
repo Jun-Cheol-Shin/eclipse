@@ -6,6 +6,7 @@
 #include "CommonUserWidget.h"
 #include "Blueprint/UserWidgetPool.h"
 #include "GridBasedListEntry.h"
+#include "DragDetectable.h"
 #include "GridBasedListView.generated.h"
 
 /**
@@ -16,10 +17,18 @@ class UBorder;
 class USizeBox;
 class UGridPanel;
 class UCommonHierarchicalScrollBox;
+class UGridBasedFootprint;
+
+UENUM(BlueprintType)
+enum class EStorageState : uint8
+{
+	Empty = 0,
+	IsFull
+};
 
 
 UCLASS()
-class ECLIPSE_API UGridBasedListView : public UCommonUserWidget
+class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDetectable
 {
 	GENERATED_BODY()
 	
@@ -38,19 +47,28 @@ protected:
 	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
 
+	// IDragDetectable
+	virtual void NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
+	virtual void NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
+	virtual void NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
+	virtual void NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
+	// End IDragDetectable
+
 private:
 	void AddWidget(UGridBasedListItem* InItem);
 	void RemoveWidget(UGridBasedListItem* InItem);
 
 	// Get Top Left Index
 	int32 MakeKey(uint32 InRow, uint32 InColumn);
-	FVector2D IndexToLocalSize(uint32 InSlotW, uint32 InSlotH);
+	FVector2D GetLocalFromIndex(uint32 InSlotW, uint32 InSlotH);
+	bool GetIndexFromLocal(const FVector2D InPos, OUT uint32& OutWIdx, uint32& OutHIdx);
 	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight);
 
 	void SetMaterial();
 	void SetInventorySize();
 
 	bool IsOverScroll(int32 InTopLeftKey) const;
+	bool IsEmptySpace(int32 InTopLeftKey, const UGridBasedListItem* InItem) const;
 
 private:
 	UFUNCTION()
@@ -94,6 +112,9 @@ private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UCanvasPanel> InventoryPanel = nullptr;
 
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	TObjectPtr<UGridBasedFootprint> FootprintWidget = nullptr;
+
 
 
 private:
@@ -101,8 +122,11 @@ private:
 	TArray<UGridBasedListItem*> Grid;
 
 	UPROPERTY(Transient)
-	TMap<TObjectPtr<UGridBasedListItem>, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
+	TMap<TObjectPtr<UGridBasedListItem>, UUserWidget*> ActiveWidgets;
 
 	UPROPERTY(Transient)
-	TMap<TWeakObjectPtr<UUserWidget>, TObjectPtr<UGridBasedListItem>> ActiveItems;
+	TMap<UUserWidget*, TObjectPtr<UGridBasedListItem>> ActiveItems;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<EStorageState, FFootprintStyle> FootprintStyles;
 };
