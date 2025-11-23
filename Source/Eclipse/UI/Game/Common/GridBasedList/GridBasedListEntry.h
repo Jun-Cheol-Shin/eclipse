@@ -20,13 +20,13 @@ class UGridBasedListItem : public UObject
 
 public:
 	UPROPERTY(EditAnywhere)
-	FDoubleArrayIndexes TopLeftPos{};
+	FIntPoint TopLeftPos{};
 
 	UPROPERTY(EditAnywhere)
-	FDoubleArrayIndexes TileSize{};
+	FIntPoint TileSize{};
 
 	UPROPERTY(EditAnywhere)
-	TArray<FDoubleArrayIndexes> HiddenIndexes{};
+	TArray<FIntPoint> HiddenIndexes{};
 };
 
 
@@ -46,6 +46,7 @@ protected:
 	virtual void NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 	virtual void NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
 	virtual void NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
+	virtual void NativeOnDrop(UPanelSlot* InPanelSlot) override;
 	// End IDraggable
 
 	// UUserWidget

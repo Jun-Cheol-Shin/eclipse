@@ -7,6 +7,7 @@
 
 #include "GridBasedObjectListEntry.generated.h"
 
+class UGridBasedListView;
 class UGridBasedListItem;
 
 // This class does not need to be modified.
@@ -44,6 +45,7 @@ protected:
 	void OnEntryReleased();
 
 	UGridBasedListView* GetOwningListView() const;
+	const UGridBasedListItem* GetOwningListItem();
 
 	float GetSlotSize() const;
 

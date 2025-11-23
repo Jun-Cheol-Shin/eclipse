@@ -21,17 +21,16 @@ void UGridBasedFootprint::SetStyle(const FFootprintStyle& InStyle)
     }
 }
 
-void UGridBasedFootprint::SetFootprint(int InRow, int InColumn, const TArray<int>& InHiddenIndex)
+void UGridBasedFootprint::SetFootprint(int InX, int InY, const TArray<int>& InHiddenIndex)
 {
     if (!CachedInstance) return;
 
-    // 0~127 = 32ºñÆ®*4 = RGBA
     uint32 W0 = 0, W1 = 0, W2 = 0, W3 = 0;
 
     for (int32 i : InHiddenIndex)
     {
-        if (i < 0 || i >= 128) continue;       // A¸¸ ¾²¹Ç·Î ¹üÀ§¸¦ 0..127·Î Á¦ÇÑ
-        const uint32 word = (uint32)i >> 5;    // 0..3 (°¢ 32Ä­)
+        if (i < 0 || i >= 128) continue; 
+        const uint32 word = (uint32)i >> 5;    // 0..3
         const uint32 bit = (uint32)i & 31u;   // 0..31
         const uint32 m = 1u << bit;
 
@@ -45,7 +44,7 @@ void UGridBasedFootprint::SetFootprint(int InRow, int InColumn, const TArray<int
         }
     }
 
-    // uint32¸¦ float·Î ºñÆ® ÀçÇØ¼®ÇØ Vector4·Î ÆÐÅ·
+    // uint32ï¿½ï¿½ floatï¿½ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ Vector4ï¿½ï¿½ ï¿½ï¿½Å·
     auto PackToFColor = [](uint32 a, uint32 b, uint32 c, uint32 d) -> FLinearColor
         {
             return FLinearColor(
@@ -56,8 +55,8 @@ void UGridBasedFootprint::SetFootprint(int InRow, int InColumn, const TArray<int
         };
 
     CachedInstance->SetVectorParameterValue(TEXT("ExcludedBitsA"), PackToFColor(W0, W1, W2, W3));
-    CachedInstance->SetScalarParameterValue(TEXT("TileX"), InRow);
-    CachedInstance->SetScalarParameterValue(TEXT("TileY"), InColumn);
+    CachedInstance->SetScalarParameterValue(TEXT("TileX"), InY);
+    CachedInstance->SetScalarParameterValue(TEXT("TileY"), InX);
     CachedInstance->SetVectorParameterValue(TEXT("ExcludedBitsB"), FLinearColor::Black);
 }
 
@@ -82,7 +81,7 @@ void UGridBasedFootprint::SynchronizeProperties()
     {
         TArray<int> HiddenIndexList;
 
-        for (FDoubleArrayIndexes& Indexes : ExcludeHiddenIdx)
+        for (const FIntPoint& Indexes : ExcludeHiddenIdx)
         {
             int X = FMath::Clamp(Indexes.X, 0, Row);
             int Y = FMath::Clamp(Indexes.Y, 0, Column);

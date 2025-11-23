@@ -21,7 +21,11 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 
 	UE_LOG(LogTemp, Warning, TEXT("On Start Detect! GridBasedListView"));
 
-	if (nullptr == InventoryPanel) { return; }
+	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
+
+	UCanvasPanelSlot* FootprintWidgetSlot = Cast<UCanvasPanelSlot>(FootprintWidget->Slot);
+	if (nullptr == FootprintWidgetSlot) return;
+
 
 	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
 	if (nullptr == ListEntry) { return; }
@@ -29,36 +33,66 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 	const UGridBasedListItem* ListItem = GetItemFromListEntry(ListEntry);
 	if (nullptr == ListItem) { return; }
 
+	// Set Footprint
+	TArray<int> HiddenIdx;
+
+	Algo::Transform(ListItem->HiddenIndexes, HiddenIdx, [&](const FIntPoint& InPoint) -> int32
+		{
+			return MakeKey(InPoint.Y, InPoint.X);
+		});
+
+	FootprintWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	FootprintWidget->SetFootprint(ListItem->TileSize.X, ListItem->TileSize.Y, HiddenIdx);
+
+	FootprintWidgetSlot->SetSize(GetLocalFromIndex(ListItem->TileSize.X, ListItem->TileSize.Y));
+
 	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
 	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
 
-	uint32 RowIdx = 0;
-	uint32 ColumnIdx = 0;
+	int32 XIdx = 0;
+	int32 YIdx = 0;
 
-	if (true == GetIndexFromLocal(InventorySpacePos, OUT RowIdx, OUT ColumnIdx))
+	ForEach(ListItem->TopLeftPos.X, ListItem->TopLeftPos.Y, ListItem->TileSize, [&](int32 InIndex)
+		{
+			if (Grid.IsValidIndex(InIndex))
+			{
+				Grid[InIndex] = nullptr;
+			}
+		});
+
+	if (true == GetIndexFromLocal(InventorySpacePos, OUT XIdx, OUT YIdx, ListItem->TileSize))
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Screen = %.1f, %.1f, Inventory = %.1f, %.1f"), CursorScreenSpacePos.X, CursorScreenSpacePos.Y, InventorySpacePos.X, InventorySpacePos.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), WidthIdx, HeightIdx);
 
-		UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), RowIdx, ColumnIdx);
+		bool bIsEmpty = true == IsEmptySpace(XIdx, YIdx, ListItem->TileSize);
 
-		int32 Key = MakeKey(RowIdx, ColumnIdx);
+		if (true == bIsEmpty)
+		{
+			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
+		}
 
+		else
+		{
+			FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
+		}
 
+		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
+		TempFootprintLoc = FIntPoint(XIdx, YIdx);
 	}
-
-
-
 
 }
 
 void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
-	// 포인터 위치 변경 시 계속 호출되는 함수
 	IDragDetectable::NativeOnDetect(InDraggingWidget, InEvent);
 
 	UE_LOG(LogTemp, Warning, TEXT("On Detect! GridBasedListView"));
 
-	if (nullptr == InventoryPanel) { return; }
+	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
+
+	UCanvasPanelSlot* FootprintWidgetSlot = Cast<UCanvasPanelSlot>(FootprintWidget->Slot);
+	if (nullptr == FootprintWidgetSlot) return;
 
 	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
 	if (nullptr == ListEntry) { return; }
@@ -69,36 +103,89 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
 	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
 
-	uint32 RowIdx = 0;
-	uint32 ColumnIdx = 0;
+	int32 XIdx = 0;
+	int32 YIdx = 0;
 
-	if (true == GetIndexFromLocal(InventorySpacePos, OUT RowIdx, OUT ColumnIdx))
+	if (true == GetIndexFromLocal(InventorySpacePos, OUT XIdx, OUT YIdx, ListItem->TileSize))
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Screen = %.1f, %.1f, Inventory = %.1f, %.1f"), CursorScreenSpacePos.X, CursorScreenSpacePos.Y, InventorySpacePos.X, InventorySpacePos.Y);
+		bool bIsEmpty = true == IsEmptySpace(XIdx, YIdx, ListItem->TileSize);
 
-		UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), RowIdx, ColumnIdx);
+		if (true == bIsEmpty)
+		{
+			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
+		}
 
+		else
+		{
+			FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
+		}
+
+		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
+		TempFootprintLoc = FIntPoint(XIdx, YIdx);
 	}
-
-
 }
 
 void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
-	// 감지가 끝났을 때 (포인터가 위젯에서 나갔을 때 LeaveWidget)
 	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
 
 	UE_LOG(LogTemp, Warning, TEXT("On End Detect! GridBasedListView"));
 
+	if (nullptr != FootprintWidget)
+	{
+		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
-	// 드래그가 끝났을 때
 	IDragDetectable::NativeOnDrop(InDraggingWidget, InEvent);
 
 	UE_LOG(LogTemp, Warning, TEXT("On Drop! GridBasedListView"));
 
+	if (nullptr != FootprintWidget)
+	{
+		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
+	if (nullptr == ListEntry) { return; }
+
+	if (TempFootprintLoc.X == -1 && TempFootprintLoc.Y == -1)
+	{
+		return;
+	}
+
+	UGridBasedListItem* const* FoundItem = ListItems.FindByPredicate([&](UGridBasedListItem* InItem)
+		{
+			return InItem == GetItemFromListEntry(ListEntry);
+		});
+
+	if (nullptr == FoundItem || nullptr == *FoundItem) { return; }
+	UGridBasedListItem* ListItem = *FoundItem;
+
+	bool bIsEmpty = IsEmptySpace(TempFootprintLoc.X, TempFootprintLoc.Y, ListItem->TileSize);
+
+	FIntPoint DropPos = true == bIsEmpty ? TempFootprintLoc : ListItem->TopLeftPos;
+	ForEach(DropPos.X, DropPos.Y, ListItem->TileSize, [&](int32 InIndex)
+		{
+			if (Grid.IsValidIndex(InIndex))
+			{
+				Grid[InIndex] = ListItem;
+			}
+		});
+
+	ListItem->TopLeftPos = FIntPoint(DropPos.X, DropPos.Y);
+	
+	UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ListEntry);
+	if (ensure(PanelSlot))
+	{
+		PanelSlot->SetPosition(GetLocalFromIndex(DropPos.X, DropPos.Y));
+		FVector2D Size = FVector2D(ListItem->TileSize.X * SlotSize, ListItem->TileSize.Y * SlotSize);
+		PanelSlot->SetSize(Size);
+	}
+
+	TempFootprintLoc = FIntPoint(-1, -1);
 }
 
 void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
@@ -116,6 +203,8 @@ void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 		return;
 	}
 
+	ListItems.Add(InItem);
+
 	int32 TopLeftX = PossibleTopLeftKey % RowCount;
 	int32 TopLeftY = PossibleTopLeftKey / RowCount;
 
@@ -124,7 +213,7 @@ void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 		Grid[Index] = InItem;
 	}
 
-	InItem->TopLeftPos = FDoubleArrayIndexes(TopLeftX, TopLeftY);
+	InItem->TopLeftPos = FIntPoint(TopLeftX, TopLeftY);
 
 	if (false == IsOverScroll(PossibleTopLeftKey))
 	{
@@ -136,6 +225,14 @@ void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 {
 	if (ActiveWidgets.Contains(InItem))
 	{
+		ForEach(InItem->TopLeftPos.X, InItem->TopLeftPos.Y, InItem->TileSize, [&](int32 InIndex)
+			{
+				if (Grid.IsValidIndex(InIndex))
+				{
+					Grid[InIndex] = nullptr;
+				}
+			});
+
 		RemoveWidget(InItem);
 		TWeakObjectPtr<UUserWidget> FoundWidget = ActiveWidgets.FindRef(InItem);
 
@@ -144,6 +241,8 @@ void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 			ActiveWidgets.Remove(InItem);
 			ActiveItems.Remove(FoundWidget.Get());
 		}
+
+		ListItems.Remove(InItem);
 	}
 
 }
@@ -204,10 +303,8 @@ void UGridBasedListView::OnChangedScrollOffset(float InScrollOffset)
 			int NewKey = MakeKey(i, RemovePage);
 			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
-			UGridBasedListItem* Item = Grid[NewKey];
+			const UGridBasedListItem* Item = Grid[NewKey];
 
-			// TODO : 아이템의 TopLeft.Y + Size.Y가 아이템이 차지하는 공간의 밑부분
-			// TopLeft : 0 , Size.Y = 5라면, 5열이 아이템의 밑부분이다.
 			if (nullptr != Item)
 			{
 				int ItemBottomYIndex = Item->TopLeftPos.Y + (Item->TileSize.Y - 1);
@@ -224,10 +321,16 @@ void UGridBasedListView::OnChangedScrollOffset(float InScrollOffset)
 			int NewKey = MakeKey(i, NewPage);
 			if (!Grid.IsValidIndex(NewKey)) { continue; }
 
-			UGridBasedListItem* Item = Grid[NewKey];
-			if (nullptr != Item && false == ActiveWidgets.Contains(Item))
+			UGridBasedListItem* const* FindItem = ListItems.FindByPredicate([&](UGridBasedListItem* InItem)
+				{
+					const UGridBasedListItem* Item = Grid[NewKey];
+
+					return nullptr != Item && InItem == Item;
+				});
+
+			if (nullptr != FindItem && nullptr != *FindItem && false == ActiveWidgets.Contains(*FindItem))
 			{
-				AddWidget(Item);
+				AddWidget(*FindItem);
 			}
 		}
 
@@ -237,6 +340,14 @@ void UGridBasedListView::OnChangedScrollOffset(float InScrollOffset)
 	if (GEngine && InventoryPanel)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString::Printf(TEXT("Current Height = %d, Active Widget Num = %d"), NewCurrentPageIndex, InventoryPanel->GetChildrenCount()));
+	}
+}
+
+void UGridBasedListView::SetVisibleScrollBar(bool bIsVisible)
+{
+	if (nullptr != ScrollBox)
+	{
+		ScrollBox->SetScrollBarVisibility(true == bIsVisible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 
@@ -268,13 +379,15 @@ void UGridBasedListView::NativeConstruct()
 
 void UGridBasedListView::NativeDestruct()
 {
+	Super::NativeDestruct();
+
 	ItemPool.ReleaseAll(true);
 	ItemPool.ResetPool();
 
 	Grid.Reset();
-
-
-	Super::NativeDestruct();
+	ListItems.Reset();
+	ActiveWidgets.Reset();
+	ActiveItems.Reset();
 }
 
 void UGridBasedListView::SynchronizeProperties()
@@ -282,7 +395,8 @@ void UGridBasedListView::SynchronizeProperties()
 	Super::SynchronizeProperties();
 
 	SetInventorySize();
-	SetMaterial();	
+	SetMaterial();
+
 }
 
 void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
@@ -318,7 +432,7 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 	}
 }
 
-void UGridBasedListView::RemoveWidget(UGridBasedListItem* InItem)
+void UGridBasedListView::RemoveWidget(const UGridBasedListItem* InItem)
 {
 	TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[InItem];
 	if (ensure(ActivedWidget.IsValid()))
@@ -345,32 +459,49 @@ void UGridBasedListView::RemoveWidget(UGridBasedListItem* InItem)
 	}
 }
 
-int32 UGridBasedListView::MakeKey(uint32 InRow, uint32 InColumn)
+int32 UGridBasedListView::MakeKey(int32 InRow, int32 InColumn)
 {
 	return InRow + (InColumn * RowCount);
 }
 
-FVector2D UGridBasedListView::GetLocalFromIndex(uint32 InSlotW, uint32 InSlotH)
+FVector2D UGridBasedListView::GetLocalFromIndex(int32 InX, int32 InY)
 {
-	return FVector2D(SlotSize * InSlotW, SlotSize * InSlotH);
+	return FVector2D(SlotSize * InX, SlotSize * InY);
 }
 
-bool UGridBasedListView::GetIndexFromLocal(const FVector2D InPos, OUT uint32& OutWIdx, uint32& OutHIdx)
+bool UGridBasedListView::GetIndexFromLocal(const FVector2D InPos, OUT int32& OutX, int32& OutY, const FIntPoint& InLocalSize)
 {
 	int Width = InPos.X / SlotSize;
 	int Height = InPos.Y / SlotSize;
 
-	if (Width >= 0 && Height >= 0 && Width < RowCount && Height < ColumnCount)
+	if (Width < 0 || Height < 0 || Width >= RowCount || Height >= ColumnCount)
 	{
-		OutWIdx = Width;
-		OutHIdx = Height;
-		return true;
+		return false;
 	}
 
-	return false;
+	/*if (Width >= 0 && Height >= 0 && Width < RowCount && Height < ColumnCount)
+	{
+
+		return true;
+	}*/
+
+	if (Width + InLocalSize.X > RowCount)
+	{
+		Width = RowCount - InLocalSize.X;
+	}
+
+	if (Height + InLocalSize.Y > ColumnCount)
+	{
+		Height = ColumnCount - InLocalSize.Y;
+	}
+
+	OutX = Width;
+	OutY = Height;
+
+	return true;
 }
 
-int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight)
+int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, int8 InX, int8 InY)
 {
 	TQueue<int32> Queue;
 
@@ -382,7 +513,7 @@ int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, u
 		}
 	}
 
-	OutGridList.Reserve(InWidth * InHeight);
+	OutGridList.Reserve(InX * InY);
 
 	while (false == Queue.IsEmpty())
 	{
@@ -390,7 +521,7 @@ int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, u
 		Queue.Dequeue(OUT TopLeft);
 
 		int Level = TopLeft / RowCount;
-		if (Level != (TopLeft + InWidth - 1) / RowCount)
+		if (Level != (TopLeft + InY - 1) / RowCount)
 		{
 			continue;
 		}
@@ -399,11 +530,11 @@ int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, u
 
 		bool flag = false;
 
-		for (int i = 0; i < InHeight; ++i)
+		for (int i = 0; i < InY; ++i)
 		{
 			int Height = i * RowCount;
 
-			for (int j = 0; j < InWidth; ++j)
+			for (int j = 0; j < InX; ++j)
 			{
 				int Index = TopLeft + j + Height;
 				OutGridList.Emplace(Index);
@@ -422,7 +553,7 @@ int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, u
 			}
 		}
 
-		if (OutGridList.Num() == InWidth * InHeight)
+		if (OutGridList.Num() == InX * InY)
 		{
 			return OutGridList.IsValidIndex(0) ? OutGridList[0] : INDEX_NONE;
 		}
@@ -442,7 +573,7 @@ void UGridBasedListView::SetMaterial()
 			Material->SetTextureParameterValue(TEXT("Pattern"), SlotTexture);
 
 			TArray<int> Index;
-			for (FDoubleArrayIndexes& Indexes : HiddenIndex)
+			for (const FIntPoint& Indexes : HiddenIndex)
 			{
 				int X = FMath::Clamp(Indexes.X, 0, RowCount);
 				int Y = FMath::Clamp(Indexes.Y, 0, ColumnCount);
@@ -450,13 +581,12 @@ void UGridBasedListView::SetMaterial()
 				Index.Emplace(X + RowCount * Y);
 			}
 
-			// 0~127 = 32비트*4 = RGBA
 			uint32 W0 = 0, W1 = 0, W2 = 0, W3 = 0;
 
 			for (int32 i : Index)
 			{
-				if (i < 0 || i >= 128) continue;       // A만 쓰므로 범위를 0..127로 제한
-				const uint32 word = (uint32)i >> 5;    // 0..3 (각 32칸)
+				if (i < 0 || i >= 128) continue;
+				const uint32 word = (uint32)i >> 5;    // 0..3 (占쏙옙 32칸)
 				const uint32 bit = (uint32)i & 31u;   // 0..31
 				const uint32 m = 1u << bit;
 
@@ -470,7 +600,6 @@ void UGridBasedListView::SetMaterial()
 				}
 			}
 
-			// uint32를 float로 비트 재해석해 Vector4로 패킹
 			auto PackToFColor = [](uint32 a, uint32 b, uint32 c, uint32 d) -> FLinearColor
 				{
 					return FLinearColor(
@@ -514,11 +643,36 @@ bool UGridBasedListView::IsOverScroll(int32 InTopLeftKey) const
 	return FirstPageIndex > CurrentPageIndex;
 }
 
-bool UGridBasedListView::IsEmptySpace(int32 InTopLeftKey, const UGridBasedListItem* InItem) const
+bool UGridBasedListView::IsEmptySpace(int32 InX, int32 InY, const FIntPoint& InSize)
 {
-	// TODO : 아이템의 사이즈만큼 공간이 비어있는지 확인 해야 함.
+	for (int32 i = 0; i < InSize.Y; ++i)
+	{
+		for (int32 j = 0; j < InSize.X; ++j)
+		{
+			int32 Index = MakeKey(InX + j, InY + i);
+
+			if (Grid.IsValidIndex(Index) &&
+				nullptr != Grid[Index])
+			{
+				return false;
+			}
+		}
+	}
+
 
 	return true;
+}
+
+void UGridBasedListView::ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32)> InFunc)
+{
+	for (int i = 0; i < InSize.Y; ++i)
+	{
+		for (int j = 0; j < InSize.X; ++j)
+		{
+			int32 NewIndex = MakeKey(InX + j, InY + i);
+			InFunc(NewIndex);
+		}
+	}
 }
 
 float UGridBasedListView::GetSlotSize() const

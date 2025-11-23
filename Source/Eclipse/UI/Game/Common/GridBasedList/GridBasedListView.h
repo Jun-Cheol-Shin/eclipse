@@ -41,6 +41,10 @@ public:
 	void RefreshList();	
 
 	float GetSlotSize() const;
+	int GetColumnCount() const { return ColumnCount; }
+	int GetRowCount() const { return RowCount; }
+
+	void SetVisibleScrollBar(bool bIsVisible);
 		 
 protected:
 	virtual void NativeConstruct() override;
@@ -56,19 +60,22 @@ protected:
 
 private:
 	void AddWidget(UGridBasedListItem* InItem);
-	void RemoveWidget(UGridBasedListItem* InItem);
+	void RemoveWidget(const UGridBasedListItem* InItem);
 
 	// Get Top Left Index
-	int32 MakeKey(uint32 InRow, uint32 InColumn);
-	FVector2D GetLocalFromIndex(uint32 InSlotW, uint32 InSlotH);
-	bool GetIndexFromLocal(const FVector2D InPos, OUT uint32& OutWIdx, uint32& OutHIdx);
-	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, uint8 InWidth, uint8 InHeight);
+	int32 MakeKey(int32 InRow, int32 InColumn);
+	FVector2D GetLocalFromIndex(int32 InX, int32 InY);
+	bool GetIndexFromLocal(const FVector2D InPos, OUT int32& OutX, int32& OutY, const FIntPoint& InLocalSize = FIntPoint(0,0));
+	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, int8 InX, int8 InY);
 
 	void SetMaterial();
 	void SetInventorySize();
 
 	bool IsOverScroll(int32 InTopLeftKey) const;
-	bool IsEmptySpace(int32 InTopLeftKey, const UGridBasedListItem* InItem) const;
+	bool IsEmptySpace(int32 InX, int32 InY, const FIntPoint& InSize);
+
+
+	void ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32 /* Grid Index */)> InFunc);
 
 private:
 	UFUNCTION()
@@ -91,11 +98,11 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TObjectPtr<UTexture> SlotTexture = nullptr;
 
-	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "GridBasedObjectListEntry"))
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "/Script/Eclipse.GridBasedObjectListEntry"))
 	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
-	TArray<FDoubleArrayIndexes> HiddenIndex{};
+	TArray<FIntPoint> HiddenIndex{};
 	
 
 
@@ -119,7 +126,7 @@ private:
 
 private:
 	UPROPERTY(Transient)
-	TArray<UGridBasedListItem*> Grid;
+	TArray<const UGridBasedListItem*> Grid;
 
 	UPROPERTY(Transient)
 	TMap<TObjectPtr<UGridBasedListItem>, UUserWidget*> ActiveWidgets;
@@ -129,4 +136,10 @@ private:
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<EStorageState, FFootprintStyle> FootprintStyles;
+	
+	UPROPERTY(Transient)
+	TArray<UGridBasedListItem*> ListItems;
+
+private:
+	FIntPoint TempFootprintLoc = FIntPoint(-1, -1);
 };

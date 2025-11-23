@@ -5,6 +5,7 @@
 
 #include "Components/SizeBox.h"
 #include "Components/Image.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 void UGridBasedListEntry::NativeOnListItemObjectSet(UGridBasedListItem* ListItemObject)
@@ -62,6 +63,27 @@ void UGridBasedListEntry::NativeOnEndDrag(const FGeometry& InGeometry, const FPo
     IDraggable::NativeOnEndDrag(InGeometry, InEvent);
 
 
+}
+
+void UGridBasedListEntry::NativeOnDrop(UPanelSlot* InPanelSlot)
+{
+    IDraggable::NativeOnDrop(InPanelSlot);
+
+    // Failed Drop on detectable widget..
+
+    const UGridBasedListItem* OwningItem = GetOwningListItem();
+    if (nullptr == OwningItem)
+    {
+        return;
+    }
+
+    UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(InPanelSlot);
+    if (ensure(PanelSlot))
+    {
+        PanelSlot->SetPosition(FVector2D(OwningItem->TopLeftPos.X * GetSlotSize(), OwningItem->TopLeftPos.Y * GetSlotSize()));
+        FVector2D Size = FVector2D(OwningItem->TileSize.X * GetSlotSize(), OwningItem->TileSize.Y * GetSlotSize());
+        PanelSlot->SetSize(Size);
+    }
 }
 
 void UGridBasedListEntry::NativeConstruct()

@@ -3,6 +3,9 @@
 
 #include "MenuHub_Inventory.h"
 
+#include "Components/SizeBox.h"
+#include "Components/OverlaySlot.h"
+
 #include "../../Common/GridBasedList/GridBasedListView.h"
 #include "../../Common/GridBasedList/GridBasedListEntry.h"
 
@@ -40,7 +43,7 @@ void UMenuHub_Inventory::NativeConstruct()
 
 				if (UGridBasedListItem* NewItem = NewObject<UGridBasedListItem>())
 				{
-					NewItem->TileSize = FDoubleArrayIndexes(Row, Column);
+					NewItem->TileSize = FIntPoint(Row, Column);
 					InventoryList->AddItem(NewItem);
 				}
 
@@ -60,4 +63,40 @@ void UMenuHub_Inventory::NativeDestruct()
 #endif
 
 	Super::NativeDestruct();
+}
+
+void UMenuHub_Inventory::SynchronizeProperties()
+{
+	Super::SynchronizeProperties();
+
+	if (nullptr == InventoryList)
+	{
+		return;
+	}
+
+	float InventorySize = InventoryList->GetSlotSize()* InventoryList->GetColumnCount();
+
+	if (nullptr != InventorySizeBox && BorderSizeBox)
+	{
+		if (FMath::IsNearlyEqual(InventorySizeBox->GetHeightOverride(), InventorySize))
+		{
+			if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(BorderSizeBox->Slot))
+			{
+				OverlaySlot->SetPadding(FMargin(0, -12.5f, 0, -12.5f));
+			}
+
+			InventoryList->SetVisibleScrollBar(false);
+		}
+
+		else
+		{
+			if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(BorderSizeBox->Slot))
+			{
+				OverlaySlot->SetPadding(FMargin(-5, -12.5f, -5, -12.5f));
+			}
+
+			InventoryList->SetVisibleScrollBar(true);
+		}
+	}
+
 }

@@ -67,6 +67,8 @@ private:
 	FReply DragStart(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	FReply DragEnd(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+
+	void Enter(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 	void Leave(const FPointerEvent& InEvent);
 
 	void SetDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
@@ -76,7 +78,7 @@ private:
 
 private:
 	bool bUseToogle = false;
-	bool bDrag = false;
+	bool bClick = false;
 
 	FVector2D ClickOffset {};
 

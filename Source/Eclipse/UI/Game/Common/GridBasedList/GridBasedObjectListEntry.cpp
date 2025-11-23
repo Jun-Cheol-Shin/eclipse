@@ -33,6 +33,16 @@ UGridBasedListView* IGridBasedObjectListEntry::GetOwningListView() const
 	return nullptr;
 }
 
+const UGridBasedListItem* IGridBasedObjectListEntry::GetOwningListItem()
+{
+	if (OwningListView.IsValid())
+	{
+		return OwningListView->GetItemFromListEntry(Cast<UUserWidget>(this));
+	}
+
+	return nullptr;
+}
+
 float IGridBasedObjectListEntry::GetSlotSize() const
 {
 	if (OwningListView.IsValid())

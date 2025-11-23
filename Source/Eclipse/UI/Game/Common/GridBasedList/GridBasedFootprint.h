@@ -9,21 +9,6 @@
 /**
  * 
  */
-USTRUCT(BlueprintType)
-struct FDoubleArrayIndexes
-{
-	GENERATED_BODY()
-
-public:
-	FDoubleArrayIndexes() : X(0), Y(0) {}
-	FDoubleArrayIndexes(int x, int y) : X(x), Y(y) {}
-
-	UPROPERTY(EditAnywhere)
-	int X = 0;
-
-	UPROPERTY(EditAnywhere)
-	int Y = 0;
-};
 
 class UImage;
 class UTexture;
@@ -55,7 +40,7 @@ class ECLIPSE_API UGridBasedFootprint : public UUserWidget
 
 public:
 	void SetStyle(const FFootprintStyle& InStyle);
-	void SetFootprint(int InRow, int InColumn, const TArray<int>& InHiddenIndex);
+	void SetFootprint(int InX, int InY, const TArray<int>& InHiddenIndex);
 	
 protected:
 	virtual void NativeConstruct() override;
@@ -74,7 +59,7 @@ private:
 	int Column = 0;
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true", Category = "Preview"))
-	TArray<FDoubleArrayIndexes> ExcludeHiddenIdx;
+	TArray<FIntPoint> ExcludeHiddenIdx;
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = "true", Category = "Preview"))
 	FFootprintStyle PreviewStyle;
