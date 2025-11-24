@@ -12,6 +12,7 @@
 
 
 class USizeBox;
+class UDragDropOperation;
 
 UCLASS()
 class UGridBasedListItem : public UObject
@@ -42,11 +43,11 @@ protected:
 	virtual void NativeOnEntryReleased() override;
 	// End IGridBasedObjectListEntry
 
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+
+
 	// IDraggable
-	virtual void NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
-	virtual void NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
-	virtual void NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent) override;
-	virtual void NativeOnDrop(UPanelSlot* InPanelSlot) override;
+	
 	// End IDraggable
 
 	// UUserWidget

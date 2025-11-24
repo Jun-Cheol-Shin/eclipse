@@ -25,6 +25,9 @@ class UPanelWidget;
 class UImage;
 class UBorder;
 class UWidget;
+class UUserWidget;
+
+enum class EDragPivot : uint8;
 
 class ECLIPSE_API IDraggable
 {
@@ -32,62 +35,38 @@ class ECLIPSE_API IDraggable
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 
+	friend class UDragPayload;
+
 public:
 	void SetWorld(UWorld* InWorld);
 	void SetOwningController(APlayerController* InController);
 	void Reset();
-
 	void SetEventFromImage(UImage* InImage);
 	void SetEventFromBorder(UBorder* InBorder);
+
 	void SetEnableToggle(bool bIsEnable);
 
+	UDragPayload* CreateDragPayload(TFunction<void(UDragPayload*)> InFunc);
 
-protected:
-	virtual void NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drag Start")
-	void OnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent); 
-
-	virtual void NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drag")
-	void OnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
-	virtual void NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drop")
-	void OnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
-	virtual void NativeOnDrop(UPanelSlot* InPanelSlot);
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Drag Widget Functions", DisplayName = "On Drop")
-	void OnDrop(UPanelSlot* InPanelSlot);
 
 private:
-	FReply DragStart(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	FReply Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	FReply DragEnd(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply MouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
-	void Enter(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	void Leave(const FPointerEvent& InEvent);
+	void Drag(UUserWidget* InVisualWidget, EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent);
+	void DragCancel(const FPointerEvent& InEvent);
+	void Drop(const FPointerEvent& InEvent);
 
-	void SetDrop(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FVector2D GetClickOffset(EDragPivot InPivot, const FVector2D& InOffset) const;
 
 private:
 	void SetEvent(UWidget* InWidget);
 
 private:
-	bool bUseToogle = false;
-	bool bClick = false;
-
-	FVector2D ClickOffset {};
-
 	TWeakObjectPtr<UWorld> OuterWorld = nullptr;
 	TWeakObjectPtr<UWidget> EventWidget = nullptr;
 	TWeakObjectPtr<UPanelWidget> OuterPanelWidget = nullptr;
 
 	TArray<UUserWidget*> DetectableWidgets;
-	UUserWidget* CurrentDetectedWidget = nullptr;
 
-	FVector2D DragCursorScreenPos = FVector2D();
+	UUserWidget* CurrentDetectedWidget = nullptr;
 };

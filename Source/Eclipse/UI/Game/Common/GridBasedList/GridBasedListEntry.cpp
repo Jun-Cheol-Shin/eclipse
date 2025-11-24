@@ -3,6 +3,8 @@
 
 #include "GridBasedListEntry.h"
 
+#include "DragPayload.h"
+
 #include "Components/SizeBox.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanelSlot.h"
@@ -44,27 +46,23 @@ void UGridBasedListEntry::NativeOnEntryReleased()
     Reset();
 }
 
-void UGridBasedListEntry::NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
+void UGridBasedListEntry::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
-    IDraggable::NativeOnStartDrag(InGeometry, InEvent);
+    Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
 
-
+    OutOperation = CreateDragPayload([this](UDragDropOperation* InOperation)
+        {
+            if (UDragPayload* Payload = Cast<UDragPayload>(InOperation))
+            {
+                Payload->Payload = this;
+                Payload->Pivot = EDragPivot::MouseDown;
+                Payload->DragVisualWidgetClass = this;
+            }
+        });
 }
 
-void UGridBasedListEntry::NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-    IDraggable::NativeOnDrag(InGeometry, InEvent);
 
-
-}
-
-void UGridBasedListEntry::NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-    IDraggable::NativeOnEndDrag(InGeometry, InEvent);
-
-
-}
-
+/*
 void UGridBasedListEntry::NativeOnDrop(UPanelSlot* InPanelSlot)
 {
     IDraggable::NativeOnDrop(InPanelSlot);
@@ -84,7 +82,8 @@ void UGridBasedListEntry::NativeOnDrop(UPanelSlot* InPanelSlot)
         FVector2D Size = FVector2D(OwningItem->TileSize.X * GetSlotSize(), OwningItem->TileSize.Y * GetSlotSize());
         PanelSlot->SetSize(Size);
     }
-}
+}*/
+
 
 void UGridBasedListEntry::NativeConstruct()
 {
