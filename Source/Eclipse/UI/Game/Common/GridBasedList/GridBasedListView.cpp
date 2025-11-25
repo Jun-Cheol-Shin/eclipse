@@ -2,7 +2,7 @@
 
 
 #include "GridBasedListView.h"
-
+#include "DragPayload.h"
 
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -19,13 +19,10 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 {
 	IDragDetectable::NativeOnStartDetectDrag(InDraggingWidget, InEvent);
 
-	UE_LOG(LogTemp, Warning, TEXT("On Start Detect! GridBasedListView"));
-
 	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
 
 	UCanvasPanelSlot* FootprintWidgetSlot = Cast<UCanvasPanelSlot>(FootprintWidget->Slot);
 	if (nullptr == FootprintWidgetSlot) return;
-
 
 	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
 	if (nullptr == ListEntry) { return; }
@@ -62,9 +59,6 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 
 	if (true == GetIndexFromLocal(InventorySpacePos, OUT XIdx, OUT YIdx, ListItem->TileSize))
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Screen = %.1f, %.1f, Inventory = %.1f, %.1f"), CursorScreenSpacePos.X, CursorScreenSpacePos.Y, InventorySpacePos.X, InventorySpacePos.Y);
-		//UE_LOG(LogTemp, Warning, TEXT("Index = %d, %d"), WidthIdx, HeightIdx);
-
 		bool bIsEmpty = true == IsEmptySpace(XIdx, YIdx, ListItem->TileSize);
 
 		if (true == bIsEmpty)
@@ -80,19 +74,24 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
 		TempFootprintLoc = FIntPoint(XIdx, YIdx);
 	}
+}
 
+void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
+{
+	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
+
+	if (nullptr != FootprintWidget)
+	{
+		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnDetect(InDraggingWidget, InEvent);
 
-	UE_LOG(LogTemp, Warning, TEXT("On Detect! GridBasedListView"));
-
-	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
-
 	UCanvasPanelSlot* FootprintWidgetSlot = Cast<UCanvasPanelSlot>(FootprintWidget->Slot);
-	if (nullptr == FootprintWidgetSlot) return;
+	if (nullptr == FootprintWidgetSlot) { return; };
 
 	UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(InDraggingWidget);
 	if (nullptr == ListEntry) { return; }
@@ -100,6 +99,7 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 	const UGridBasedListItem* ListItem = GetItemFromListEntry(ListEntry);
 	if (nullptr == ListItem) { return; }
 
+	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
 	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
 	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
 
@@ -123,25 +123,12 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
 		TempFootprintLoc = FIntPoint(XIdx, YIdx);
 	}
-}
 
-void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
-{
-	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
-
-	UE_LOG(LogTemp, Warning, TEXT("On End Detect! GridBasedListView"));
-
-	if (nullptr != FootprintWidget)
-	{
-		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
 }
 
 void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnDrop(InDraggingWidget, InEvent);
-
-	UE_LOG(LogTemp, Warning, TEXT("On Drop! GridBasedListView"));
 
 	if (nullptr != FootprintWidget)
 	{
@@ -176,7 +163,7 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 		});
 
 	ListItem->TopLeftPos = FIntPoint(DropPos.X, DropPos.Y);
-	
+
 	UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ListEntry);
 	if (ensure(PanelSlot))
 	{
@@ -186,6 +173,7 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	}
 
 	TempFootprintLoc = FIntPoint(-1, -1);
+
 }
 
 void UGridBasedListView::AddItem(UGridBasedListItem* InItem)

@@ -56,34 +56,9 @@ void UGridBasedListEntry::NativeOnDragDetected(const FGeometry& InGeometry, cons
             {
                 Payload->Payload = this;
                 Payload->Pivot = EDragPivot::MouseDown;
-                Payload->DragVisualWidgetClass = this;
             }
         });
 }
-
-
-/*
-void UGridBasedListEntry::NativeOnDrop(UPanelSlot* InPanelSlot)
-{
-    IDraggable::NativeOnDrop(InPanelSlot);
-
-    // Failed Drop on detectable widget..
-
-    const UGridBasedListItem* OwningItem = GetOwningListItem();
-    if (nullptr == OwningItem)
-    {
-        return;
-    }
-
-    UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(InPanelSlot);
-    if (ensure(PanelSlot))
-    {
-        PanelSlot->SetPosition(FVector2D(OwningItem->TopLeftPos.X * GetSlotSize(), OwningItem->TopLeftPos.Y * GetSlotSize()));
-        FVector2D Size = FVector2D(OwningItem->TileSize.X * GetSlotSize(), OwningItem->TileSize.Y * GetSlotSize());
-        PanelSlot->SetSize(Size);
-    }
-}*/
-
 
 void UGridBasedListEntry::NativeConstruct()
 {
@@ -94,5 +69,24 @@ void UGridBasedListEntry::SynchronizeProperties()
 {
     Super::SynchronizeProperties();
 
+
+}
+
+void UGridBasedListEntry::NativeOnDragCancel(UPanelSlot* InSlot)
+{
+    IDraggable::NativeOnDragCancel(InSlot);
+
+    const UGridBasedListItem* OwningItem = GetOwningListItem();
+    if (nullptr == OwningItem)
+    {
+        return;
+    }
+
+    if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(InSlot))
+    {
+        PanelSlot->SetPosition(FVector2D(OwningItem->TopLeftPos.X * GetSlotSize(), OwningItem->TopLeftPos.Y * GetSlotSize()));
+        FVector2D Size = FVector2D(OwningItem->TileSize.X * GetSlotSize(), OwningItem->TileSize.Y * GetSlotSize());
+        PanelSlot->SetSize(Size);
+    }
 
 }

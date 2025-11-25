@@ -4,11 +4,12 @@
 #include "DragPayload.h"
 #include "Draggable.h"
 
+#include "Components/PanelWidget.h"
 #include "Blueprint/UserWidget.h"
 
-void UDragPayload::Set(UUserWidget* InDraggableWidget)
+void UDragPayload::Set(UUserWidget* InDraggable)
 {
-	DraggableWidget = InDraggableWidget;
+	DraggableWidget = InDraggable;
 }
 
 void UDragPayload::BeginDestroy()
@@ -22,44 +23,25 @@ void UDragPayload::Dragged_Implementation(const FPointerEvent& PointerEvent)
 {
 	if (IDraggable* Draggable = Cast<IDraggable>(DraggableWidget))
 	{
-		if (nullptr == DuplicatedWidget)
+		if (UPanelWidget* PanelWidget = DraggableWidget->GetParent())
 		{
-			DuplicatedWidget = DuplicateObject<UUserWidget>(DragVisualWidgetClass, this);
-
-			if (DuplicatedWidget)
-			{
-				DuplicatedWidget->AddToViewport(INT_MAX - 1);
-			}
+			PanelWidget->RemoveChild(DraggableWidget.Get());
 		}
 
-		Draggable->Drag(DuplicatedWidget, Pivot, Offset, PointerEvent);
+		if (false == DraggableWidget->IsInViewport())
+		{
+			DraggableWidget->AddToViewport(0);
+		}
+
+		Draggable->Drag(Pivot, Offset, PointerEvent);
 	}
 }
 
-void UDragPayload::Drop_Implementation(const FPointerEvent& PointerEvent)
-{
-	if (IDraggable* Draggable = Cast<IDraggable>(DraggableWidget))
-	{
-		if (DuplicatedWidget)
-		{
-			DuplicatedWidget->RemoveFromParent();
-			DuplicatedWidget = nullptr;
-		}
-
-		Draggable->Drop(PointerEvent);
-	}
-}
 
 void UDragPayload::DragCancelled_Implementation(const FPointerEvent& PointerEvent)
 {
 	if (IDraggable* Draggable = Cast<IDraggable>(DraggableWidget))
 	{
-		if (DuplicatedWidget)
-		{
-			DuplicatedWidget->RemoveFromParent();
-			DuplicatedWidget = nullptr;
-		}
-
 		Draggable->DragCancel(PointerEvent);
 	}
 }

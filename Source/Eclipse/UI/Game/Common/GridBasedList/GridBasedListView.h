@@ -51,12 +51,12 @@ protected:
 	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
 
-	// IDragDetectable
-	virtual void NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
-	virtual void NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
-	virtual void NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
-	virtual void NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent) override;
-	// End IDragDetectable
+	// Drag Detectable Event
+	virtual void NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	virtual void NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	virtual void NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	virtual void NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
+	// End Drag Detectable Event
 
 private:
 	void AddWidget(UGridBasedListItem* InItem);

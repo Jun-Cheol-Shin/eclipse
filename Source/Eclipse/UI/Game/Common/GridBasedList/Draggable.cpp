@@ -2,12 +2,13 @@
 
 
 #include "Draggable.h"
-#include "DragDetectable.h"
 #include "DragPayload.h"
+#include "DragDetectable.h"
 
 #include "Components/Border.h"
 #include "Components/Image.h"
 #include "Components/Widget.h"
+#include "Components/PanelWidget.h"
 
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -82,6 +83,11 @@ UDragPayload* IDraggable::CreateDragPayload(TFunction<void(UDragPayload*)> InFun
 	return nullptr;
 }
 
+void IDraggable::NativeOnDragCancel(UPanelSlot* InPanelSlot)
+{
+	Execute_OnDragCancel(Cast<UObject>(this), InPanelSlot);
+}
+
 FReply IDraggable::MouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
 	if (InEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
@@ -101,9 +107,19 @@ FReply IDraggable::MouseButtonDown(const FGeometry& InGeometry, const FPointerEv
 	return FReply::Unhandled();
 }
 
-void IDraggable::Drag(UUserWidget* InVisualWidget, EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent)
+FReply IDraggable::MouseMove(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
-	if (nullptr == InVisualWidget)
+	UE_LOG(LogTemp, Warning, TEXT("Move!"));
+
+
+
+	return FReply::Handled();
+}
+
+void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent)
+{
+	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
+	if (nullptr == OuterWidget)
 	{
 		return;
 	}
@@ -114,29 +130,86 @@ void IDraggable::Drag(UUserWidget* InVisualWidget, EDragPivot InPivot, const FVe
 
 	FVector2D Widget_PixelPosition;
 	FVector2D Widget_ViewportPosition;
-	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), InVisualWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
+	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
 
 	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
-	const FVector2D WidgetSize = InVisualWidget->GetDesiredSize() * DPIScale;
+	const FVector2D WidgetSize = OuterWidget->GetDesiredSize() * DPIScale;
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(OuterWorld.Get());
 
-	const FVector2D ClickOffset = GetClickOffset(InPivot, InOffset);
+	if (ClickOffset == FVector2D(-1, -1))
+	{
+		ClickOffset = GetClickOffset(Widget_PixelPosition, Cursor_PixelPosition, WidgetSize, InPivot);
+	}
 
-	/*
-	
-	FVector2D FinalPos;
-		FinalPos.X = FMath::Clamp(WidgetPos.X, 0.0f, ViewportSize.X - WidgetSize.X);
-		FinalPos.Y = FMath::Clamp(WidgetPos.Y, 0.0f, ViewportSize.Y - WidgetSize.Y);
+	FVector2D CursorPos = Cursor_PixelPosition - ClickOffset;
 
-		OuterWidget->SetPositionInViewport(FinalPos);
+	FVector2D MaxPosVP = ViewportSize - WidgetSize;
+	MaxPosVP.X = FMath::Max(0.f, MaxPosVP.X);
+	MaxPosVP.Y = FMath::Max(0.f, MaxPosVP.Y);
 
-		NativeOnDrag(InGeometry, InEvent);
+	CursorPos.X = FMath::Clamp(CursorPos.X, 0.f, MaxPosVP.X);
+	CursorPos.Y = FMath::Clamp(CursorPos.Y, 0.f, MaxPosVP.Y);
 
-		if (nullptr == CurrentDetectedWidget)
+	OuterWidget->SetPositionInViewport(CursorPos);
+
+
+	if (nullptr == CurrentDetectedWidget)
+	{
+		for (auto& Widget : DetectableWidgets)
 		{
+			if (nullptr == Widget) continue;
+
+			else if (true == Widget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
+			{
+				CurrentDetectedWidget = Widget;
+				break;
+			}
+		}
+
+		if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
+		{
+			DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
+		}
+
+		else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
+		{
+			IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
+		}
+	}
+
+	else if (CurrentDetectedWidget)
+	{
+		if (true == CurrentDetectedWidget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
+		{
+			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
+			{
+				DetectableInterface->NativeOnDetect(OuterWidget, InEvent);
+			}
+
+			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
+			{
+				IDragDetectable::Execute_OnDetect(CurrentDetectedWidget, OuterWidget, InEvent);
+			}
+		}
+
+		else
+		{
+			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
+			{
+				DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
+			}
+
+			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
+			{
+				IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
+			}
+
+			CurrentDetectedWidget = nullptr;
+
+			// Find New Detectable Widget....
 			for (auto& Widget : DetectableWidgets)
 			{
-				if (nullptr == Widget) continue;
+				if (nullptr == Widget || Widget == CurrentDetectedWidget) continue;
 
 				else if (true == Widget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
 				{
@@ -145,91 +218,30 @@ void IDraggable::Drag(UUserWidget* InVisualWidget, EDragPivot InPivot, const FVe
 				}
 			}
 
-			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-			{
-				DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
-			}
-
-			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-			{
-				IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
-			}
-		}
-
-		else if (CurrentDetectedWidget)
-		{
-			if (true == CurrentDetectedWidget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
+			if (CurrentDetectedWidget)
 			{
 				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 				{
-					DetectableInterface->NativeOnDetect(OuterWidget, InEvent);
+					DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
 				}
 
 				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 				{
-					IDragDetectable::Execute_OnDetect(CurrentDetectedWidget, OuterWidget, InEvent);
-				}
-			}
-
-			else
-			{
-				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-				{
-					DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
-				}
-
-				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-				{
-					IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
-				}
-
-				CurrentDetectedWidget = nullptr;
-
-				// Find New Detectable Widget....
-				for (auto& Widget : DetectableWidgets)
-				{
-					if (nullptr == Widget || Widget == CurrentDetectedWidget) continue;
-
-					else if (true == Widget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
-					{
-						CurrentDetectedWidget = Widget;
-						break;
-					}
-				}
-
-				if (CurrentDetectedWidget)
-				{
-					if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-					{
-						DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
-					}
-
-					else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-					{
-						IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
-					}
+					IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
 				}
 			}
 		}
-
-		return FReply::Handled();
-
-	*/
-
+	}
 
 }
 
 void IDraggable::DragCancel(const FPointerEvent& InEvent)
 {
+	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
 
+	ClickOffset = FVector2D(-1, -1);
 
-
-	OuterPanelWidget = nullptr;
-}
-
-void IDraggable::Drop(const FPointerEvent& InEvent)
-{
-	/*if (CurrentDetectedWidget)
+	if (CurrentDetectedWidget)
 	{
 		if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 		{
@@ -240,21 +252,30 @@ void IDraggable::Drop(const FPointerEvent& InEvent)
 		{
 			IDragDetectable::Execute_OnDrop(CurrentDetectedWidget, OuterWidget, InEvent);
 		}
-	}*/
+	}
 
+	// failed drop
+	else if (nullptr != OuterPanelWidget)
+	{
+		if (UPanelSlot* PanelSlot = OuterPanelWidget->AddChild(OuterWidget))
+		{
+			NativeOnDragCancel(PanelSlot);
+		}
+	}
 
 	OuterPanelWidget = nullptr;
+	CurrentDetectedWidget = nullptr;
+
 }
 
-FVector2D IDraggable::GetClickOffset(EDragPivot InPivot, const FVector2D& InOffset) const
+FVector2D IDraggable::GetClickOffset(const FVector2D& InWidgetPos, const FVector2D& InCursorPos, const FVector2D& InWidgetSize, EDragPivot InPivot) const
 {
 	switch (InPivot)
 	{
 	case EDragPivot::MouseDown:
 	{
-
+		return InCursorPos - InWidgetPos;
 	}
-		break;
 	case EDragPivot::TopLeft:
 	{
 
@@ -308,219 +329,7 @@ FVector2D IDraggable::GetClickOffset(EDragPivot InPivot, const FVector2D& InOffs
 }
 
 /*
-void IDraggable::NativeOnStartDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	Execute_OnStartDrag(Cast<UObject>(this), InGeometry, InEvent);
-}
 
-FReply IDraggable::DragStart(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
-
-	if (nullptr == OuterWidget ||
-		false == OuterWorld.IsValid())
-	{
-		return FReply::Unhandled();
-	}
-
-	if (true == InEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
-	{
-		if (true == bClick)
-		{
-			SetDrop(InGeometry, InEvent);
-
-			return FReply::Unhandled()
-				.ClearUserFocus()
-				.ReleaseMouseLock()
-				.ReleaseMouseCapture();
-		}
-
-		else
-		{
-			OuterPanelWidget = OuterWidget->GetParent();
-
-			FVector2D Cursor_PixelPosition;
-			FVector2D Cursor_ViewportPosition;
-			USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), InEvent.GetScreenSpacePosition(), OUT Cursor_PixelPosition, OUT Cursor_ViewportPosition);
-
-			FVector2D Widget_PixelPosition;
-			FVector2D Widget_ViewportPosition;
-			USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
-
-			const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
-			const FVector2D WidgetSize = OuterWidget->GetDesiredSize() * DPIScale;
-			const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(OuterWorld.Get());
-
-			//ClickOffset = Widget_PixelPosition - Cursor_PixelPosition;
-			ClickOffset = WidgetSize * 0.5f;
-
- 			FVector2D FinalPos = Cursor_PixelPosition - ClickOffset;
-			FinalPos.X = FMath::Clamp(FinalPos.X, 0.0f, ViewportSize.X - WidgetSize.X);
-			FinalPos.Y = FMath::Clamp(FinalPos.Y, 0.0f, ViewportSize.Y - WidgetSize.Y);
-
-			if (OuterPanelWidget.IsValid())
-			{
-				OuterPanelWidget->RemoveChild(OuterWidget);
-			}
-
-			else
-			{
-				OuterWidget->RemoveFromParent();
-			}
-
-			//OuterWidget->AddToViewport(INT_MAX - 1);
-			OuterWidget->SetDesiredSizeInViewport(OuterWidget->GetDesiredSize());
-			OuterWidget->SetPositionInViewport(FinalPos);
-			
-			bClick = true;
-
-			UWidgetBlueprintLibrary::GetAllWidgetsWithInterface(OuterWorld.Get(), OUT DetectableWidgets, UDragDetectable::StaticClass(), false);
-
-			NativeOnStartDrag(InGeometry, InEvent);
-
-			FEventReply Reply;
-			Reply = UWidgetBlueprintLibrary::Handled();
-			Reply = UWidgetBlueprintLibrary::CaptureMouse(Reply, OuterWidget);
-			return Reply.NativeReply;
-		}
-	}
-
-
-	return FReply::Unhandled();
-}
-
-void IDraggable::NativeOnDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	Execute_OnDrag(Cast<UObject>(this), InGeometry, InEvent);
-}
-
-FReply IDraggable::Drag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
-
-	if (bClick && DragCursorScreenPos != InEvent.GetScreenSpacePosition() && OuterWidget)
-	{
-		DragCursorScreenPos = InEvent.GetScreenSpacePosition();
-		//UUserWidget* OuterWidget = Cast<UUserWidget>(this);
-
-		FVector2D Cursor_PixelPosition;
-		FVector2D Cursor_ViewportPosition;
-		USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), InEvent.GetScreenSpacePosition(), OUT Cursor_PixelPosition, OUT Cursor_ViewportPosition);
-
-		FVector2D Widget_PixelPosition;
-		FVector2D Widget_ViewportPosition;
-		USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
-
-		const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
-		const FVector2D WidgetSize = OuterWidget->GetDesiredSize() * DPIScale;
-
-		FVector2D WidgetPos = Cursor_PixelPosition - ClickOffset;
-		const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(OuterWorld.Get());
-
-		FVector2D FinalPos;
-		FinalPos.X = FMath::Clamp(WidgetPos.X, 0.0f, ViewportSize.X - WidgetSize.X);
-		FinalPos.Y = FMath::Clamp(WidgetPos.Y, 0.0f, ViewportSize.Y - WidgetSize.Y);
-
-		OuterWidget->SetPositionInViewport(FinalPos);
-
-		NativeOnDrag(InGeometry, InEvent);
-
-		if (nullptr == CurrentDetectedWidget)
-		{
-			for (auto& Widget : DetectableWidgets)
-			{
-				if (nullptr == Widget) continue;
-
-				else if (true == Widget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
-				{
-					CurrentDetectedWidget = Widget;
-					break;
-				}
-			}
-
-			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-			{
-				DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
-			}
-
-			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-			{
-				IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
-			}
-		}
-
-		else if (CurrentDetectedWidget)
-		{
-			if (true == CurrentDetectedWidget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
-			{
-				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-				{
-					DetectableInterface->NativeOnDetect(OuterWidget, InEvent);
-				}
-
-				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-				{
-					IDragDetectable::Execute_OnDetect(CurrentDetectedWidget, OuterWidget, InEvent);
-				}
-			}
-
-			else
-			{
-				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-				{
-					DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
-				}
-
-				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-				{
-					IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
-				}
-
-				CurrentDetectedWidget = nullptr;
-
-				// Find New Detectable Widget....
-				for (auto& Widget : DetectableWidgets)
-				{
-					if (nullptr == Widget || Widget == CurrentDetectedWidget) continue;
-
-					else if (true == Widget->GetTickSpaceGeometry().IsUnderLocation(InEvent.GetScreenSpacePosition()))
-					{
-						CurrentDetectedWidget = Widget;
-						break;
-					}
-				}
-
-				if (CurrentDetectedWidget)
-				{
-					if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
-					{
-						DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
-					}
-
-					else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
-					{
-						IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
-					}
-				}
-			}
-		}
-
-		return FReply::Handled();
-
-	}
-
-	return  FReply::Unhandled();
-}
-
-void IDraggable::NativeOnEndDrag(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	Execute_OnEndDrag(Cast<UObject>(this), InGeometry, InEvent);
-}
-
-void IDraggable::NativeOnDrop(UPanelSlot* InPanelSlot)
-{
-	Execute_OnDrop(Cast<UObject>(this), InPanelSlot);
-}
 
 FReply IDraggable::DragEnd(const FGeometry& InGeometry, const FPointerEvent& InEvent)
 {
@@ -587,8 +396,10 @@ void IDraggable::SetEvent(UWidget* InWidget)
 	if (SlateWidget.IsValid())
 	{
 		SlateWidget->SetOnMouseButtonDown(FPointerEventHandler::CreateRaw(this, &IDraggable::MouseButtonDown));
+		SlateWidget->SetOnMouseMove(FPointerEventHandler::CreateRaw(this, &IDraggable::MouseMove));
+
 		//SlateWidget->SetOnMouseDoubleClick(FPointerEventHandler::CreateRaw(this, &IDraggable::DragStart));
-		//SlateWidget->SetOnMouseMove(FPointerEventHandler::CreateRaw(this, &IDraggable::Drag));
+
 		//SlateWidget->SetOnMouseButtonUp(FPointerEventHandler::CreateRaw(this, &IDraggable::DragEnd));
 		//SlateWidget->SetOnMouseEnter(FNoReplyPointerEventHandler::CreateRaw(this, &IDraggable::Enter));
 		//SlateWidget->SetOnMouseLeave(FSimpleNoReplyPointerEventHandler::CreateRaw(this, &IDraggable::Leave));

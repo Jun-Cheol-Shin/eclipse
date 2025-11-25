@@ -48,15 +48,21 @@ public:
 
 	UDragPayload* CreateDragPayload(TFunction<void(UDragPayload*)> InFunc);
 
+protected:
+	virtual void NativeOnDragCancel(UPanelSlot* InPanelSlot);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Draggable Functions", DisplayName = "On Drag Cancel")
+	void OnDragCancel(UPanelSlot* InPanelSlot);
 
 private:
 	FReply MouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InEvent);
+	FReply MouseMove(const FGeometry& InGeometry, const FPointerEvent& InEvent);
 
-	void Drag(UUserWidget* InVisualWidget, EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent);
+	void Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent);
 	void DragCancel(const FPointerEvent& InEvent);
-	void Drop(const FPointerEvent& InEvent);
+	//void Drop(const FPointerEvent& InEvent);
 
-	FVector2D GetClickOffset(EDragPivot InPivot, const FVector2D& InOffset) const;
+	FVector2D GetClickOffset(const FVector2D& InWidgetPos, const FVector2D& InCursorPos, const FVector2D& InWidgetSize, EDragPivot InPivot) const;
 
 private:
 	void SetEvent(UWidget* InWidget);
@@ -64,9 +70,13 @@ private:
 private:
 	TWeakObjectPtr<UWorld> OuterWorld = nullptr;
 	TWeakObjectPtr<UWidget> EventWidget = nullptr;
-	TWeakObjectPtr<UPanelWidget> OuterPanelWidget = nullptr;
-
-	TArray<UUserWidget*> DetectableWidgets;
 
 	UUserWidget* CurrentDetectedWidget = nullptr;
+	TArray<UUserWidget*> DetectableWidgets;
+
+private:
+	FVector2D ClickOffset = FVector2D(-1, -1);
+	UPanelWidget* OuterPanelWidget = nullptr;
+
+	UUserWidget* VisualWidget = nullptr;
 };

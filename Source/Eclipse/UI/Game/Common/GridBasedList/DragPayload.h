@@ -17,22 +17,21 @@ class ECLIPSE_API UDragPayload : public UDragDropOperation
 {
 	GENERATED_BODY()
 
-public:
-	const UUserWidget* DragVisualWidgetClass = nullptr;
+	friend class IDraggable;
 
-	void Set(UUserWidget* InDraggableWidget);
+public:
+	//UUserWidget* GetDraggableWidget() const;
 
 protected:
 	virtual void BeginDestroy() override;
 
-	virtual void Drop_Implementation(const FPointerEvent& PointerEvent);
+	//virtual void Drop_Implementation(const FPointerEvent& PointerEvent);
 	virtual void DragCancelled_Implementation(const FPointerEvent& PointerEvent);
 	virtual void Dragged_Implementation(const FPointerEvent& PointerEvent);
 
+private:
+	void Set(UUserWidget* InDraggable);
 
 private:
 	TWeakObjectPtr<UUserWidget> DraggableWidget = nullptr;
-
-	UPROPERTY()
-	UUserWidget* DuplicatedWidget = nullptr;
 };

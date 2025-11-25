@@ -43,17 +43,15 @@ protected:
 	virtual void NativeOnEntryReleased() override;
 	// End IGridBasedObjectListEntry
 
-	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
-
-
-	// IDraggable
-	
-	// End IDraggable
-
-	// UUserWidget
+	// UUserWidget Event
 	virtual void NativeConstruct() override;
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;	
 	virtual void SynchronizeProperties() override;
-	// End UUserWidget
+	// End UUserWidget Event
+
+	// Draggable Event
+	virtual void NativeOnDragCancel(UPanelSlot* InSlot) override;
+	// end Draggable Event
 
 private:
 	UPROPERTY(meta = (BindWidget))
