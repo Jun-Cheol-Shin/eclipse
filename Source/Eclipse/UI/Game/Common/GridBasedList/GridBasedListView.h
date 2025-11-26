@@ -59,20 +59,25 @@ protected:
 	// End Drag Detectable Event
 
 private:
+	// Make Top Left Index
+	int32 MakeKey(int32 InRow, int32 InColumn);
+	FVector2D PointToLocal(const FIntPoint& InPoint);
+	FIntPoint LocalToPoint(const FVector2D& InLocalVec);
+
+	int32 GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize);
+	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize);
+	bool GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize);
+
+
+private:
 	void AddWidget(UGridBasedListItem* InItem);
 	void RemoveWidget(const UGridBasedListItem* InItem);
-
-	// Get Top Left Index
-	int32 MakeKey(int32 InRow, int32 InColumn);
-	FVector2D GetLocalFromIndex(int32 InX, int32 InY);
-	bool GetIndexFromLocal(const FVector2D InPos, OUT int32& OutX, int32& OutY, const FIntPoint& InLocalSize = FIntPoint(0,0));
-	int32 GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, int8 InX, int8 InY);
 
 	void SetMaterial();
 	void SetInventorySize();
 
 	bool IsOverScroll(int32 InTopLeftKey) const;
-	bool IsEmptySpace(int32 InX, int32 InY, const FIntPoint& InSize);
+
 
 
 	void ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32 /* Grid Index */)> InFunc);

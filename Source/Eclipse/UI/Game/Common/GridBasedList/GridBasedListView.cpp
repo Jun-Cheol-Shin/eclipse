@@ -41,13 +41,10 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 	FootprintWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	FootprintWidget->SetFootprint(ListItem->TileSize.X, ListItem->TileSize.Y, HiddenIdx);
 
-	FootprintWidgetSlot->SetSize(GetLocalFromIndex(ListItem->TileSize.X, ListItem->TileSize.Y));
+	FootprintWidgetSlot->SetSize(PointToLocal(ListItem->TileSize));
 
 	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
 	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
-
-	int32 XIdx = 0;
-	int32 YIdx = 0;
 
 	ForEach(ListItem->TopLeftPos.X, ListItem->TopLeftPos.Y, ListItem->TileSize, [&](int32 InIndex)
 		{
@@ -57,23 +54,24 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 			}
 		});
 
-	if (true == GetIndexFromLocal(InventorySpacePos, OUT XIdx, OUT YIdx, ListItem->TileSize))
+	FIntPoint TopLeftPoint = LocalToPoint(InventorySpacePos);
+	TopLeftPoint.X = FMath::Clamp(TopLeftPoint.X, 0, RowCount - ListItem->TileSize.X);
+	TopLeftPoint.Y = FMath::Clamp(TopLeftPoint.Y, 0, ColumnCount - ListItem->TileSize.Y);
+
+	bool bIsEmpty = true == IsEmptySpace(TopLeftPoint, ListItem->TileSize);
+
+	if (true == bIsEmpty)
 	{
-		bool bIsEmpty = true == IsEmptySpace(XIdx, YIdx, ListItem->TileSize);
-
-		if (true == bIsEmpty)
-		{
-			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
-		}
-
-		else
-		{
-			FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
-		}
-
-		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
-		TempFootprintLoc = FIntPoint(XIdx, YIdx);
+		FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
 	}
+
+	else
+	{
+		FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
+	}
+
+	FootprintWidgetSlot->SetPosition(PointToLocal(TopLeftPoint));
+	TempFootprintLoc = TopLeftPoint;
 }
 
 void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
@@ -103,27 +101,24 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
 	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
 
-	int32 XIdx = 0;
-	int32 YIdx = 0;
+	FIntPoint TopLeftPoint = LocalToPoint(InventorySpacePos);
+	TopLeftPoint.X = FMath::Clamp(TopLeftPoint.X, 0, RowCount - ListItem->TileSize.X);
+	TopLeftPoint.Y = FMath::Clamp(TopLeftPoint.Y, 0, ColumnCount - ListItem->TileSize.Y);
 
-	if (true == GetIndexFromLocal(InventorySpacePos, OUT XIdx, OUT YIdx, ListItem->TileSize))
+	bool bIsEmpty = true == IsEmptySpace(TopLeftPoint, ListItem->TileSize);
+
+	if (true == bIsEmpty)
 	{
-		bool bIsEmpty = true == IsEmptySpace(XIdx, YIdx, ListItem->TileSize);
-
-		if (true == bIsEmpty)
-		{
-			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
-		}
-
-		else
-		{
-			FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
-		}
-
-		FootprintWidgetSlot->SetPosition(GetLocalFromIndex(XIdx, YIdx));
-		TempFootprintLoc = FIntPoint(XIdx, YIdx);
+		FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
 	}
 
+	else
+	{
+		FootprintWidget->SetStyle(FootprintStyles[EStorageState::IsFull]);
+	}
+
+	FootprintWidgetSlot->SetPosition(PointToLocal(TopLeftPoint));
+	TempFootprintLoc = TopLeftPoint;
 }
 
 void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
@@ -151,7 +146,7 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	if (nullptr == FoundItem || nullptr == *FoundItem) { return; }
 	UGridBasedListItem* ListItem = *FoundItem;
 
-	bool bIsEmpty = IsEmptySpace(TempFootprintLoc.X, TempFootprintLoc.Y, ListItem->TileSize);
+	bool bIsEmpty = IsEmptySpace(TempFootprintLoc, ListItem->TileSize);
 
 	FIntPoint DropPos = true == bIsEmpty ? TempFootprintLoc : ListItem->TopLeftPos;
 	ForEach(DropPos.X, DropPos.Y, ListItem->TileSize, [&](int32 InIndex)
@@ -167,7 +162,7 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ListEntry);
 	if (ensure(PanelSlot))
 	{
-		PanelSlot->SetPosition(GetLocalFromIndex(DropPos.X, DropPos.Y));
+		PanelSlot->SetPosition(PointToLocal(DropPos));
 		FVector2D Size = FVector2D(ListItem->TileSize.X * SlotSize, ListItem->TileSize.Y * SlotSize);
 		PanelSlot->SetSize(Size);
 	}
@@ -184,7 +179,7 @@ void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 	}
 	
 	TArray<int32> GridList;
-	int32 PossibleTopLeftKey = GetBlankedSpaceIndex(OUT GridList, InItem->TileSize.X, InItem->TileSize.Y);
+	int32 PossibleTopLeftKey = GetEmptyTopLeftKey(OUT GridList, InItem->TileSize);
 	if (INDEX_NONE == PossibleTopLeftKey)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not enough empty space.."));
@@ -408,7 +403,7 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 			UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ActivedWidget);
 			if (ensure(PanelSlot))
 			{
-				PanelSlot->SetPosition(GetLocalFromIndex(InItem->TopLeftPos.X, InItem->TopLeftPos.Y));
+				PanelSlot->SetPosition(PointToLocal(InItem->TopLeftPos));
 
 				FVector2D Size = FVector2D(InItem->TileSize.X * SlotSize, InItem->TileSize.Y * SlotSize);
 				PanelSlot->SetSize(Size);
@@ -452,98 +447,41 @@ int32 UGridBasedListView::MakeKey(int32 InRow, int32 InColumn)
 	return InRow + (InColumn * RowCount);
 }
 
-FVector2D UGridBasedListView::GetLocalFromIndex(int32 InX, int32 InY)
+FVector2D UGridBasedListView::PointToLocal(const FIntPoint& InPoint)
 {
-	return FVector2D(SlotSize * InX, SlotSize * InY);
+	return FVector2D(InPoint.X * SlotSize, InPoint.Y * SlotSize);
 }
 
-bool UGridBasedListView::GetIndexFromLocal(const FVector2D InPos, OUT int32& OutX, int32& OutY, const FIntPoint& InLocalSize)
+FIntPoint UGridBasedListView::LocalToPoint(const FVector2D& InLocalVec)
 {
-	int Width = InPos.X / SlotSize;
-	int Height = InPos.Y / SlotSize;
-
-	if (Width < 0 || Height < 0 || Width >= RowCount || Height >= ColumnCount)
-	{
-		return false;
-	}
-
-	/*if (Width >= 0 && Height >= 0 && Width < RowCount && Height < ColumnCount)
-	{
-
-		return true;
-	}*/
-
-	if (Width + InLocalSize.X > RowCount)
-	{
-		Width = RowCount - InLocalSize.X;
-	}
-
-	if (Height + InLocalSize.Y > ColumnCount)
-	{
-		Height = ColumnCount - InLocalSize.Y;
-	}
-
-	OutX = Width;
-	OutY = Height;
-
-	return true;
+	return FIntPoint(InLocalVec.X / SlotSize, InLocalVec.Y / SlotSize);
 }
 
-int32 UGridBasedListView::GetBlankedSpaceIndex(OUT TArray<int32>& OutGridList, int8 InX, int8 InY)
+int32 UGridBasedListView::GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize)
 {
-	TQueue<int32> Queue;
+	TQueue<int32> TopLeftQueue;
 
 	for (int i = 0; i < Grid.Num(); ++i)
 	{
 		if (nullptr == Grid[i])
 		{
-			Queue.Enqueue(i);
+			TopLeftQueue.Enqueue(i);
 		}
 	}
 
-	OutGridList.Reserve(InX * InY);
+	OutGridList.Reserve(InItemSize.X * InItemSize.Y);
 
-	while (false == Queue.IsEmpty())
+	while (false == TopLeftQueue.IsEmpty())
 	{
 		int32 TopLeft;
-		Queue.Dequeue(OUT TopLeft);
+		TopLeftQueue.Dequeue(OUT TopLeft);
 
-		int Level = TopLeft / RowCount;
-		if (Level != (TopLeft + InY - 1) / RowCount)
+		if (true == IsEmptySpace(TopLeft, InItemSize))
 		{
-			continue;
-		}
-
-		OutGridList.Reset();
-
-		bool flag = false;
-
-		for (int i = 0; i < InY; ++i)
-		{
-			int Height = i * RowCount;
-
-			for (int j = 0; j < InX; ++j)
+			if (ensure(true == GetIndexes(OUT OutGridList, TopLeft, InItemSize)))
 			{
-				int Index = TopLeft + j + Height;
-				OutGridList.Emplace(Index);
-
-				if (false == Grid.IsValidIndex(Index) ||
-					nullptr != Grid[Index])
-				{
-					flag = true;
-					break;
-				}
+				return OutGridList.IsValidIndex(0) ? OutGridList[0] : INDEX_NONE;
 			}
-
-			if (true == flag)
-			{
-				break;
-			}
-		}
-
-		if (OutGridList.Num() == InX * InY)
-		{
-			return OutGridList.IsValidIndex(0) ? OutGridList[0] : INDEX_NONE;
 		}
 	}
 
@@ -631,13 +569,23 @@ bool UGridBasedListView::IsOverScroll(int32 InTopLeftKey) const
 	return FirstPageIndex > CurrentPageIndex;
 }
 
-bool UGridBasedListView::IsEmptySpace(int32 InX, int32 InY, const FIntPoint& InSize)
+bool UGridBasedListView::IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize)
 {
 	for (int32 i = 0; i < InSize.Y; ++i)
 	{
+		if (InTopLeftPoint.Y + i >= ColumnCount)
+		{
+			return false;
+		}
+
 		for (int32 j = 0; j < InSize.X; ++j)
 		{
-			int32 Index = MakeKey(InX + j, InY + i);
+			if (InTopLeftPoint.X + j >= RowCount)
+			{
+				return false;
+			}
+
+			int32 Index = MakeKey(InTopLeftPoint.X + j, InTopLeftPoint.Y + i);
 
 			if (Grid.IsValidIndex(Index) &&
 				nullptr != Grid[Index])
@@ -649,6 +597,21 @@ bool UGridBasedListView::IsEmptySpace(int32 InX, int32 InY, const FIntPoint& InS
 
 
 	return true;
+}
+
+bool UGridBasedListView::GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize)
+{
+	OutIndexList.Reset();
+
+	for (int i = 0; i < InSize.Y; ++i)
+	{
+		for (int j = 0; j < InSize.X; ++j)
+		{
+			OutIndexList.Emplace(MakeKey(InTopLeft.X + j, InTopLeft.Y + i));
+		}
+	}
+
+	return OutIndexList.Num() == InSize.X * InSize.Y;
 }
 
 void UGridBasedListView::ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32)> InFunc)
