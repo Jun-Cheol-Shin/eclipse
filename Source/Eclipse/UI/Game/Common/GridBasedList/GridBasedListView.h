@@ -32,7 +32,17 @@ class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDet
 {
 	GENERATED_BODY()
 	
+	// TODO : 이벤트 추가
+protected:
+	//virtual void OnItemsChanged();
+	//virtual void OnSelectionChanged();
+	//virtual void OnItemClickedInternal
+	//OnListViewScrolledInternal
+	//OnItemScrolledIntoViewInternal
+	
 public:
+	void SetListItems(const TArray<UGridBasedListItem*>& InItemList);
+	void ClearListItems();
 	void AddItem(UGridBasedListItem* InItem);
 	void RemoveItem(UGridBasedListItem* InItem);
 
@@ -45,6 +55,8 @@ public:
 	int GetRowCount() const { return RowCount; }
 
 	void SetVisibleScrollBar(bool bIsVisible);
+
+	void Refresh();
 		 
 protected:
 	virtual void NativeConstruct() override;

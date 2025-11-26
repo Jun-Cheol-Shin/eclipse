@@ -73,7 +73,6 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 	FootprintWidgetSlot->SetPosition(PointToLocal(TopLeftPoint));
 	TempFootprintLoc = TopLeftPoint;
 }
-
 void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
@@ -83,7 +82,6 @@ void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const 
 		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
-
 void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnDetect(InDraggingWidget, InEvent);
@@ -120,7 +118,6 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 	FootprintWidgetSlot->SetPosition(PointToLocal(TopLeftPoint));
 	TempFootprintLoc = TopLeftPoint;
 }
-
 void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnDrop(InDraggingWidget, InEvent);
@@ -168,6 +165,46 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	}
 
 	TempFootprintLoc = FIntPoint(-1, -1);
+
+}
+
+
+void UGridBasedListView::SetListItems(const TArray<UGridBasedListItem*>& InItemList)
+{
+	/*
+	ClearListItems();
+	ListItems.Reserve(InListItems.Num());
+	for (const ItemObjectT ListItem : InListItems)
+	{
+		if (ListItem != nullptr)
+		{
+			ListItems.Add(ListItem);
+		}
+	}
+
+	OnItemsChanged(ListItems, TArray<UObject*>());
+
+	RequestRefresh();
+	*/
+}
+
+void UGridBasedListView::ClearListItems()
+{
+	// TODO : List Clear
+	/*const TArray<UObject*> Added;
+	const TArray<UObject*> Removed = MoveTemp(ListItems);
+
+	ListItems.Reset();
+
+	OnItemsChanged(Added, Removed);
+
+	RequestRefresh();*/
+}
+
+
+void UGridBasedListView::Refresh()
+{
+	// TODO : ListItems를 기반으로 캔버스 패널 내 child(ListEntry) 갱신
 
 }
 
