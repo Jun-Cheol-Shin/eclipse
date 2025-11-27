@@ -32,14 +32,16 @@ class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDet
 {
 	GENERATED_BODY()
 	
-	// TODO : 이벤트 추가
-protected:
-	//virtual void OnItemsChanged();
-	//virtual void OnSelectionChanged();
-	//virtual void OnItemClickedInternal
-	//OnListViewScrolledInternal
-	//OnItemScrolledIntoViewInternal
-	
+public:
+	DECLARE_DELEGATE_OneParam(FOnGeneratedEntry, UGridBasedListEntry&)
+	FOnGeneratedEntry OnEntryGenerated;
+
+	DECLARE_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
+	FOnGeneratedEntry OnEntryReleased;
+
+	DECLARE_DELEGATE_OneParam(FOnSelectionChanged, UGridBasedListItem*)
+	FOnSelectionChanged OnSelectionChanged;
+
 public:
 	void SetListItems(const TArray<UGridBasedListItem*>& InItemList);
 	void ClearListItems();

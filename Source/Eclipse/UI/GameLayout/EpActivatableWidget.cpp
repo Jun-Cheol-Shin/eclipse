@@ -170,3 +170,18 @@ void UEpActivatableWidget::SynchronizeProperties()
 
 	}
 }
+
+bool UEpActivatableWidget::NativeOnHandleBackAction()
+{
+    if (bIsBackHandler)
+    {
+        // boolean 변수를 쓰질 않는다?
+        BP_OnHandleBackAction();
+        OnBack();
+
+        return true;
+    }
+
+
+    return false;
+}

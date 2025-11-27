@@ -87,14 +87,13 @@ void UNLGameLayout::RefreshGameLayerInputMode()
 
 	if (false == bIsVisible)
 	{
-		/*
-		*   TODO
-			UI¿¡¼­ ¸ðµç À§Á¬À» ºñÈ°¼ºÈ­ÇÏ¸é ¹ü¿ë UI´Â ºñÈ°¼ºÈ­µÈ ¸¶Áö¸· À§Á¬ÀÇ ÀÔ·Â ±¸¼ºÀ» ±âº»°ªÀ¸·Î »ç¿ëÇÕ´Ï´Ù.
-			UIÀÇ ¸ðµç À§Á¬À» ºñÈ°¼ºÈ­ÇØ¾ß ÇÏ´Â »ç¿ë »ç·ÊÀÇ °æ¿ì ¸¶Áö¸·À¸·Î ºñÈ°¼ºÈ­ÇÑ À§Á¬ÀÌ ¼ÒÇÁÆ®¶ô ¹æÁö¸¦ À§ÇØ ÇÕ¸®ÀûÀÎ ÀÔ·Â Ã³¸® »óÅÂ¸¦ ´Ù½Ã Àû¿ëÇÏµµ·Ï ÇØ¾ß ÇÕ´Ï´Ù.
-		*/
+		// ëª¨ë“  UIê°€ êº¼ì¡Œì„ ê²½ìš°, InputModeë¥¼ ì¸ê²Œìž„ ëª¨ë“œë¡œ ë³€ê²½í•´ì•¼ í•¨. (ì¼ë‹¨ì€ ì†Œìš¸ë¥˜ë¥¼ ìƒê°ì¤‘... GameOnlyë¡œ ë°”ê¾¸ìž)
 
-
-
+		if (APlayerController* PlayerController = GetOwningPlayer())
+		{
+			PlayerController->SetInputMode(FInputModeGameOnly());
+			PlayerController->SetShowMouseCursor(false);
+		}
 	}
 }
 

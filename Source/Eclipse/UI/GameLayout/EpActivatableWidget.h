@@ -34,6 +34,8 @@ protected:
 	virtual void OnDestroy() {};
 	virtual void OnCreate() {};
 	virtual void OnChangedInputDevice(ECommonInputType InInputType) {};
+	virtual void OnBack() {};
+
 
 private:
 	virtual void NativeOnActivated() override;
@@ -42,6 +44,7 @@ private:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void SynchronizeProperties() override;
+	virtual bool NativeOnHandleBackAction() override;
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Eclipe Activatable Widget Settings")

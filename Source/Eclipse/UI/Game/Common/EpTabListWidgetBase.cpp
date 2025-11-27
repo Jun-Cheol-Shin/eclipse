@@ -187,8 +187,18 @@ void UEpTabListWidgetBase::NativeConstruct()
 
 void UEpTabListWidgetBase::NativeDestruct()
 {
-	PreregisteredTabInfoArray.Reset();
+	//PreregisteredTabInfoArray.Reset();
 	PendingTabLabelInfoMap.Reset();
+
+	if (TabButtonGroup)
+	{
+		TabButtonGroup->OnSelectedButtonBaseChanged.RemoveDynamic(this, &UEpTabListWidgetBase::OnSelectedTabButton);
+	}
+
+	if (TabButtonBox)
+	{
+		TabButtonBox->ClearChildren();
+	}
 
 	Super::NativeDestruct();
 }

@@ -23,11 +23,13 @@ public:
 
 	
 protected:
+
 	// UEpActivatableWidget
 	virtual void OnShow() override;
 	virtual void OnHide() override;
 	virtual void OnCreate() override;
 	virtual void OnDestroy() override;
+	virtual void OnBack() override;
 	virtual void OnChangedInputDevice(ECommonInputType InInputType) override;
 	// End UEpActivatableWidget
 

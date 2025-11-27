@@ -15,6 +15,8 @@
 
 #include "HAL/IConsoleManager.h"
 
+#include "Components/ListView.h"
+
 void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnStartDetectDrag(InDraggingWidget, InEvent);
@@ -171,41 +173,68 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 
 void UGridBasedListView::SetListItems(const TArray<UGridBasedListItem*>& InItemList)
 {
-	/*
+
+
 	ClearListItems();
-	ListItems.Reserve(InListItems.Num());
-	for (const ItemObjectT ListItem : InListItems)
+	ListItems.Reserve(InItemList.Num());
+
+	for (UGridBasedListItem* ListItem : InItemList)
 	{
-		if (ListItem != nullptr)
+		if (nullptr == ListItem)
 		{
+			continue;
+		}
+
+		if (false == IsEmptySpace(ListItem->TopLeftPos, ListItem->TileSize))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Not enough empty space.."));
+			continue;
+		}
+
+		TArray<int32> Indexes;
+		if (true == GetIndexes(OUT Indexes, ListItem->TopLeftPos, ListItem->TileSize))
+		{
+			for (int32 Index : Indexes)
+			{
+				Grid[Index] = ListItem;
+			}
+
 			ListItems.Add(ListItem);
 		}
 	}
 
-	OnItemsChanged(ListItems, TArray<UObject*>());
-
-	RequestRefresh();
-	*/
+	Refresh();
 }
 
 void UGridBasedListView::ClearListItems()
 {
-	// TODO : List Clear
-	/*const TArray<UObject*> Added;
-	const TArray<UObject*> Removed = MoveTemp(ListItems);
-
 	ListItems.Reset();
-
-	OnItemsChanged(Added, Removed);
-
-	RequestRefresh();*/
+	Refresh();
 }
 
 
 void UGridBasedListView::Refresh()
 {
-	// TODO : ListItems를 기반으로 캔버스 패널 내 child(ListEntry) 갱신
+	if (nullptr != InventoryPanel)
+	{
+		for (auto& ChildWidget : InventoryPanel->GetAllChildren())
+		{
+			UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ChildWidget);
+			if (nullptr == ListEntry) continue;
 
+			InventoryPanel->RemoveChild(ListEntry);
+			ItemPool.Release(ListEntry);
+		}
+	}
+
+	for (UGridBasedListItem* ListItem : ListItems)
+	{
+		if (false == IsOverScroll(
+			MakeKey(ListItem->TopLeftPos.X, ListItem->TopLeftPos.Y)))
+		{
+			AddWidget(ListItem);
+		}
+	}
 }
 
 void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
@@ -253,16 +282,12 @@ void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 				}
 			});
 
-		RemoveWidget(InItem);
-		TWeakObjectPtr<UUserWidget> FoundWidget = ActiveWidgets.FindRef(InItem);
-
-		if (FoundWidget.IsValid())
-		{
-			ActiveWidgets.Remove(InItem);
-			ActiveItems.Remove(FoundWidget.Get());
-		}
-
 		ListItems.Remove(InItem);
+
+		if (false == IsOverScroll(MakeKey(InItem->TopLeftPos.X, InItem->TopLeftPos.Y)))
+		{
+			RemoveWidget(InItem);
+		}
 	}
 
 }
@@ -454,6 +479,11 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 
 void UGridBasedListView::RemoveWidget(const UGridBasedListItem* InItem)
 {
+	if (false == ActiveWidgets.Contains(InItem))
+	{
+		return;
+	}
+
 	TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[InItem];
 	if (ensure(ActivedWidget.IsValid()))
 	{

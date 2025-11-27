@@ -4,6 +4,8 @@
 #include "MenuHubSheet.h"
 #include "../Common/EpTabListWidgetBase.h"
 
+#include "Eclipse/SubSystems/EpUIManagerSubsystem.h"
+
 void UMenuHubSheet::SelectTab(const FGameplayTag& InTabTag)
 {
 	if (nullptr != TabList)
@@ -30,6 +32,18 @@ void UMenuHubSheet::OnCreate()
 void UMenuHubSheet::OnDestroy()
 {
 
+}
+
+void UMenuHubSheet::OnBack()
+{
+	UEpUIManagerSubsystem* UIManager = UGameInstance::GetSubsystem<UEpUIManagerSubsystem>(GetGameInstance());
+	if (!ensure(UIManager))
+	{
+		return;
+	}
+
+
+	UIManager->HideLayerWidget<UMenuHubSheet>();
 }
 
 
