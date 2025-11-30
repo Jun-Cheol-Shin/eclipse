@@ -76,25 +76,15 @@ void UMenuHub_Inventory::SynchronizeProperties()
 
 	float InventorySize = InventoryList->GetSlotSize()* InventoryList->GetColumnCount();
 
-	if (nullptr != InventorySizeBox && BorderSizeBox)
+	if (nullptr != InventorySizeBox)
 	{
 		if (FMath::IsNearlyEqual(InventorySizeBox->GetHeightOverride(), InventorySize))
 		{
-			if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(BorderSizeBox->Slot))
-			{
-				OverlaySlot->SetPadding(FMargin(0, -12.5f, 0, -12.5f));
-			}
-
 			InventoryList->SetVisibleScrollBar(false);
 		}
 
 		else
 		{
-			if (UOverlaySlot* OverlaySlot = Cast<UOverlaySlot>(BorderSizeBox->Slot))
-			{
-				OverlaySlot->SetPadding(FMargin(-5, -12.5f, -5, -12.5f));
-			}
-
 			InventoryList->SetVisibleScrollBar(true);
 		}
 	}

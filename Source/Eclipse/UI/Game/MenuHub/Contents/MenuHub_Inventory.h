@@ -38,10 +38,6 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USizeBox> InventorySizeBox = nullptr;
 
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<USizeBox> BorderSizeBox = nullptr;
-
 #if WITH_EDITOR
 private:
 	IConsoleCommand* InventoryCheatHandle = nullptr;

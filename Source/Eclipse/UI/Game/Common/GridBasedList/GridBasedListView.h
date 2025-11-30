@@ -39,7 +39,7 @@ public:
 	DECLARE_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
 	FOnGeneratedEntry OnEntryReleased;
 
-	DECLARE_DELEGATE_OneParam(FOnSelectionChanged, UGridBasedListItem*)
+	DECLARE_DELEGATE_TwoParams(FOnSelectionChanged, UGridBasedListItem*, bool)
 	FOnSelectionChanged OnSelectionChanged;
 
 public:
@@ -51,6 +51,9 @@ public:
 	const UUserWidget* GetEntry(UGridBasedListItem* InItem) const;
 	const UGridBasedListItem* GetItemFromListEntry(UUserWidget* InWidget) const;
 	void RefreshList();	
+
+	void SetSelect(const UGridBasedListItem* InItem);
+	bool IsSelectedItem(const UGridBasedListItem* InItem) const;
 
 	float GetSlotSize() const;
 	int GetColumnCount() const { return ColumnCount; }
@@ -117,6 +120,9 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TObjectPtr<UTexture> SlotTexture = nullptr;
 
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	FLinearColor SlotColor = FLinearColor::White;
+
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "/Script/Eclipse.GridBasedObjectListEntry"))
 	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
 
@@ -158,6 +164,12 @@ private:
 	
 	UPROPERTY(Transient)
 	TArray<UGridBasedListItem*> ListItems;
+
+	UPROPERTY(Transient)
+	TSet<const UGridBasedListItem*> SelectedItems;
+
+	UPROPERTY(Transient)
+	TSet<const UGridBasedListItem*> DeActivedSelectedItems;
 
 private:
 	FIntPoint TempFootprintLoc = FIntPoint(-1, -1);

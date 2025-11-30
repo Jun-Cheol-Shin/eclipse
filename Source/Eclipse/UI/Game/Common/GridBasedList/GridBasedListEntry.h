@@ -28,6 +28,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TArray<FIntPoint> HiddenIndexes{};
+
 };
 
 

@@ -288,6 +288,16 @@ void UGridBasedListView::RemoveItem(UGridBasedListItem* InItem)
 		{
 			RemoveWidget(InItem);
 		}
+
+		if (SelectedItems.Contains(InItem))
+		{
+			SelectedItems.Remove(InItem);
+		}
+
+		if (DeActivedSelectedItems.Contains(InItem))
+		{
+			DeActivedSelectedItems.Remove(InItem);
+		}
 	}
 
 }
@@ -424,8 +434,6 @@ void UGridBasedListView::NativeConstruct()
 
 void UGridBasedListView::NativeDestruct()
 {
-	Super::NativeDestruct();
-
 	ItemPool.ReleaseAll(true);
 	ItemPool.ResetPool();
 
@@ -433,6 +441,11 @@ void UGridBasedListView::NativeDestruct()
 	ListItems.Reset();
 	ActiveWidgets.Reset();
 	ActiveItems.Reset();
+	HiddenIndex.Reset();
+	SelectedItems.Reset();
+	DeActivedSelectedItems.Reset();
+
+	Super::NativeDestruct();
 }
 
 void UGridBasedListView::SynchronizeProperties()
@@ -474,6 +487,11 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 
 		ActiveWidgets.Emplace(InItem, ActivedWidget);
 		ActiveItems.Emplace(ActivedWidget, InItem);
+
+		if (UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ActivedWidget))
+		{
+			OnEntryGenerated.ExecuteIfBound(*ListEntry);
+		}
 	}
 }
 
@@ -487,6 +505,11 @@ void UGridBasedListView::RemoveWidget(const UGridBasedListItem* InItem)
 	TWeakObjectPtr<UUserWidget> ActivedWidget = ActiveWidgets[InItem];
 	if (ensure(ActivedWidget.IsValid()))
 	{
+		if (UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ActivedWidget))
+		{
+			OnEntryReleased.ExecuteIfBound(*ListEntry);
+		}
+
 		if (IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget.Get()))
 		{
 			InterfaceEntry->NativeOnEntryReleased();
@@ -564,6 +587,8 @@ void UGridBasedListView::SetMaterial()
 			Material->SetScalarParameterValue(TEXT("TileX"), RowCount);
 			Material->SetScalarParameterValue(TEXT("TileY"), ColumnCount);
 			Material->SetTextureParameterValue(TEXT("Pattern"), SlotTexture);
+
+			InventoryBG->SetBrushColor(SlotColor);
 
 			TArray<int> Index;
 			for (const FIntPoint& Indexes : HiddenIndex)
@@ -691,6 +716,46 @@ void UGridBasedListView::ForEach(int32 InX, int32 InY, const FIntPoint& InSize, 
 			InFunc(NewIndex);
 		}
 	}
+}
+
+void UGridBasedListView::SetSelect(const UGridBasedListItem* InItem)
+{
+	UUserWidget* ListEntry = ActiveWidgets.FindRef(InItem);
+	UGridBasedListItem* ListItem = ActiveItems.FindRef(ListEntry);
+
+	if (true == ActiveWidgets.Contains(InItem))
+	{
+		if (true == SelectedItems.Contains(InItem))
+		{
+			SelectedItems.Remove(InItem);
+			OnSelectionChanged.ExecuteIfBound(ListItem, false);
+		}
+
+		/*else if (true == DeActivedSelectedItems.Contains(InItem))
+		{
+			DeActivedSelectedItems.Remove(InItem);
+		}*/
+
+		else
+		{
+			SelectedItems.Emplace(InItem);
+			OnSelectionChanged.ExecuteIfBound(ListItem, true);
+		}
+
+	}
+
+	else
+	{
+		if (true == DeActivedSelectedItems.Contains(InItem))
+		{
+			DeActivedSelectedItems.Remove(InItem);
+		}
+	}
+}
+
+bool UGridBasedListView::IsSelectedItem(const UGridBasedListItem* InItem) const
+{
+	return true == SelectedItems.Contains(InItem);
 }
 
 float UGridBasedListView::GetSlotSize() const
