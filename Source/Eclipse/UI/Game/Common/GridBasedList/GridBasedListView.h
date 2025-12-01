@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidgetPool.h"
 #include "GridBasedListEntry.h"
 #include "DragDetectable.h"
+#include "Draggable.h"
 #include "GridBasedListView.generated.h"
 
 /**
@@ -28,7 +29,7 @@ enum class EStorageState : uint8
 
 
 UCLASS()
-class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDetectable
+class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDetectable, public IDraggable
 {
 	GENERATED_BODY()
 	
@@ -75,11 +76,22 @@ protected:
 	virtual void NativeOnDrop(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent);
 	// End Drag Detectable Event
 
+	// Draggable Event
+	virtual void NativeOnDragCancel(UPanelSlot* InSlot) override;
+	// End Draggable Event
+
+	// UUserWidget Event
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;	
+	virtual FReply NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	// End UUserWidget Event
+
+
 private:
 	// Make Top Left Index
 	int32 MakeKey(int32 InRow, int32 InColumn);
 	FVector2D PointToLocal(const FIntPoint& InPoint);
 	FIntPoint LocalToPoint(const FVector2D& InLocalVec);
+	FIntPoint KeyToPoint(int32 InKey);
 
 	int32 GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize);
 	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize);
@@ -125,6 +137,12 @@ private:
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting", MustImplement = "/Script/Eclipse.GridBasedObjectListEntry"))
 	TSubclassOf<UUserWidget> ItemWidgetClass = nullptr;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	EDragPivot DragPivot;
+
+	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
+	FVector2D DragOffset;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	TArray<FIntPoint> HiddenIndex{};

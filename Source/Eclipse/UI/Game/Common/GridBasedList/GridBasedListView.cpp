@@ -19,6 +19,8 @@
 
 void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
+	// DraggableWidget : GridBasedListEntry
+
 	IDragDetectable::NativeOnStartDetectDrag(InDraggingWidget, InEvent);
 
 	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
@@ -45,9 +47,7 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 
 	FootprintWidgetSlot->SetSize(PointToLocal(ListItem->TileSize));
 
-	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
-	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
-
+	// 터치한 아이템 그리드에서 비워주기
 	ForEach(ListItem->TopLeftPos.X, ListItem->TopLeftPos.Y, ListItem->TileSize, [&](int32 InIndex)
 		{
 			if (Grid.IsValidIndex(InIndex))
@@ -56,7 +56,15 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 			}
 		});
 
-	FIntPoint TopLeftPoint = LocalToPoint(InventorySpacePos);
+	const FVector2D Offset = GetClickOffset();
+	const FVector2D CursorInventoryPos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(InEvent.GetScreenSpacePosition());
+
+	FVector2D CalculatedCursorPos = CursorInventoryPos - Offset;
+	//CalculatedCursorPos.X = FMath::Clamp(CalculatedCursorPos.X, 0, InventorySizeBox->GetWidthOverride());
+	//CalculatedCursorPos.Y = FMath::Clamp(CalculatedCursorPos.Y, 0, InventorySizeBox->GetHeightOverride());
+
+	FIntPoint TopLeftPoint = LocalToPoint(CursorInventoryPos - Offset);
+
 	TopLeftPoint.X = FMath::Clamp(TopLeftPoint.X, 0, RowCount - ListItem->TileSize.X);
 	TopLeftPoint.Y = FMath::Clamp(TopLeftPoint.Y, 0, ColumnCount - ListItem->TileSize.Y);
 
@@ -75,6 +83,7 @@ void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, 
 	FootprintWidgetSlot->SetPosition(PointToLocal(TopLeftPoint));
 	TempFootprintLoc = TopLeftPoint;
 }
+
 void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnEndDetect(InDraggingWidget, InEvent);
@@ -84,9 +93,12 @@ void UGridBasedListView::NativeOnEndDetect(UUserWidget* InDraggingWidget, const 
 		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
+
 void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	IDragDetectable::NativeOnDetect(InDraggingWidget, InEvent);
+
+	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
 
 	UCanvasPanelSlot* FootprintWidgetSlot = Cast<UCanvasPanelSlot>(FootprintWidget->Slot);
 	if (nullptr == FootprintWidgetSlot) { return; };
@@ -97,11 +109,15 @@ void UGridBasedListView::NativeOnDetect(UUserWidget* InDraggingWidget, const FPo
 	const UGridBasedListItem* ListItem = GetItemFromListEntry(ListEntry);
 	if (nullptr == ListItem) { return; }
 
-	if (nullptr == InventoryPanel || nullptr == FootprintWidget) { return; }
-	const FVector2D CursorScreenSpacePos = InEvent.GetScreenSpacePosition();
-	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
+	const FVector2D Offset = GetClickOffset();
+	const FVector2D CursorInventoryPos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(InEvent.GetScreenSpacePosition());
 
-	FIntPoint TopLeftPoint = LocalToPoint(InventorySpacePos);
+	FVector2D CalculatedCursorPos = CursorInventoryPos - Offset;
+	//CalculatedCursorPos.X = FMath::Clamp(CalculatedCursorPos.X, 0, InventorySizeBox->GetWidthOverride());
+	//CalculatedCursorPos.Y = FMath::Clamp(CalculatedCursorPos.Y, 0, InventorySizeBox->GetHeightOverride());
+
+	FIntPoint TopLeftPoint = LocalToPoint(CalculatedCursorPos);
+
 	TopLeftPoint.X = FMath::Clamp(TopLeftPoint.X, 0, RowCount - ListItem->TileSize.X);
 	TopLeftPoint.Y = FMath::Clamp(TopLeftPoint.Y, 0, ColumnCount - ListItem->TileSize.Y);
 
@@ -170,11 +186,100 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 
 }
 
+FReply UGridBasedListView::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	Super::NativeOnPreviewMouseButtonDown(InGeometry, InMouseEvent);
+
+	if (nullptr == InventoryPanel)
+	{
+		return FReply::Handled();
+	}
+
+	const FVector2D CursorScreenSpacePos = InMouseEvent.GetScreenSpacePosition();
+	const FVector2D InventorySpacePos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(CursorScreenSpacePos);
+
+	const FIntPoint TopLeftPoint = LocalToPoint(InventorySpacePos);
+	const int32 IndexKey = MakeKey(TopLeftPoint.X, TopLeftPoint.Y);
+
+
+	UE_LOG(LogTemp, Warning, TEXT("Index : %d, TopLeft : %d, %d"), IndexKey, TopLeftPoint.X, TopLeftPoint.Y);
+
+	if (false == Grid.IsValidIndex(IndexKey))
+	{
+		return FReply::Handled();
+	}
+
+	const UGridBasedListItem* ListItem = Grid[IndexKey];
+
+	if (false == ActiveWidgets.Contains(ListItem))
+	{
+		return FReply::Handled();
+	}
+
+	UUserWidget* ListEntry = ActiveWidgets[ListItem];
+	SetMoveWidget(ListEntry);
+
+	return FReply::Unhandled();
+}
+
+void UGridBasedListView::NativeOnDragCancel(UPanelSlot* InSlot)
+{
+	IDraggable::NativeOnDragCancel(InSlot);
+
+	UUserWidget* MovedListEntry = Cast<UUserWidget>(InSlot->GetContent());
+
+	if (nullptr == MovedListEntry)
+	{
+		return;
+	}
+
+	if (false == ActiveItems.Contains(MovedListEntry))
+	{
+		return;
+	}
+
+	const UGridBasedListItem* ListItem = ActiveItems[MovedListEntry];
+	if (nullptr == ListItem)
+	{
+		return;
+	}
+
+	ForEach(ListItem->TopLeftPos.X, ListItem->TopLeftPos.Y, ListItem->TileSize, [&](int32 InIndex)
+		{
+			if (Grid.IsValidIndex(InIndex))
+			{
+				Grid[InIndex] = ListItem;
+			}
+		});
+
+	if (UCanvasPanelSlot* PanelSlot = Cast<UCanvasPanelSlot>(InSlot))
+	{
+		PanelSlot->SetPosition(FVector2D(ListItem->TopLeftPos.X * GetSlotSize(), ListItem->TopLeftPos.Y * GetSlotSize()));
+		FVector2D Size = FVector2D(ListItem->TileSize.X * GetSlotSize(), ListItem->TileSize.Y * GetSlotSize());
+		PanelSlot->SetSize(Size);
+	}
+
+	TempFootprintLoc = FIntPoint(-1, -1);
+}
+
+void UGridBasedListView::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+
+	OutOperation = CreateDragPayload([this](UDragDropOperation* InOperation)
+		{
+			if (UDragPayload* Payload = Cast<UDragPayload>(InOperation))
+			{
+				Payload->Payload = this;
+				Payload->Pivot = DragPivot;
+				Payload->Offset = DragOffset;
+			}
+		});
+}
+
 
 void UGridBasedListView::SetListItems(const TArray<UGridBasedListItem*>& InItemList)
 {
-
-
 	ClearListItems();
 	ListItems.Reserve(InItemList.Num());
 
@@ -430,6 +535,9 @@ void UGridBasedListView::NativeConstruct()
 	{
 		FootprintWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	SetWorld(GetWorld());
+	SetEventFromBorder(InventoryBG);
 }
 
 void UGridBasedListView::NativeDestruct()
@@ -547,6 +655,11 @@ FIntPoint UGridBasedListView::LocalToPoint(const FVector2D& InLocalVec)
 	return FIntPoint(InLocalVec.X / SlotSize, InLocalVec.Y / SlotSize);
 }
 
+FIntPoint UGridBasedListView::KeyToPoint(int32 InKey)
+{
+	return FIntPoint(InKey % RowCount, InKey / RowCount);
+}
+
 int32 UGridBasedListView::GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize)
 {
 	TQueue<int32> TopLeftQueue;
@@ -566,9 +679,11 @@ int32 UGridBasedListView::GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, con
 		int32 TopLeft;
 		TopLeftQueue.Dequeue(OUT TopLeft);
 
-		if (true == IsEmptySpace(TopLeft, InItemSize))
+		FIntPoint Point = KeyToPoint(TopLeft);
+
+		if (true == IsEmptySpace(Point, InItemSize))
 		{
-			if (ensure(true == GetIndexes(OUT OutGridList, TopLeft, InItemSize)))
+			if (ensure(true == GetIndexes(OUT OutGridList, Point, InItemSize)))
 			{
 				return OutGridList.IsValidIndex(0) ? OutGridList[0] : INDEX_NONE;
 			}

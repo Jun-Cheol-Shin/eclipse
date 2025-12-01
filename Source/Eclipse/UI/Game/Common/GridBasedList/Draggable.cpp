@@ -17,6 +17,12 @@
 
 // Add default functionality here for any IDraggable functions that are not pure virtual.
 
+
+void IDraggable::SetMoveWidget(UUserWidget* InWidget)
+{
+	MoveWidget = InWidget;
+}
+
 void IDraggable::SetWorld(UWorld* InWorld)
 {
 	OuterWorld = InWorld;
@@ -34,6 +40,7 @@ void IDraggable::SetOwningController(APlayerController* InController)
 
 void IDraggable::Reset()
 {
+	MoveWidget.Reset();
 	OuterWorld.Reset();
 
 	if (EventWidget.IsValid())
@@ -63,11 +70,6 @@ void IDraggable::SetEventFromBorder(UBorder* InBorder)
 	SetEvent(InBorder);
 }
 
-void IDraggable::SetEnableToggle(bool bIsEnable)
-{
-	//bUseToogle = bIsEnable;
-}
-
 UDragPayload* IDraggable::CreateDragPayload(TFunction<void(UDragPayload*)> InFunc)
 {
 	UDragDropOperation* Operation = UWidgetBlueprintLibrary::CreateDragDropOperation(UDragPayload::StaticClass());
@@ -92,34 +94,27 @@ FReply IDraggable::MouseButtonDown(const FGeometry& InGeometry, const FPointerEv
 {
 	if (InEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
-		UUserWidget* OuterWidget = Cast<UUserWidget>(this);
-		if (OuterWidget)
+		if (false == MoveWidget.IsValid())
 		{
-			OuterPanelWidget = OuterWidget->GetParent();
+			MoveWidget = Cast<UUserWidget>(this);
 		}
 
-		UWidgetBlueprintLibrary::GetAllWidgetsWithInterface(OuterWorld.Get(), OUT DetectableWidgets, UDragDetectable::StaticClass(), false);
+		if (MoveWidget.IsValid())
+		{
+			OuterPanelWidget = MoveWidget->GetParent();
+			UWidgetBlueprintLibrary::GetAllWidgetsWithInterface(OuterWorld.Get(), OUT DetectableWidgets, UDragDetectable::StaticClass(), false);
 
-		return UWidgetBlueprintLibrary::DetectDragIfPressed(InEvent, Cast<UWidget>(this), EKeys::LeftMouseButton).NativeReply;
+			return UWidgetBlueprintLibrary::DetectDragIfPressed(InEvent, Cast<UWidget>(this), EKeys::LeftMouseButton).NativeReply;
+		}
 	}
-
 
 	return FReply::Unhandled();
 }
 
-FReply IDraggable::MouseMove(const FGeometry& InGeometry, const FPointerEvent& InEvent)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Move!"));
-
-
-
-	return FReply::Handled();
-}
 
 void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent)
 {
-	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
-	if (nullptr == OuterWidget)
+	if (false == MoveWidget.IsValid())
 	{
 		return;
 	}
@@ -130,15 +125,15 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 
 	FVector2D Widget_PixelPosition;
 	FVector2D Widget_ViewportPosition;
-	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), OuterWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
+	USlateBlueprintLibrary::AbsoluteToViewport(OuterWorld.Get(), MoveWidget->GetTickSpaceGeometry().GetAbsolutePosition(), OUT Widget_PixelPosition, OUT Widget_ViewportPosition);
 
 	const float DPIScale = UWidgetLayoutLibrary::GetViewportScale(OuterWorld->GetGameViewport());
-	const FVector2D WidgetSize = OuterWidget->GetDesiredSize() * DPIScale;
+	const FVector2D WidgetSize = MoveWidget->GetDesiredSize() * DPIScale;
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(OuterWorld.Get());
 
 	if (ClickOffset == FVector2D(-1, -1))
 	{
-		ClickOffset = GetClickOffset(Widget_PixelPosition, Cursor_PixelPosition, WidgetSize, InPivot);
+		ClickOffset = GetClickOffset(Widget_PixelPosition, Cursor_PixelPosition, WidgetSize, InPivot) + InOffset;
 	}
 
 	FVector2D CursorPos = Cursor_PixelPosition - ClickOffset;
@@ -150,7 +145,7 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 	CursorPos.X = FMath::Clamp(CursorPos.X, 0.f, MaxPosVP.X);
 	CursorPos.Y = FMath::Clamp(CursorPos.Y, 0.f, MaxPosVP.Y);
 
-	OuterWidget->SetPositionInViewport(CursorPos);
+	MoveWidget->SetPositionInViewport(CursorPos);
 
 
 	if (nullptr == CurrentDetectedWidget)
@@ -168,12 +163,12 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 
 		if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 		{
-			DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
+			DetectableInterface->NativeOnStartDetectDrag(MoveWidget.Get(), InEvent);
 		}
 
 		else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 		{
-			IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
+			IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, MoveWidget.Get(), InEvent);
 		}
 	}
 
@@ -183,12 +178,12 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 		{
 			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 			{
-				DetectableInterface->NativeOnDetect(OuterWidget, InEvent);
+				DetectableInterface->NativeOnDetect(MoveWidget.Get(), InEvent);
 			}
 
 			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 			{
-				IDragDetectable::Execute_OnDetect(CurrentDetectedWidget, OuterWidget, InEvent);
+				IDragDetectable::Execute_OnDetect(CurrentDetectedWidget, MoveWidget.Get(), InEvent);
 			}
 		}
 
@@ -196,12 +191,12 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 		{
 			if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 			{
-				DetectableInterface->NativeOnEndDetect(OuterWidget, InEvent);
+				DetectableInterface->NativeOnEndDetect(MoveWidget.Get(), InEvent);
 			}
 
 			else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 			{
-				IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, OuterWidget, InEvent);
+				IDragDetectable::Execute_OnEndDetect(CurrentDetectedWidget, MoveWidget.Get(), InEvent);
 			}
 
 			CurrentDetectedWidget = nullptr;
@@ -222,12 +217,12 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 			{
 				if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 				{
-					DetectableInterface->NativeOnStartDetectDrag(OuterWidget, InEvent);
+					DetectableInterface->NativeOnStartDetectDrag(MoveWidget.Get(), InEvent);
 				}
 
 				else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 				{
-					IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, OuterWidget, InEvent);
+					IDragDetectable::Execute_OnStartDetectDrag(CurrentDetectedWidget, MoveWidget.Get(), InEvent);
 				}
 			}
 		}
@@ -237,7 +232,10 @@ void IDraggable::Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPoin
 
 void IDraggable::DragCancel(const FPointerEvent& InEvent)
 {
-	UUserWidget* OuterWidget = Cast<UUserWidget>(this);
+	if (false == MoveWidget.IsValid())
+	{
+		return;
+	}
 
 	ClickOffset = FVector2D(-1, -1);
 
@@ -245,19 +243,19 @@ void IDraggable::DragCancel(const FPointerEvent& InEvent)
 	{
 		if (IDragDetectable* DetectableInterface = Cast<IDragDetectable>(CurrentDetectedWidget))
 		{
-			DetectableInterface->NativeOnDrop(OuterWidget, InEvent);
+			DetectableInterface->NativeOnDrop(MoveWidget.Get(), InEvent);
 		}
 
 		else if (CurrentDetectedWidget->StaticClass() && CurrentDetectedWidget->StaticClass()->ImplementsInterface(UDragDetectable::StaticClass()))
 		{
-			IDragDetectable::Execute_OnDrop(CurrentDetectedWidget, OuterWidget, InEvent);
+			IDragDetectable::Execute_OnDrop(CurrentDetectedWidget, MoveWidget.Get(), InEvent);
 		}
 	}
 
 	// failed drop
 	else if (nullptr != OuterPanelWidget)
 	{
-		if (UPanelSlot* PanelSlot = OuterPanelWidget->AddChild(OuterWidget))
+		if (UPanelSlot* PanelSlot = OuterPanelWidget->AddChild(MoveWidget.Get()))
 		{
 			NativeOnDragCancel(PanelSlot);
 		}
@@ -278,47 +276,47 @@ FVector2D IDraggable::GetClickOffset(const FVector2D& InWidgetPos, const FVector
 	}
 	case EDragPivot::TopLeft:
 	{
-
+		return FVector2D(0, 0);
 	}
 		break;
 	case EDragPivot::TopCenter:
 	{
-
+		return FVector2D(InWidgetSize.X * 0.5f, 0);
 	}
 		break;
 	case EDragPivot::TopRight:
 	{
-
+		return FVector2D(InWidgetSize.X, 0);
 	}
 		break;
 	case EDragPivot::CenterLeft:
 	{
-
+		return FVector2D(0, InWidgetSize.Y * 0.5f);
 	}
 		break;
 	case EDragPivot::CenterCenter:
 	{
-
+		return FVector2D(InWidgetSize.X * 0.5f, InWidgetSize.Y * 0.5f);
 	}
 		break;
 	case EDragPivot::CenterRight:
 	{
-
+		return FVector2D(InWidgetSize.X, InWidgetSize.Y * 0.5f);
 	}
 		break;
 	case EDragPivot::BottomLeft:
 	{
-
+		return FVector2D(0, InWidgetSize.Y);
 	}
 		break;
 	case EDragPivot::BottomCenter:
 	{
-
+		return FVector2D(InWidgetSize.X * 0.5f, InWidgetSize.Y);
 	}
 		break;
 	case EDragPivot::BottomRight:
 	{
-
+		return FVector2D(InWidgetSize.X, InWidgetSize.Y);
 	}
 		break;
 	default:
@@ -326,6 +324,11 @@ FVector2D IDraggable::GetClickOffset(const FVector2D& InWidgetPos, const FVector
 	}
 
 	return FVector2D::ZeroVector;
+}
+
+FVector2D IDraggable::GetClickOffset() const
+{
+	return ClickOffset;
 }
 
 /*
@@ -396,10 +399,9 @@ void IDraggable::SetEvent(UWidget* InWidget)
 	if (SlateWidget.IsValid())
 	{
 		SlateWidget->SetOnMouseButtonDown(FPointerEventHandler::CreateRaw(this, &IDraggable::MouseButtonDown));
-		SlateWidget->SetOnMouseMove(FPointerEventHandler::CreateRaw(this, &IDraggable::MouseMove));
 
+		//SlateWidget->SetOnMouseMove(FPointerEventHandler::CreateRaw(this, &IDraggable::MouseMove));
 		//SlateWidget->SetOnMouseDoubleClick(FPointerEventHandler::CreateRaw(this, &IDraggable::DragStart));
-
 		//SlateWidget->SetOnMouseButtonUp(FPointerEventHandler::CreateRaw(this, &IDraggable::DragEnd));
 		//SlateWidget->SetOnMouseEnter(FNoReplyPointerEventHandler::CreateRaw(this, &IDraggable::Enter));
 		//SlateWidget->SetOnMouseLeave(FSimpleNoReplyPointerEventHandler::CreateRaw(this, &IDraggable::Leave));

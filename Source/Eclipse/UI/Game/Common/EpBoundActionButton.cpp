@@ -41,11 +41,22 @@ void UEpBoundActionButton::SetButtonState(EEpButtonState InState)
 	case EEpButtonState::Disable:
 	{
 		SetIsEnabled(false);
+		SetIsSelectable(false);
+		SetIsSelected(false);
 	}
 	break;
 	case EEpButtonState::Enable:
 	{
 		SetIsEnabled(true);
+		if (IsDesignTime())
+		{
+			SetIsSelectable(false);
+		}
+		else
+		{
+			SetIsSelectable(true);
+		}
+		SetIsSelected(false);
 	}
 	break;
 	case EEpButtonState::Selected:
@@ -75,37 +86,5 @@ void UEpBoundActionButton::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
-	switch (ButtonState)
-	{
-	case EEpButtonState::Disable:
-	{
-		SetIsEnabled(false);
-		SetIsSelectable(false);
-		SetIsSelected(false);
-	}
-	break;
-	case EEpButtonState::Enable:
-	{
-		SetIsEnabled(true);
-		if (IsDesignTime())
-		{
-			SetIsSelectable(false);
-		}
-		else
-		{
-			SetIsSelectable(true);
-		}
-		SetIsSelected(false);
-	}
-	break;
-	case EEpButtonState::Selected:
-	{
-		SetIsEnabled(true);
-		SetIsSelectable(true);
-		SetIsSelected(true);
-	}
-	break;
-	default:
-		break;
-	}
+	SetButtonState(ButtonState);
 }

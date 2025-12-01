@@ -186,7 +186,7 @@ private:
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UPanelWidget> TabButtonBox = nullptr;
 
-	UPROPERTY(EditInstanceOnly, meta = (TitleProperty = "TabId"))
+	UPROPERTY(EditInstanceOnly, meta = (TitleProperty = "{TabText}"))
 	TArray<FEpTabParameter> PreregisteredTabInfoArray;
 
 };

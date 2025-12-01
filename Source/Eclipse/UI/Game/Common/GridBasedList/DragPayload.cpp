@@ -23,14 +23,20 @@ void UDragPayload::Dragged_Implementation(const FPointerEvent& PointerEvent)
 {
 	if (IDraggable* Draggable = Cast<IDraggable>(DraggableWidget))
 	{
-		if (UPanelWidget* PanelWidget = DraggableWidget->GetParent())
+		TWeakObjectPtr<UUserWidget> MoveWidget = Draggable->MoveWidget;
+		if (false == MoveWidget.IsValid())
 		{
-			PanelWidget->RemoveChild(DraggableWidget.Get());
+			return;
 		}
 
-		if (false == DraggableWidget->IsInViewport())
+		if (UPanelWidget* PanelWidget = MoveWidget->GetParent())
 		{
-			DraggableWidget->AddToViewport(0);
+			PanelWidget->RemoveChild(MoveWidget.Get());
+		}
+
+		if (false == MoveWidget->IsInViewport())
+		{
+			MoveWidget->AddToViewport(0);
 		}
 
 		Draggable->Drag(Pivot, Offset, PointerEvent);

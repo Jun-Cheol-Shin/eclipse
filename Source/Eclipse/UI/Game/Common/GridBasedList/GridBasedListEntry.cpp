@@ -28,8 +28,8 @@ void UGridBasedListEntry::NativeOnListItemObjectSet(UGridBasedListItem* ListItem
         SizeBox->SetHeightOverride(Height);
     }
 
-    SetWorld(GetWorld());
-    SetEventFromImage(Footprint->FootprintImage);
+   // SetWorld(GetWorld());
+   // SetEventFromImage(Footprint->FootprintImage);
 }
 
 void UGridBasedListEntry::NativeOnItemSelectionChanged(bool bIsSelected)
@@ -43,9 +43,10 @@ void UGridBasedListEntry::NativeOnEntryReleased()
 {
     IGridBasedObjectListEntry::NativeOnEntryReleased();
 
-    Reset();
+    //Reset();
 }
 
+/*
 void UGridBasedListEntry::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
     Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
@@ -90,3 +91,4 @@ void UGridBasedListEntry::NativeOnDragCancel(UPanelSlot* InSlot)
     }
 
 }
+*/

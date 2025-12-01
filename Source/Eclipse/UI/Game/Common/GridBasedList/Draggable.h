@@ -38,15 +38,17 @@ class ECLIPSE_API IDraggable
 	friend class UDragPayload;
 
 public:
+	void SetMoveWidget(UUserWidget* InWidget);
+
 	void SetWorld(UWorld* InWorld);
 	void SetOwningController(APlayerController* InController);
 	void Reset();
 	void SetEventFromImage(UImage* InImage);
 	void SetEventFromBorder(UBorder* InBorder);
 
-	void SetEnableToggle(bool bIsEnable);
-
 	UDragPayload* CreateDragPayload(TFunction<void(UDragPayload*)> InFunc);
+
+	FVector2D GetClickOffset() const;
 
 protected:
 	virtual void NativeOnDragCancel(UPanelSlot* InPanelSlot);
@@ -56,27 +58,27 @@ protected:
 
 private:
 	FReply MouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-	FReply MouseMove(const FGeometry& InGeometry, const FPointerEvent& InEvent);
-
 	void Drag(EDragPivot InPivot, const FVector2D& InOffset, const FPointerEvent& InEvent);
 	void DragCancel(const FPointerEvent& InEvent);
-	//void Drop(const FPointerEvent& InEvent);
 
 	FVector2D GetClickOffset(const FVector2D& InWidgetPos, const FVector2D& InCursorPos, const FVector2D& InWidgetSize, EDragPivot InPivot) const;
 
 private:
-	void SetEvent(UWidget* InWidget);
+	void SetEvent(UWidget* InWidget);	
 
 private:
+	// 실제 움직일 위젯 포인터
+	TWeakObjectPtr<UUserWidget> MoveWidget = nullptr;
+
+	// 이벤트 바인딩용
 	TWeakObjectPtr<UWorld> OuterWorld = nullptr;
 	TWeakObjectPtr<UWidget> EventWidget = nullptr;
 
+	// 감지된 위젯들
 	UUserWidget* CurrentDetectedWidget = nullptr;
 	TArray<UUserWidget*> DetectableWidgets;
+	UPanelWidget* OuterPanelWidget = nullptr;
 
 private:
 	FVector2D ClickOffset = FVector2D(-1, -1);
-	UPanelWidget* OuterPanelWidget = nullptr;
-
-	UUserWidget* VisualWidget = nullptr;
 };

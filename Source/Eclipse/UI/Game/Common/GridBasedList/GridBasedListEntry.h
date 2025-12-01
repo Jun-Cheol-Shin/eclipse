@@ -7,7 +7,6 @@
 #include "GameplayTagContainer.h"
 #include "GridBasedFootprint.h"
 #include "GridBasedObjectListEntry.h"
-#include "Draggable.h"
 #include "GridBasedListEntry.generated.h"
 
 
@@ -33,7 +32,7 @@ public:
 
 
 UCLASS(Abstract, Blueprintable, MinimalAPI)
-class UGridBasedListEntry : public UCommonUserWidget, public IGridBasedObjectListEntry, public IDraggable
+class UGridBasedListEntry : public UCommonUserWidget, public IGridBasedObjectListEntry
 {
 	GENERATED_BODY()
 
@@ -45,13 +44,13 @@ protected:
 	// End IGridBasedObjectListEntry
 
 	// UUserWidget Event
-	virtual void NativeConstruct() override;
-	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;	
-	virtual void SynchronizeProperties() override;
+	//virtual void NativeConstruct() override;
+	//virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;	
+	//virtual void SynchronizeProperties() override;
 	// End UUserWidget Event
 
 	// Draggable Event
-	virtual void NativeOnDragCancel(UPanelSlot* InSlot) override;
+	//virtual void NativeOnDragCancel(UPanelSlot* InSlot) override;
 	// end Draggable Event
 
 private:
