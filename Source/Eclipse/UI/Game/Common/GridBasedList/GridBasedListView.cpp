@@ -162,8 +162,45 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	UGridBasedListItem* ListItem = *FoundItem;
 
 	bool bIsEmpty = IsEmptySpace(TempFootprintLoc, ListItem->TileSize);
+	//FIntPoint DropPos = true == bIsEmpty ? TempFootprintLoc : ListItem->TopLeftPos;
 
-	FIntPoint DropPos = true == bIsEmpty ? TempFootprintLoc : ListItem->TopLeftPos;
+	if (false == bIsEmpty)
+	{
+		// 겹치는 아이템 찾기 (커서 기준? Footprint 기준?)
+		const FVector2D CursorInventoryPos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(InEvent.GetScreenSpacePosition());
+		const FIntPoint CursorPoint = LocalToPoint(CursorInventoryPos);
+		const int32 CursorIndex = MakeKey(CursorPoint.X, CursorPoint.Y);
+
+		// 아이템 스왑
+		if (Grid.IsValidIndex(CursorIndex) && 
+			nullptr != Grid[CursorIndex] &&
+			true == ActiveWidgets.Contains(Grid[CursorIndex]))
+		{
+			const UGridBasedListItem* DetectListItem = Grid[CursorIndex];
+			UGridBasedListEntry* DetectListEntry = Cast<UGridBasedListEntry>(ActiveWidgets[DetectListItem]);
+
+			const FIntPoint DraggedItemTopLeft = ListItem->TopLeftPos;
+			const FIntPoint DetectedItemTopLeft = DetectListItem->TopLeftPos;
+
+			if (true == IsEmptySpace(DraggedItemTopLeft, DetectListItem->TileSize) &&
+				true == IsEmptySpace(DetectedItemTopLeft, ListItem->TileSize, DetectListItem))
+			{
+				Swap(ListEntry, DetectListEntry);
+				return;
+			}
+		}
+
+		SetItemPosition(ListItem, ListItem->TopLeftPos);
+	}
+
+	else
+	{
+		SetItemPosition(ListItem, TempFootprintLoc);
+	}
+
+
+	// 제자리로 이동
+	/*const FIntPoint DropPos = TempFootprintLoc;
 	ForEach(DropPos.X, DropPos.Y, ListItem->TileSize, [&](int32 InIndex)
 		{
 			if (Grid.IsValidIndex(InIndex))
@@ -172,7 +209,7 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 			}
 		});
 
-	ListItem->TopLeftPos = FIntPoint(DropPos.X, DropPos.Y);
+	ListItem->TopLeftPos = DropPos;
 
 	UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ListEntry);
 	if (ensure(PanelSlot))
@@ -180,10 +217,9 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 		PanelSlot->SetPosition(PointToLocal(DropPos));
 		FVector2D Size = FVector2D(ListItem->TileSize.X * SlotSize, ListItem->TileSize.Y * SlotSize);
 		PanelSlot->SetSize(Size);
-	}
+	}*/
 
 	TempFootprintLoc = FIntPoint(-1, -1);
-
 }
 
 FReply UGridBasedListView::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -598,7 +634,7 @@ void UGridBasedListView::AddWidget(UGridBasedListItem* InItem)
 
 		if (UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ActivedWidget))
 		{
-			OnEntryGenerated.ExecuteIfBound(*ListEntry);
+			OnEntryGenerated.Broadcast(*ListEntry);
 		}
 	}
 }
@@ -615,7 +651,7 @@ void UGridBasedListView::RemoveWidget(const UGridBasedListItem* InItem)
 	{
 		if (UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ActivedWidget))
 		{
-			OnEntryReleased.ExecuteIfBound(*ListEntry);
+			OnEntryReleased.Broadcast(*ListEntry);
 		}
 
 		if (IGridBasedObjectListEntry* InterfaceEntry = Cast<IGridBasedObjectListEntry>(ActivedWidget.Get()))
@@ -776,7 +812,7 @@ bool UGridBasedListView::IsOverScroll(int32 InTopLeftKey) const
 	return FirstPageIndex > CurrentPageIndex;
 }
 
-bool UGridBasedListView::IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize)
+bool UGridBasedListView::IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize, const UGridBasedListItem* InExceptItem)
 {
 	for (int32 i = 0; i < InSize.Y; ++i)
 	{
@@ -794,8 +830,7 @@ bool UGridBasedListView::IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIn
 
 			int32 Index = MakeKey(InTopLeftPoint.X + j, InTopLeftPoint.Y + i);
 
-			if (Grid.IsValidIndex(Index) &&
-				nullptr != Grid[Index])
+			if (Grid.IsValidIndex(Index) && nullptr != Grid[Index] && InExceptItem != Grid[Index])
 			{
 				return false;
 			}
@@ -833,6 +868,79 @@ void UGridBasedListView::ForEach(int32 InX, int32 InY, const FIntPoint& InSize, 
 	}
 }
 
+void UGridBasedListView::Swap(UGridBasedListEntry* InFirst, UGridBasedListEntry* InSecond)
+{
+	UGridBasedListItem* FirstItem = ActiveItems.Contains(InFirst) ? ActiveItems[InFirst] : nullptr;
+	UGridBasedListItem* SecondItem = ActiveItems.Contains(InSecond) ? ActiveItems[InSecond] : nullptr;
+
+	if (!ensure(FirstItem && SecondItem))
+	{
+		return;
+	}
+
+	ForEach(FirstItem->TopLeftPos.X, FirstItem->TopLeftPos.Y, FirstItem->TileSize, [&](int32 InIndex)
+		{
+			if (Grid.IsValidIndex(InIndex))
+			{
+				Grid[InIndex] = nullptr;
+			}
+		});
+
+	ForEach(SecondItem->TopLeftPos.X, SecondItem->TopLeftPos.Y, SecondItem->TileSize, [&](int32 InIndex)
+		{
+			if (Grid.IsValidIndex(InIndex))
+			{
+				Grid[InIndex] = nullptr;
+			}
+		});
+
+	const FIntPoint CachedFirstTopLeft = FirstItem->TopLeftPos;
+	const FIntPoint CachedSecondTopLeft = SecondItem->TopLeftPos;
+	
+
+	// 위치 세팅
+	SetItemPosition(FirstItem, CachedSecondTopLeft);
+	SetItemPosition(SecondItem, CachedFirstTopLeft);
+}
+
+void UGridBasedListView::SetItemPosition(UGridBasedListItem* InItem, const FIntPoint& InPosition)
+{
+	if (nullptr != InItem)
+	{
+		ForEach(InPosition.X, InPosition.Y, InItem->TileSize, [&](int32 InIndex)
+			{
+				if (Grid.IsValidIndex(InIndex))
+				{
+					Grid[InIndex] = InItem;
+				}
+			});
+
+
+		InItem->TopLeftPos = InPosition;
+
+		if (!ensureAlways(ActiveWidgets.Contains(InItem)))
+		{
+			return;
+		}
+
+		UGridBasedListEntry* ListEntry = Cast<UGridBasedListEntry>(ActiveWidgets[InItem]);
+
+		if (!ensureAlways(ListEntry))
+		{
+			return;
+		}
+
+		UCanvasPanelSlot* PanelSlot = InventoryPanel->AddChildToCanvas(ListEntry);
+		if (ensure(PanelSlot))
+		{
+			PanelSlot->SetPosition(PointToLocal(InPosition));
+			FVector2D Size = FVector2D(InItem->TileSize.X * SlotSize, InItem->TileSize.Y * SlotSize);
+			PanelSlot->SetSize(Size);
+		}
+	}
+
+}
+
 void UGridBasedListView::SetSelect(const UGridBasedListItem* InItem)
 {
 	UUserWidget* ListEntry = ActiveWidgets.FindRef(InItem);
@@ -843,7 +951,7 @@ void UGridBasedListView::SetSelect(const UGridBasedListItem* InItem)
 		if (true == SelectedItems.Contains(InItem))
 		{
 			SelectedItems.Remove(InItem);
-			OnSelectionChanged.ExecuteIfBound(ListItem, false);
+			OnSelectionChanged.Broadcast(ListItem, false);
 		}
 
 		/*else if (true == DeActivedSelectedItems.Contains(InItem))
@@ -854,7 +962,7 @@ void UGridBasedListView::SetSelect(const UGridBasedListItem* InItem)
 		else
 		{
 			SelectedItems.Emplace(InItem);
-			OnSelectionChanged.ExecuteIfBound(ListItem, true);
+			OnSelectionChanged.Broadcast(ListItem, true);
 		}
 
 	}

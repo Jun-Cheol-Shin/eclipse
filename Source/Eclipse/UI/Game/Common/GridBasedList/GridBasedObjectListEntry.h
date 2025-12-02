@@ -26,6 +26,9 @@ class IGridBasedObjectListEntry
 
 	friend class UGridBasedListView;
 
+public:
+	const UGridBasedListItem* GetOwningListItem();
+
 protected:
 	/** Follows the same pattern as the NativeOn[X] methods in UUserWidget - super calls are expected in order to route the event to BP. */
 	virtual void NativeOnListItemObjectSet(UGridBasedListItem* ListItemObject);
@@ -45,7 +48,6 @@ protected:
 	void OnEntryReleased();
 
 	UGridBasedListView* GetOwningListView() const;
-	const UGridBasedListItem* GetOwningListItem();
 
 	float GetSlotSize() const;
 

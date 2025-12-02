@@ -34,14 +34,17 @@ class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDet
 	GENERATED_BODY()
 	
 public:
-	DECLARE_DELEGATE_OneParam(FOnGeneratedEntry, UGridBasedListEntry&)
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnGeneratedEntry, UGridBasedListEntry&)
 	FOnGeneratedEntry OnEntryGenerated;
 
-	DECLARE_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
 	FOnGeneratedEntry OnEntryReleased;
 
-	DECLARE_DELEGATE_TwoParams(FOnSelectionChanged, UGridBasedListItem*, bool)
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSelectionChanged, UGridBasedListItem*, bool)
 	FOnSelectionChanged OnSelectionChanged;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnDropItemSignature, UGridBasedListItem*)
+	FOnDropItemSignature OnDropItem;
 
 public:
 	void SetListItems(const TArray<UGridBasedListItem*>& InItemList);
@@ -94,7 +97,7 @@ private:
 	FIntPoint KeyToPoint(int32 InKey);
 
 	int32 GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize);
-	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize);
+	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize, const UGridBasedListItem* InExceptItem = nullptr);
 	bool GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize);
 
 
@@ -106,10 +109,10 @@ private:
 	void SetInventorySize();
 
 	bool IsOverScroll(int32 InTopLeftKey) const;
-
-
-
 	void ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32 /* Grid Index */)> InFunc);
+
+	void Swap(UGridBasedListEntry* InFirst, UGridBasedListEntry* InSecond);
+	void SetItemPosition(UGridBasedListItem* InItem, const FIntPoint& InPosition);
 
 private:
 	UFUNCTION()
