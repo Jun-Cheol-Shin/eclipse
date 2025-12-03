@@ -37,11 +37,16 @@ public:
 	FSoftObjectPath				GetMeshPath() const;
 	FSoftObjectPath				GetThumbnailPath() const;
 
+	// TODO : 아이템 사이즈에 대한 데이터 필요
+	const FIntPoint&			GetItemSize() const { return FIntPoint(0, 0); }
+
 
 	FORCEINLINE int32			GetItemId() const { return ItemId; }
 	FORCEINLINE int64			GetItemStackCount() const { return StackCount; }
 
 	bool						IsEqual(UEclipseInventoryItem* OtherItem);
+
+	const FIntPoint&			GetTopLeft() const;
 
 private:
 	const FItemDataRow*			GetItemData() const;
@@ -57,5 +62,8 @@ private:
 	int32						ItemId = 0;
 	int64						StackCount = 0;
 	
+	// Grid System
+	FIntPoint					TopLeft = FIntPoint(-1, -1); // X, Y
+
 };
 

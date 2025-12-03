@@ -55,6 +55,11 @@ EItemRarity UEclipseInventoryItem::GetRarity() const
 	return EItemRarity::Common;
 }
 
+const FIntPoint& UEclipseInventoryItem::GetTopLeft() const
+{
+	return TopLeft;
+}
+
 EClassType UEclipseInventoryItem::GetClassTypeEnum() const
 {
 	const FItemDataRow* ItemData = GetItemData();

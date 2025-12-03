@@ -32,8 +32,12 @@ struct FEclipseInventoryArray : public FFastArraySerializer
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FEclipseInventoryArray() {}
-	FEclipseInventoryArray(UActorComponent* InOwnerComponent) : CachedOwnerComponent(InOwnerComponent) {}
+	FEclipseInventoryArray() { InventorySize = FIntPoint(0, 0); }
+	FEclipseInventoryArray(UActorComponent* InOwnerComponent, const FIntPoint& InInventorySize) : CachedOwnerComponent(InOwnerComponent), InventorySize(InInventorySize) 
+	{
+		Items.Reset();
+		Items.SetNumZeroed(InInventorySize.X * InInventorySize.Y);
+	}
 
 	TArray<UEclipseInventoryItem*> GetAllItems() const;
 
@@ -52,10 +56,13 @@ public:
 	void AddItem(UEclipseInventoryItem* InItem);
 	void RemoveItem(UEclipseInventoryItem* InItem);
 
+	bool IsEmpty(int Index) const;
 
 private:
 	UPROPERTY()
 	TArray<FEclipseInventoryEntry>	Items;	/** Step 3: You MUST have a TArray named Items of the struct you made in step 1. */
+
+	FIntPoint InventorySize;
 	TWeakObjectPtr<UActorComponent> CachedOwnerComponent;
 };
 
@@ -78,6 +85,13 @@ class ECLIPSE_API UEpInventoryComponent : public UActorComponent
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_AddItem(UEclipseInventoryItem* InAddItem);
+
+public:
+	const FIntPoint& GetInventorySize() const;
+	int GetIndex(const FIntPoint& InPoint) const;
+
+	bool IsPossibleAdd(UEclipseInventoryItem* InItem) const;
+	//bool IsPossibleAdd(UEclipseInventoryItem* InItem, const FIntPoint& InTopLeft) const;
 
 public:	
 	// Sets default values for this component's properties
@@ -104,5 +118,9 @@ protected:
 protected:
 	UPROPERTY(Replicated)
 	FEclipseInventoryArray InventoryItemArray;
+
+
+	UPROPERTY(EditAnywhere)
+	FIntPoint InventorySize = FIntPoint(0, 0);
 };
  

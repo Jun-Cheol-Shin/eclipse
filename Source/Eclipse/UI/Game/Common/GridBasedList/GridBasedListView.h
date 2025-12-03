@@ -41,11 +41,25 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
 	FOnGeneratedEntry OnEntryReleased;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnDropItemSignature, UGridBasedListItem*)
+	FOnDropItemSignature OnDropItem;
+	
+	//DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(bool, FOnGetPossibleAddItem, UGridBasedListItem*)
+	//FOnGetPossibleAddItem OnGetPossibleAddItem;
+
+	// 인벤토리 공간이 꽉 찼을 때..
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnFailedAddItem, UGridBasedListItem*)
+	FOnFailedAddItem OnFailedAddItem;
+
+
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSwappedItem, UGridBasedListItem*, UGridBasedListItem*)
+	FOnSwappedItem OnSwappedItem;
+
+
+	// TODO
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSelectionChanged, UGridBasedListItem*, bool)
 	FOnSelectionChanged OnSelectionChanged;
 
-	DECLARE_MULTICAST_DELEGATE_OneParam(FOnDropItemSignature, UGridBasedListItem*)
-	FOnDropItemSignature OnDropItem;
 
 public:
 	void SetListItems(const TArray<UGridBasedListItem*>& InItemList);

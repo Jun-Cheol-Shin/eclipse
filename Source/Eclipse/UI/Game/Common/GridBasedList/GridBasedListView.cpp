@@ -2,6 +2,7 @@
 
 
 #include "GridBasedListView.h"
+#include "GridBasedObjectListEntry.h"
 #include "DragPayload.h"
 
 #include "Components/CanvasPanel.h"
@@ -10,12 +11,9 @@
 
 #include "Components/SizeBox.h"
 #include "Components/Border.h"
-
-#include "GridBasedObjectListEntry.h"
+#include "Components/ListView.h"
 
 #include "HAL/IConsoleManager.h"
-
-#include "Components/ListView.h"
 
 void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
@@ -304,11 +302,16 @@ void UGridBasedListView::AddItem(UGridBasedListItem* InItem)
 		return;
 	}
 	
+	// TODO : 데이터와 연동해서 조건이 맞는지 체크를 해야 함.
+	// 조건 체크 로직 분리가 필요
+
 	TArray<int32> GridList;
 	int32 PossibleTopLeftKey = GetEmptyTopLeftKey(OUT GridList, InItem->TileSize);
 	if (INDEX_NONE == PossibleTopLeftKey)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not enough empty space.."));
+		OnFailedAddItem.Broadcast(InItem);
+
 		return;
 	}
 
@@ -831,7 +834,7 @@ void UGridBasedListView::SetPreviewDragFootprint(const UGridBasedListItem* InIte
 	TempFootprintLoc = TopLeftPoint;
 }
 
-bool UGridBasedListView::IsPossibleSwap(UGridBasedListEntry** OutSwappableEntry, const FIntPoint& InTargetTopLeft, const UGridBasedListItem* InDraggedItem) const
+bool UGridBasedListView::IsPossibleSwap(OUT UGridBasedListEntry** OutSwappableEntry, const FIntPoint& InTargetTopLeft, const UGridBasedListItem* InDraggedItem) const
 {
 	// InTargetTopLeft = TempFootprintLoc
 
@@ -922,6 +925,8 @@ void UGridBasedListView::Swap(UGridBasedListEntry* InFirst, UGridBasedListEntry*
 	// 위치 세팅
 	SetItemPosition(FirstItem, InDraggedTopLeft);
 	SetItemPosition(SecondItem, CachedFirstTopLeft);
+
+	OnSwappedItem.Broadcast(FirstItem, SecondItem);
 }
 
 void UGridBasedListView::SetItemPosition(UGridBasedListItem* InItem, const FIntPoint& InPosition)

@@ -50,6 +50,16 @@ void UEpInventoryComponent::RemoveItem(UEclipseInventoryItem* InRemovedItem)
 	}
 }
 
+const FIntPoint& UEpInventoryComponent::GetInventorySize() const
+{
+	return InventorySize;
+}
+
+bool UEpInventoryComponent::IsPossibleAdd() const
+{
+	return false;
+}
+
 // Sets default values for this component's properties
 UEpInventoryComponent::UEpInventoryComponent()
 {
@@ -66,6 +76,8 @@ void UEpInventoryComponent::InitializeComponent()
 	Super::InitializeComponent();
 
 	UE_LOG(LogTemp, Warning, TEXT("Init Inventory Component!"));
+
+	InventoryItemArray = FEclipseInventoryArray(this, { 12, 5 });
 }
 
 bool UEpInventoryComponent::ReplicateSubobjects(UActorChannel* InChannel, FOutBunch* InBunch, FReplicationFlags* InRepFlags)
@@ -138,6 +150,7 @@ TArray<UEclipseInventoryItem*> FEclipseInventoryArray::GetAllItems() const
 
 	return ItemList;
 }
+
 void FEclipseInventoryArray::PreReplicatedRemove(const TArrayView<int32>& RemovedIndices, int32 FinalSize)
 {
 	if (!ensureAlways(CachedOwnerComponent.IsValid()))
@@ -248,6 +261,48 @@ void FEclipseInventoryArray::RemoveItem(UEclipseInventoryItem* InItem)
 		}
 	}
 
+}
+
+bool FEclipseInventoryArray::IsEmpty(int Index) const
+{
+	return Items.IsValidIndex(Index) && nullptr != Items[Index].ItemInstance;
+}
+
+bool UEpInventoryComponent::IsPossibleAdd(UEclipseInventoryItem* InItem) const
+{
+	const FIntPoint TopLeft = InItem->GetTopLeft();
+	const FIntPoint Size = InItem->GetItemSize();
+
+	for (int32 i = 0; i < InventorySize.Y; ++i)
+	{
+		if (TopLeft.Y + i >= InventorySize.Y)
+		{
+			return false;
+		}
+
+		for (int32 j = 0; j < InventorySize.X; ++j)
+		{
+			if (TopLeft.X + j >= InventorySize.X)
+			{
+				return false;
+			}
+
+			int32 Index = GetIndex({ TopLeft.X + j, TopLeft.Y + i });
+
+			if (false == InventoryItemArray.IsEmpty(Index))
+			{
+				return false;
+			}
+		}
+	}
+
+
+	return true;
+}
+
+int UEpInventoryComponent::GetIndex(const FIntPoint& InPoint) const
+{
+	return InPoint.X + (InPoint.Y * InventorySize.X);
 }
 
 // End FEclipseInventoryArray
