@@ -19,6 +19,7 @@ class USizeBox;
 class UGridPanel;
 class UCommonHierarchicalScrollBox;
 class UGridBasedFootprint;
+class UCanvasPanelSlot;
 
 UENUM(BlueprintType)
 enum class EStorageState : uint8
@@ -91,14 +92,14 @@ protected:
 
 private:
 	// Make Top Left Index
-	int32 MakeKey(int32 InRow, int32 InColumn);
-	FVector2D PointToLocal(const FIntPoint& InPoint);
-	FIntPoint LocalToPoint(const FVector2D& InLocalVec);
-	FIntPoint KeyToPoint(int32 InKey);
+	int32 MakeKey(int32 InRow, int32 InColumn) const;
+	FVector2D PointToLocal(const FIntPoint& InPoint) const;
+	FIntPoint LocalToPoint(const FVector2D& InLocalVec) const;
+	FIntPoint KeyToPoint(int32 InKey) const;
 
 	int32 GetEmptyTopLeftKey(OUT TArray<int32>& OutGridList, const FIntPoint& InItemSize);
-	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize, const UGridBasedListItem* InExceptItem = nullptr);
-	bool GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize);
+	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize, const UGridBasedListItem* InExceptItem = nullptr) const;
+	bool GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize) const;
 
 
 private:
@@ -111,8 +112,11 @@ private:
 	bool IsOverScroll(int32 InTopLeftKey) const;
 	void ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32 /* Grid Index */)> InFunc);
 
-	void Swap(UGridBasedListEntry* InFirst, UGridBasedListEntry* InSecond);
+	void SetPreviewDragFootprint(const UGridBasedListItem* InItem, const FVector2D& InCursorScreenPos);
+	bool IsPossibleSwap(OUT UGridBasedListEntry** OutSwappableEntry, const FIntPoint& InTargetTopLeft, const UGridBasedListItem* InDraggedItem) const;
+	void Swap(UGridBasedListEntry* InFirst, UGridBasedListEntry* InSecond, const FIntPoint& InDraggedTopLeft);
 	void SetItemPosition(UGridBasedListItem* InItem, const FIntPoint& InPosition);
+	void Drop(UGridBasedListItem* InItem);
 
 private:
 	UFUNCTION()
