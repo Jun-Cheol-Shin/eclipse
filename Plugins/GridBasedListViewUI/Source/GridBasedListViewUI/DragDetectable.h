@@ -17,7 +17,7 @@ class UDragDetectable : public UInterface
 /**
  * 
  */
-class ECLIPSE_API IDragDetectable
+class GRIDBASEDLISTVIEWUI_API IDragDetectable
 {
 	GENERATED_BODY()
 

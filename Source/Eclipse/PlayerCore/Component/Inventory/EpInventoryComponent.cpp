@@ -9,7 +9,7 @@
 
 #include "../../../Actor/EpDropItemActor.h"
 
-
+/*
 static TAutoConsoleVariable<int32> CVarShowInventory(
 	TEXT("ShowDebugInventory"),
 	0,
@@ -18,6 +18,7 @@ static TAutoConsoleVariable<int32> CVarShowInventory(
 	TEXT(" 1 : on\n"),
 	ECVF_Cheat
 );
+*/
 
 void UEpInventoryComponent::Server_AddItem_Implementation(UEclipseInventoryItem* InAddItem)
 {
@@ -42,7 +43,7 @@ bool UEpInventoryComponent::Server_AddItem_Validate(UEclipseInventoryItem* InAdd
 	return true;
 }
 
-void UEpInventoryComponent::RemoveItem(UEclipseInventoryItem* InRemovedItem)
+void UEpInventoryComponent::Server_RemoveItem_Implementation(UEclipseInventoryItem* InRemovedItem)
 {
 	if (GetOwner()->HasAuthority())
 	{
@@ -53,11 +54,6 @@ void UEpInventoryComponent::RemoveItem(UEclipseInventoryItem* InRemovedItem)
 const FIntPoint& UEpInventoryComponent::GetInventorySize() const
 {
 	return InventorySize;
-}
-
-bool UEpInventoryComponent::IsPossibleAdd() const
-{
-	return false;
 }
 
 // Sets default values for this component's properties
@@ -75,9 +71,36 @@ void UEpInventoryComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	UE_LOG(LogTemp, Warning, TEXT("Init Inventory Component!"));
+	switch (GetNetMode())
+	{
+	case ENetMode::NM_Client:
+	{
+		InventoryItemArray.SetComponent(this);
+	}
+		break;
+	case ENetMode::NM_DedicatedServer:
+	{
+		InventoryItemArray.SetComponent(this);
+		InventoryItemArray.SetInventory(InventorySize);
+	}
+		break;
 
-	InventoryItemArray = FEclipseInventoryArray(this, { 12, 5 });
+	case ENetMode::NM_ListenServer:
+	{
+		InventoryItemArray.SetComponent(this);
+		InventoryItemArray.SetInventory(InventorySize);
+	}
+		break;
+
+	default:
+	{
+		// standalone?
+		InventoryItemArray.SetComponent(this);
+		InventoryItemArray.SetInventory(InventorySize);
+	}
+		break;
+	}
+
 }
 
 bool UEpInventoryComponent::ReplicateSubobjects(UActorChannel* InChannel, FOutBunch* InBunch, FReplicationFlags* InRepFlags)
@@ -110,6 +133,7 @@ void UEpInventoryComponent::TickComponent(float InDeltaTime, ELevelTick InTickTy
 {
 	Super::TickComponent(InDeltaTime, InTickType, InTickFunc);
 
+/*
 #if WITH_EDITOR
 	const bool bShowDebug = CVarShowInventory.GetValueOnGameThread() != 0;
 	if (true == bShowDebug)
@@ -120,18 +144,31 @@ void UEpInventoryComponent::TickComponent(float InDeltaTime, ELevelTick InTickTy
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Green, FString::Printf(TEXT("Item Name : %s, Item Count = %d"), *Item->GetItemNameStr(), Item->GetItemStackCount()));
 			}
-
-			else
-			{
-				//
-			}
 		}
 	}
 #endif
+*/
 
 }
 
 // FEclipseInventoryArray
+void FEclipseInventoryArray::SetInventory(const FIntPoint& InSize)
+{
+	InventorySize = InSize;
+	Items.Reset();
+
+	for (int i = 0; i < InSize.X * InSize.Y; ++i)
+	{
+		Items.Emplace(FEclipseInventoryEntry());
+	}
+
+	MarkArrayDirty();
+}
+
+void FEclipseInventoryArray::SetComponent(UActorComponent* InComponent)
+{
+	CachedOwnerComponent = InComponent;
+}
 
 TArray<UEclipseInventoryItem*> FEclipseInventoryArray::GetAllItems() const
 {
@@ -158,8 +195,12 @@ void FEclipseInventoryArray::PreReplicatedRemove(const TArrayView<int32>& Remove
 		return;
 	}
 
+	/*	
+	*	그리드 인벤토리는 배열 자리를 미리 할당 시킨다.
+	*	Remove가 들어오는 경우는 인벤토리 확장 혹은 초기 세팅말고는 없는 것 같다.
+	*/
 
-	UEpInventoryComponent* InventoryComp = Cast<UEpInventoryComponent>(CachedOwnerComponent);
+	/*UEpInventoryComponent* InventoryComp = Cast<UEpInventoryComponent>(CachedOwnerComponent);
 	if (!ensureAlways(InventoryComp))
 	{
 		return;
@@ -179,7 +220,7 @@ void FEclipseInventoryArray::PreReplicatedRemove(const TArrayView<int32>& Remove
 
 		InventoryComp->OnRemovedItemDelegate.Broadcast(RemovedItem);
 	}
-
+	*/
 
 
 
@@ -191,8 +232,12 @@ void FEclipseInventoryArray::PostReplicatedAdd(const TArrayView<int32>& AddedInd
 		return;
 	}
 
+	/*	그리드 인벤토리는 배열 자리를 미리 할당 시킨다.
+	*	Add가 들어오는 경우는 인벤토리 확장 혹은 초기 세팅말고는 없는 것 같다.
+	*/
 
-	UEpInventoryComponent* InventoryComp = Cast<UEpInventoryComponent>(CachedOwnerComponent);
+
+	/*UEpInventoryComponent* InventoryComp = Cast<UEpInventoryComponent>(CachedOwnerComponent);
 	if (!ensureAlways(InventoryComp))
 	{
 		return;
@@ -210,57 +255,78 @@ void FEclipseInventoryArray::PostReplicatedAdd(const TArrayView<int32>& AddedInd
 		}
 
 		InventoryComp->OnAddedItemDelegate.Broadcast(AddedItem);
-	}
+	}*/
 }
 void FEclipseInventoryArray::PostReplicatedChange(const TArrayView<int32>& ChangedIndices, int32 FinalSize)
-{
-
-}
-
-void FEclipseInventoryArray::AddItem(UEpInventoryComponent* InComponent)
-{
-	//unimplemented();
-}
-void FEclipseInventoryArray::AddItem(UEclipseInventoryItem* InItem)
 {
 	if (!ensureAlways(CachedOwnerComponent.IsValid()))
 	{
 		return;
 	}
 
+	// TODO : ChangedIndices에서 가장 작은 값을 가져온다 -> TopLeft을 가져오기
 
-	AActor* OwningActor = CachedOwnerComponent->GetOwner();
-	if (nullptr == OwningActor || false == OwningActor->HasAuthority())
+
+
+
+}
+
+void FEclipseInventoryArray::AddItem(UEclipseInventoryItem* InItem)
+{
+	if (CachedOwnerComponent.IsValid() && ENetRole::ROLE_Authority != CachedOwnerComponent->GetOwnerRole())
 	{
+		/*
+		*	이 함수는 Inventory Component의 Server_AddItem으로 부터 호출된다.
+		*	그렇기 때문에, 서버에서만 호출되며, 호출 되어야만한다.
+		*/
 		return;
 	}
 
-	FEclipseInventoryEntry NewEntry = Items.AddDefaulted_GetRef();
-	NewEntry.ItemInstance = InItem;
+	TArray<int32> IndexList;
+	int TopLeft = GetEmptyIndex(OUT IndexList, InItem);
 
-	MarkItemDirty(NewEntry);
+	if (INDEX_NONE != TopLeft)
+	{
+		InItem->SetPosition(TopLeft);
+
+		for (int Index : IndexList)
+		{
+			FEclipseInventoryEntry NewEntry = Items[Index];
+			NewEntry.ItemInstance = InItem;
+		}
+
+		MarkArrayDirty();
+	}
 }
 
 void FEclipseInventoryArray::RemoveItem(UEclipseInventoryItem* InItem)
 {
-	for (auto EntryIt = Items.CreateIterator(); EntryIt; ++EntryIt)
+	if (!ensureAlways(CachedOwnerComponent.IsValid()))
 	{
-		FEclipseInventoryEntry& Entry = *EntryIt;
-		UEclipseInventoryItem* Item = Entry.ItemInstance;
-
-		if (nullptr == Item)
-		{
-			EntryIt.RemoveCurrent();
-			MarkArrayDirty();
-		}
-
-		else if (Item->IsEqual(InItem))
-		{
-			EntryIt.RemoveCurrent();
-			MarkArrayDirty();
-		}
+		return;
 	}
 
+	if (nullptr == InItem)
+	{
+		return;
+	}
+
+	int32 TopLeft = InItem->GetPosition();
+
+	if (INDEX_NONE != TopLeft)
+	{
+		TArray<int32> IndexList;
+		GetIndex(OUT IndexList, TopLeft, InItem->GetItemSize());
+
+		for (int Index : IndexList)
+		{
+			FEclipseInventoryEntry NewEntry = Items[Index];
+			NewEntry.ItemInstance = nullptr;
+		}
+
+		MarkArrayDirty();
+	}
+	
 }
 
 bool FEclipseInventoryArray::IsEmpty(int Index) const
@@ -268,41 +334,97 @@ bool FEclipseInventoryArray::IsEmpty(int Index) const
 	return Items.IsValidIndex(Index) && nullptr != Items[Index].ItemInstance;
 }
 
-bool UEpInventoryComponent::IsPossibleAdd(UEclipseInventoryItem* InItem) const
+bool FEclipseInventoryArray::IsValid() const
 {
-	const FIntPoint TopLeft = InItem->GetTopLeft();
-	const FIntPoint Size = InItem->GetItemSize();
+	return true == CachedOwnerComponent.IsValid() && InventorySize != FIntPoint(0, 0);
+}
 
-	for (int32 i = 0; i < InventorySize.Y; ++i)
+int32 FEclipseInventoryArray::GetEmptyIndex(OUT TArray<int32>& OutIndexList, UEclipseInventoryItem* InItem) const
+{
+	TQueue<int32> TopLeftQueue;
+
+	for (int i = 0; i < Items.Num(); ++i)
 	{
-		if (TopLeft.Y + i >= InventorySize.Y)
+		if (nullptr == Items[i].ItemInstance)
+		{
+			TopLeftQueue.Enqueue(i);
+		}
+	}
+
+	FIntPoint ItemSize = InItem->GetItemSize();
+
+	OutIndexList.Reserve(ItemSize.X * ItemSize.Y);
+
+	while (false == TopLeftQueue.IsEmpty())
+	{
+		int32 TopLeft;
+		TopLeftQueue.Dequeue(OUT TopLeft);
+
+		FIntPoint Point = IndexToPoint(TopLeft);
+
+		if (true == IsEmptySpace(Point, ItemSize))
+		{
+			if (ensure(true == GetIndex(OUT OutIndexList, Point, ItemSize)))
+			{
+				return OutIndexList.IsValidIndex(0) ? OutIndexList[0] : INDEX_NONE;
+			}
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+FIntPoint FEclipseInventoryArray::IndexToPoint(int32 Index) const
+{
+	return FIntPoint(Index % InventorySize.X, Index / InventorySize.X);
+}
+
+int32 FEclipseInventoryArray::PointToIndex(const FIntPoint& InPoint) const
+{
+	return InPoint.Y * InventorySize.X + InPoint.X;
+}
+
+bool FEclipseInventoryArray::IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize) const
+{
+	for (int32 i = 0; i < InSize.Y; ++i)
+	{
+		if (InTopLeftPoint.Y + i >= InventorySize.Y)
 		{
 			return false;
 		}
 
-		for (int32 j = 0; j < InventorySize.X; ++j)
+		for (int32 j = 0; j < InSize.X; ++j)
 		{
-			if (TopLeft.X + j >= InventorySize.X)
+			if (InTopLeftPoint.X + j >= InventorySize.X)
 			{
 				return false;
 			}
 
-			int32 Index = GetIndex({ TopLeft.X + j, TopLeft.Y + i });
+			int32 Index = PointToIndex({ InTopLeftPoint.X + j, InTopLeftPoint.Y + i });
 
-			if (false == InventoryItemArray.IsEmpty(Index))
+			if (Items.IsValidIndex(Index) && nullptr != Items[Index].ItemInstance)
 			{
 				return false;
 			}
 		}
 	}
 
-
 	return true;
 }
 
-int UEpInventoryComponent::GetIndex(const FIntPoint& InPoint) const
+bool FEclipseInventoryArray::GetIndex(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize) const
 {
-	return InPoint.X + (InPoint.Y * InventorySize.X);
+	OutIndexList.Reset();
+
+	for (int i = 0; i < InSize.Y; ++i)
+	{
+		for (int j = 0; j < InSize.X; ++j)
+		{
+			OutIndexList.Emplace(PointToIndex({ InTopLeft.X + j, InTopLeft.Y + i }));
+		}
+	}
+
+	return OutIndexList.Num() == InSize.X * InSize.Y;
 }
 
 // End FEclipseInventoryArray

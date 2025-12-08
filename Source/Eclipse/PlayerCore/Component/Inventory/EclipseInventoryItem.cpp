@@ -5,13 +5,22 @@
 #include "../../../GameModes/EpGameInstance.h"
 #include "../../../Subsystems/EpGameDataSubSystem.h"
 
+#include "../../../DataTable/ItemDataRow.h"
+#include "../../../DataTable/ItemResourceDataRow.h"
+#include "../../../DataTable/ItemShapeDataRow.h"
+
 #include "Net/UnrealNetwork.h"
 
 void UEclipseInventoryItem::SetItem(int32 InItemId, int64 InStackCount)
 {
-	Serial = FGuid::NewGuid();
+	//Serial = GetUniqueID();
 	ItemId = InItemId;
 	StackCount = StackCount;
+}
+
+void UEclipseInventoryItem::SetPosition(int32 InTopLeft)
+{
+	TopLeft = InTopLeft;
 }
 
 void UEclipseInventoryItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -21,14 +30,14 @@ void UEclipseInventoryItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	// TODO : Change Conditional
 
 	DOREPLIFETIME(UEclipseInventoryItem, StackCount);
-	DOREPLIFETIME(UEclipseInventoryItem, Serial);
+	//DOREPLIFETIME(UEclipseInventoryItem, Serial);
 	DOREPLIFETIME(UEclipseInventoryItem, ItemId);
 }
 
 
 bool UEclipseInventoryItem::IsEqual(UEclipseInventoryItem* OtherItem)
 {
-	return	Serial == OtherItem->Serial &&
+	return	TopLeft == OtherItem->TopLeft &&
 			ItemId == OtherItem->ItemId &&
 			StackCount == OtherItem->StackCount;
 }
@@ -53,11 +62,6 @@ EItemRarity UEclipseInventoryItem::GetRarity() const
 	}
 
 	return EItemRarity::Common;
-}
-
-const FIntPoint& UEclipseInventoryItem::GetTopLeft() const
-{
-	return TopLeft;
 }
 
 EClassType UEclipseInventoryItem::GetClassTypeEnum() const
@@ -115,6 +119,39 @@ FSoftObjectPath UEclipseInventoryItem::GetThumbnailPath() const
 	return nullptr;
 }
 
+FIntPoint UEclipseInventoryItem::GetItemSize() const
+{
+	const FItemShapeDataRow* ShapeData = GetItemShapeData();
+	if (ShapeData)
+	{
+		return FIntPoint(ShapeData->Width, ShapeData->Height);
+	}
+
+	return FIntPoint(0, 0);
+}
+
+TArray<int32> UEclipseInventoryItem::GetItemIndexList() const
+{
+	const FItemShapeDataRow* ShapeData = GetItemShapeData();
+	if (ShapeData)
+	{
+		TArray<int32> IndexList;
+
+		int Num = ShapeData->Height * ShapeData->Width;
+		for (int i = 0; i < Num; ++i)
+		{
+			if (false == ShapeData->HiddenIndexList.Contains(i))
+			{
+				IndexList.Emplace(i);
+			}
+		}
+
+		return IndexList;
+	}
+
+	return TArray<int32>();
+}
+
 
 const FItemDataRow* UEclipseInventoryItem::GetItemData() const
 {
@@ -133,6 +170,17 @@ const FItemResourceDataRow* UEclipseInventoryItem::GetItemResourceData() const
 	if (ensure(GameDataSubSystem))
 	{
 		return GameDataSubSystem->GetGameData<FItemResourceDataRow>(ItemId);
+	}
+
+	return nullptr;
+}
+
+const FItemShapeDataRow* UEclipseInventoryItem::GetItemShapeData() const
+{
+	UEpGameDataSubSystem* GameDataSubSystem = GetGameDataSubSytem();
+	if (ensure(GameDataSubSystem))
+	{
+		return GameDataSubSystem->GetGameData<FItemShapeDataRow>(ItemId);
 	}
 
 	return nullptr;

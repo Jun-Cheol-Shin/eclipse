@@ -7,9 +7,6 @@
 #include "EpResourceSubSystem.h"
 
 #include "Engine/DataTable.h"
-// Data Row
-#include "../DataTable/ItemDataRow.h"
-#include "../DataTable/ItemResourceDataRow.h"
 
 #include "EpGameDataSubSystem.generated.h"
 

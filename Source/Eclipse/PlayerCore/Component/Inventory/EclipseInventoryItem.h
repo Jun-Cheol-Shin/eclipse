@@ -12,6 +12,7 @@ enum class EClassType : uint8;
 
 struct FItemDataRow;
 struct FItemResourceDataRow;
+struct FItemShapeDataRow;
 
 class UEpGameDataSubSystem;
 
@@ -25,6 +26,7 @@ public:
 
 	// Setter
 	void SetItem(int32 InItemId, int64 InStackCount);
+	void SetPosition(int32 InTopLeft);
 
 	// Item Data
 	FString						GetItemNameStr() const;
@@ -37,20 +39,23 @@ public:
 	FSoftObjectPath				GetMeshPath() const;
 	FSoftObjectPath				GetThumbnailPath() const;
 
-	// TODO : 아이템 사이즈에 대한 데이터 필요
-	const FIntPoint&			GetItemSize() const { return FIntPoint(0, 0); }
+	// Item Shape Data
+	// Hidden Index는 제외한 가로,세로 사이즈를 전달
+	FIntPoint					GetItemSize() const;
+	// Hidden Index를 제외한 실제 아이템 모양과 매칭시켜 인덱싱해 전달
+	TArray<int32>				GetItemIndexList() const;
 
 
 	FORCEINLINE int32			GetItemId() const { return ItemId; }
 	FORCEINLINE int64			GetItemStackCount() const { return StackCount; }
+	FORCEINLINE int32			GetPosition() const { return TopLeft; }
 
 	bool						IsEqual(UEclipseInventoryItem* OtherItem);
-
-	const FIntPoint&			GetTopLeft() const;
 
 private:
 	const FItemDataRow*			GetItemData() const;
 	const FItemResourceDataRow*	GetItemResourceData() const;
+	const FItemShapeDataRow*	GetItemShapeData() const;
 	UEpGameDataSubSystem*		GetGameDataSubSytem() const;
 
 protected:
@@ -58,12 +63,10 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
-	FGuid						Serial;
+	//int32						Serial;					// 임시 : Instance의 Unique id
 	int32						ItemId = 0;
 	int64						StackCount = 0;
-	
-	// Grid System
-	FIntPoint					TopLeft = FIntPoint(-1, -1); // X, Y
 
+	int32						TopLeft = INDEX_NONE;
 };
 

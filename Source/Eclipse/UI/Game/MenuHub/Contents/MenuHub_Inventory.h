@@ -32,8 +32,8 @@ protected:
 	virtual void SynchronizeProperties() override;
 
 private:
-	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
-	TObjectPtr<UGridBasedListView> InventoryList;
+	//UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	//TObjectPtr<UGridBasedListView> InventoryList;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<USizeBox> InventorySizeBox = nullptr;

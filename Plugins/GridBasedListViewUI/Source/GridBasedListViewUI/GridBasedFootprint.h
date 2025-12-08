@@ -32,7 +32,7 @@ public:
 
 
 UCLASS()
-class ECLIPSE_API UGridBasedFootprint : public UUserWidget
+class GRIDBASEDLISTVIEWUI_API UGridBasedFootprint : public UUserWidget
 {
 	GENERATED_BODY()
 

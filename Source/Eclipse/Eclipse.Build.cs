@@ -15,7 +15,7 @@ public class Eclipse : ModuleRules
 			"InputCore", 
 			"EnhancedInput",
 			"NamelessUISystem",
-
+            "GridBasedListViewUI"
             });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { 
@@ -32,6 +32,7 @@ public class Eclipse : ModuleRules
             "GameInputBase",
             "GameInputBaseEditor",
             "GameInputWindows",
+
             });
 
 		// Uncomment if you are using Slate UI

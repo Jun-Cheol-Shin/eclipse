@@ -13,7 +13,7 @@
 class IDraggable;
 
 UCLASS()
-class ECLIPSE_API UDragPayload : public UDragDropOperation
+class GRIDBASEDLISTVIEWUI_API UDragPayload : public UDragDropOperation
 {
 	GENERATED_BODY()
 

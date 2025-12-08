@@ -29,7 +29,7 @@ class UUserWidget;
 
 enum class EDragPivot : uint8;
 
-class ECLIPSE_API IDraggable
+class GRIDBASEDLISTVIEWUI_API IDraggable
 {
 	GENERATED_BODY()
 

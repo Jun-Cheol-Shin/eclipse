@@ -115,8 +115,14 @@ void UGridBasedListView::NativeOnDrop(UUserWidget* InDraggingWidget, const FPoin
 	if (false == bIsEmpty)
 	{
 		UGridBasedListEntry* SwappableEntry = nullptr;
+		UGridBasedListItem* PlacedItem = GetItemInPlace(TempFootprintLoc, ListItem->TileSize);
 
-		if (IsPossibleSwap(OUT &SwappableEntry, TempFootprintLoc, ListItem))
+		if (OnGetCanPlace.IsBound() && true == OnGetCanPlace.Execute(ListItem, PlacedItem))
+		{
+			OnPlacedItem.Broadcast(ListItem, PlacedItem);
+		}
+
+		else if (IsPossibleSwap(OUT &SwappableEntry, TempFootprintLoc, ListItem))
 		{
 			Swap(ListEntry, SwappableEntry, TempFootprintLoc);
 		}
@@ -778,6 +784,41 @@ bool UGridBasedListView::GetIndexes(OUT TArray<int32>& OutIndexList, const FIntP
 	return OutIndexList.Num() == InSize.X * InSize.Y;
 }
 
+UGridBasedListItem* UGridBasedListView::GetItemInPlace(const FIntPoint& InTopLeft, const FIntPoint& InSize) const
+{
+	TArray<int32> Indexes;
+	TArray<const UGridBasedListItem*> ItemsInArea;
+	GetIndexes(OUT Indexes, InTopLeft, InSize);
+
+	Algo::Transform(Indexes, ItemsInArea, [&](int32 Index) -> const UGridBasedListItem*
+		{
+			return Grid.IsValidIndex(Index) ? Grid[Index] : nullptr;
+		});
+
+	ItemsInArea.RemoveAll([](const UGridBasedListItem* InItem) -> bool
+		{
+			return nullptr == InItem;
+		});
+
+	TSet<const UGridBasedListItem*> ItemInAreaSet(ItemsInArea);
+
+	if (ItemInAreaSet.Num() == 1)
+	{
+		const UGridBasedListItem* Key = *ItemInAreaSet.begin();
+		if (true == ActiveWidgets.Contains(Key))
+		{
+			UUserWidget* ListEntry = ActiveWidgets[Key];
+			
+			if (ActiveItems.Contains(ListEntry))
+			{
+				return ActiveItems[ListEntry];
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 void UGridBasedListView::ForEach(int32 InX, int32 InY, const FIntPoint& InSize, TFunctionRef<void(int32)> InFunc)
 {
 	for (int i = 0; i < InSize.Y; ++i)
@@ -811,9 +852,15 @@ void UGridBasedListView::SetPreviewDragFootprint(const UGridBasedListItem* InIte
 	else
 	{
 		UGridBasedListEntry* SwappableEntry = nullptr;
+		UGridBasedListItem* ItemInDragPlace = GetItemInPlace(TopLeftPoint, InItem->TileSize);
+
+		if (OnGetCanPlace.IsBound() && true == OnGetCanPlace.Execute(InItem, ItemInDragPlace))
+		{
+			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
+		}
 
 		// 스왑 가능한지 체크?
-		if (true == IsPossibleSwap(&SwappableEntry, TopLeftPoint, InItem))
+		else if (true == IsPossibleSwap(&SwappableEntry, TopLeftPoint, InItem))
 		{
 			FootprintWidget->SetStyle(FootprintStyles[EStorageState::Empty]);
 		}
@@ -836,14 +883,8 @@ void UGridBasedListView::SetPreviewDragFootprint(const UGridBasedListItem* InIte
 
 bool UGridBasedListView::IsPossibleSwap(OUT UGridBasedListEntry** OutSwappableEntry, const FIntPoint& InTargetTopLeft, const UGridBasedListItem* InDraggedItem) const
 {
-	// InTargetTopLeft = TempFootprintLoc
 
-	// 겹치는 아이템 찾기 (커서 기준? Footprint 기준?)
-	//const FVector2D CursorInventoryPos = InventoryPanel->GetTickSpaceGeometry().AbsoluteToLocal(InEvent.GetScreenSpacePosition());
-	//const FIntPoint CursorPoint = LocalToPoint(CursorInventoryPos);
-	//
-
-	TArray<int32> Indexes;
+	/*TArray<int32> Indexes;
 	TArray<const UGridBasedListItem*> ItemsInArea;
 	GetIndexes(OUT Indexes, InTargetTopLeft, InDraggedItem->TileSize);
 
@@ -859,17 +900,13 @@ bool UGridBasedListView::IsPossibleSwap(OUT UGridBasedListEntry** OutSwappableEn
 
 	TSet<const UGridBasedListItem*> ItemInAreaSet(ItemsInArea);
 
-	check(ItemInAreaSet.Num() != 0);
+	check(ItemInAreaSet.Num() != 0);*/
 
-	if (ItemInAreaSet.Num() <= 1)
+	// 드래그 할 영역에 아이템이 1개 이하로 있을 때는 스왑을 시도한다.
+	const UGridBasedListItem* DetectListItem = GetItemInPlace(InTargetTopLeft, InDraggedItem->TileSize);
+
+	if (nullptr != DetectListItem)
 	{
-		// 드래그 할 영역에 아이템이 1개 이하로 있을 때는 스왑을 시도한다.
-		const UGridBasedListItem* DetectListItem = *ItemInAreaSet.begin();
-		if (nullptr == DetectListItem)
-		{
-			return false;
-		}
-
 		UGridBasedListEntry* DetectListEntry = Cast<UGridBasedListEntry>(ActiveWidgets[DetectListItem]);
 		if (!ensure(DetectListEntry))
 		{
@@ -878,11 +915,17 @@ bool UGridBasedListView::IsPossibleSwap(OUT UGridBasedListEntry** OutSwappableEn
 
 		const FIntPoint DraggedItemTopLeft = InDraggedItem->TopLeftPos;
 
-		// 드래그 하는 아이템보다 인식된 아이템의 사이즈가 작다면 ?
-		// 그대로 가져오는게 아닌? TempFootprintLoc기준으로 비교해야한다?
-		//const FIntPoint DetectedItemTopLeft = DetectListItem->TopLeftPos;
+		TArray<int32> Indexes;
+		GetIndexes(OUT Indexes, InTargetTopLeft, InDraggedItem->TileSize);
+		
+		/* 
+		*	현재 드래그 하고 있는 아이템의 TopLeft에 Detected된 아이템이 들어 올 것이기 때문에,
+		*	Indexes (드래그 되고 있는 아이템이 옮겨질 위치에서로 부터 내가 차지할 공간)에 
+		*	드래그 전 내가 차지하고 있는 공간이 겹치는지 확인이 필요하다.
+		*/
 
-		if (true == IsEmptySpace(DraggedItemTopLeft, DetectListItem->TileSize) &&
+		if (false == Indexes.Contains(MakeKey(DraggedItemTopLeft.X, DraggedItemTopLeft.Y)) &&
+			true == IsEmptySpace(DraggedItemTopLeft, DetectListItem->TileSize) &&
 			true == IsEmptySpace(InTargetTopLeft, InDraggedItem->TileSize, DetectListItem))
 		{
 			*OutSwappableEntry = DetectListEntry;

@@ -73,17 +73,7 @@ void AEpDropItemActor::OnInteract(APlayerController* InOwningController)
 			if (UEpInventoryComponent* InventoryComponent = PlayerState->GetInventoryComponent())
 			{
 				// client to server
-				if (true == InventoryComponent->IsPossibleAdd(ItemData.Get()))
-				{
-					InventoryComponent->Server_AddItem(ItemData.Get());
-				}
-
-				else
-				{
-					// 시스템 메세지 출력?
-					UE_LOG(LogTemp, Error, TEXT("Not Enough Inventory Space. %s"), ANSI_TO_TCHAR(__FUNCTION__));
-				}
-
+				InventoryComponent->Server_AddItem(ItemData.Get());
 			}
 
 			else

@@ -14,6 +14,7 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Slate/UMGDragDropOp.h"
+#include "InputCoreTypes.h"
 
 // Add default functionality here for any IDraggable functions that are not pure virtual.
 

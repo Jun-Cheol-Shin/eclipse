@@ -14,7 +14,7 @@ class AEpDropItemActor;
 USTRUCT(BlueprintType)
 struct FEclipseInventoryEntry : public FFastArraySerializerItem
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 	
 	FEclipseInventoryEntry() {}
 
@@ -24,20 +24,25 @@ struct FEclipseInventoryEntry : public FFastArraySerializerItem
 
 	// Optional: debug string used with LogNetFastTArray logging
 	FString GetDebugString();
+
+	// FFastArraySerializerItem
+	//void PreReplicatedRemove(const struct FFastArraySerializer& InArraySerializer);
+	//void PostReplicatedAdd(const struct FFastArraySerializer& InArraySerializer);
+	//void PostReplicatedChange(const struct FFastArraySerializer& InArraySerializer);
+	// End FFastArraySerializerItem
 };
 
 USTRUCT(BlueprintType)
 struct FEclipseInventoryArray : public FFastArraySerializer
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 
 public:
-	FEclipseInventoryArray() { InventorySize = FIntPoint(0, 0); }
-	FEclipseInventoryArray(UActorComponent* InOwnerComponent, const FIntPoint& InInventorySize) : CachedOwnerComponent(InOwnerComponent), InventorySize(InInventorySize) 
-	{
-		Items.Reset();
-		Items.SetNumZeroed(InInventorySize.X * InInventorySize.Y);
-	}
+	FEclipseInventoryArray() = default;
+
+public:
+	void SetInventory(const FIntPoint& InSize);
+	void SetComponent(UActorComponent* InComponent);
 
 	TArray<UEclipseInventoryItem*> GetAllItems() const;
 
@@ -52,18 +57,33 @@ public:
 		return FFastArraySerializer::FastArrayDeltaSerialize<FEclipseInventoryEntry, FEclipseInventoryArray>(Items, DeltaParms, *this);
 	}
 
-	void AddItem(UEpInventoryComponent* InComponent);
 	void AddItem(UEclipseInventoryItem* InItem);
 	void RemoveItem(UEclipseInventoryItem* InItem);
 
 	bool IsEmpty(int Index) const;
+	bool IsValid() const;
+
+private:
+	int32 GetEmptyIndex(OUT TArray<int32>& OutIndexList, UEclipseInventoryItem* InItem) const;
+	FIntPoint IndexToPoint(int32 Index) const;
+	int32 PointToIndex(const FIntPoint& InPoint) const;
+	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize) const;
+	bool GetIndex(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize) const;
 
 private:
 	UPROPERTY()
 	TArray<FEclipseInventoryEntry>	Items;	/** Step 3: You MUST have a TArray named Items of the struct you made in step 1. */
 
-	FIntPoint InventorySize;
-	TWeakObjectPtr<UActorComponent> CachedOwnerComponent;
+private:
+	// 클라, 서버 둘 다 아는 변수
+	TWeakObjectPtr<UActorComponent> CachedOwnerComponent = nullptr;
+
+private:
+	// 서버만 아는 변수
+	FIntPoint InventorySize = FIntPoint(0, 0);
+
+private:
+	// ..
 };
 
 template<>
@@ -83,21 +103,6 @@ class ECLIPSE_API UEpInventoryComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_AddItem(UEclipseInventoryItem* InAddItem);
-
-public:
-	const FIntPoint& GetInventorySize() const;
-	int GetIndex(const FIntPoint& InPoint) const;
-
-	bool IsPossibleAdd(UEclipseInventoryItem* InItem) const;
-	//bool IsPossibleAdd(UEclipseInventoryItem* InItem, const FIntPoint& InTopLeft) const;
-
-public:	
-	// Sets default values for this component's properties
-	UEpInventoryComponent();
-		
-public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnChangedItemSignature, UEclipseInventoryItem*, InChangedItem);
 	FOnChangedItemSignature OnAddedItemDelegate;
 	FOnChangedItemSignature OnRemovedItemDelegate;
@@ -106,8 +111,17 @@ public:
 	FOnFailedItemSignature OnFailedMessageDelegate;
 
 public:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_AddItem(UEclipseInventoryItem* InAddItem);
 
-	void RemoveItem(UEclipseInventoryItem* InRemovedItem);
+	UFUNCTION(Server, Reliable)
+	void Server_RemoveItem(UEclipseInventoryItem* InRemovedItem);
+
+	const FIntPoint& GetInventorySize() const;
+	
+public:	
+	// Sets default values for this component's properties
+	UEpInventoryComponent();
 
 protected:
 	virtual void InitializeComponent() override;

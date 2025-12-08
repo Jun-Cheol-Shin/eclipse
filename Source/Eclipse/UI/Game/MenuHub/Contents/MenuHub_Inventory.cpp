@@ -5,9 +5,7 @@
 
 #include "Components/SizeBox.h"
 #include "Components/OverlaySlot.h"
-
-#include "../../Common/GridBasedList/GridBasedListView.h"
-#include "../../Common/GridBasedList/GridBasedListEntry.h"
+#include "GridBasedListViewUI/GridBasedListView.h"
 
 void UMenuHub_Inventory::NativeOnActiveContent()
 {
@@ -30,7 +28,7 @@ void UMenuHub_Inventory::NativeConstruct()
 		TEXT("Add Item <Row Size> <Column Size>"),
 		FConsoleCommandWithArgsDelegate::CreateWeakLambda(this, [this](const TArray<FString>& InArgs)
 			{
-				if (nullptr == InventoryList) return;
+				/*if (nullptr == InventoryList) return;
 
 				if (InArgs.Num() < 2)
 				{
@@ -45,7 +43,7 @@ void UMenuHub_Inventory::NativeConstruct()
 				{
 					NewItem->TileSize = FIntPoint(Row, Column);
 					InventoryList->AddItem(NewItem);
-				}
+				}*/
 
 			}),
 		ECVF_Default);
@@ -69,7 +67,7 @@ void UMenuHub_Inventory::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
 
-	if (nullptr == InventoryList)
+	/*if (nullptr == InventoryList)
 	{
 		return;
 	}
@@ -87,6 +85,6 @@ void UMenuHub_Inventory::SynchronizeProperties()
 		{
 			InventoryList->SetVisibleScrollBar(true);
 		}
-	}
+	}*/
 
 }

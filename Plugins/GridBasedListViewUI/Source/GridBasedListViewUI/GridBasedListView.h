@@ -30,7 +30,7 @@ enum class EStorageState : uint8
 
 
 UCLASS()
-class ECLIPSE_API UGridBasedListView : public UCommonUserWidget, public IDragDetectable, public IDraggable
+class GRIDBASEDLISTVIEWUI_API UGridBasedListView : public UCommonUserWidget, public IDragDetectable, public IDraggable
 {
 	GENERATED_BODY()
 	
@@ -41,22 +41,28 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnReleasedEntry, UGridBasedListEntry&)
 	FOnGeneratedEntry OnEntryReleased;
 
+	// 아이템을 필드에 드래그 드랍 했을 경우..
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnDropItemSignature, UGridBasedListItem*)
 	FOnDropItemSignature OnDropItem;
-	
-	//DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(bool, FOnGetPossibleAddItem, UGridBasedListItem*)
-	//FOnGetPossibleAddItem OnGetPossibleAddItem;
 
-	// 인벤토리 공간이 꽉 찼을 때..
+	// 아이템 추가가 실패 했을 때
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnFailedAddItem, UGridBasedListItem*)
 	FOnFailedAddItem OnFailedAddItem;
 
-
+	// 아이템이 스왑 됐을 때 호출
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSwappedItem, UGridBasedListItem*, UGridBasedListItem*)
 	FOnSwappedItem OnSwappedItem;
 
+	// 아이템을 겹칠 수 있는가? (아이템 Stack 혹은 가방에 넣는 기능?)
+	DECLARE_DELEGATE_RetVal_TwoParams(bool, FOnGetCanPlace, const UGridBasedListItem*, const UGridBasedListItem*)
+	FOnGetCanPlace OnGetCanPlace;
 
-	// TODO
+	// 아이템이 겹쳐졌을 때 호출
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPlacedItem, UGridBasedListItem*, UGridBasedListItem*)
+	FOnPlacedItem OnPlacedItem;
+	
+
+	// TODO : 패드 전용?
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSelectionChanged, UGridBasedListItem*, bool)
 	FOnSelectionChanged OnSelectionChanged;
 
@@ -115,6 +121,7 @@ private:
 	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize, const UGridBasedListItem* InExceptItem = nullptr) const;
 	bool GetIndexes(OUT TArray<int32>& OutIndexList, const FIntPoint& InTopLeft, const FIntPoint& InSize) const;
 
+	UGridBasedListItem* GetItemInPlace(const FIntPoint& InTopLeft, const FIntPoint& InSize) const;
 
 private:
 	void AddWidget(UGridBasedListItem* InItem);
