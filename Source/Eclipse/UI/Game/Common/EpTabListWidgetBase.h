@@ -33,10 +33,22 @@ public:
 	FText TabText = FText();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bShowTabIcon = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bShowTabIcon", EditConditionHides))
 	TSoftObjectPtr<UTexture2D> TabIcon = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UCommonButtonBase> TabButton = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FMargin ActionIconOffset = FMargin(0, 0, 0, 0);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FVector2D ActionIconSize = FVector2D(0, 0);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 FontSize = 24;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftClassPtr<UCommonUserWidget> TabContent = nullptr;

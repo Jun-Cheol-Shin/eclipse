@@ -10,6 +10,7 @@
 class UCommonLazyImage;
 class UCommonActionWidget;
 class UCommonTextBlock;
+class USizeBox;
 
 UCLASS()
 class ECLIPSE_API UEpBoundActionButton : public UCommonBoundActionButton, public IEclipseTabButtonInterface
@@ -41,4 +42,10 @@ private:
 
 	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
 	TObjectPtr<UCommonActionWidget> ActionWidget;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	TObjectPtr<USizeBox> IconWrapperBox;
+
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = "true"))
+	TObjectPtr<USizeBox> ActionWrapperBox;
 };

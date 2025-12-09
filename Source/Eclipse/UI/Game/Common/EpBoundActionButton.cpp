@@ -7,6 +7,9 @@
 #include "CommonTextBlock.h"
 #include "CommonActionWidget.h"
 
+#include "Components/VerticalBoxSlot.h"
+#include "Components/SizeBox.h"
+
 void UEpBoundActionButton::NativeOnChangedTabState(EEpButtonState InState)
 {
 	SetButtonState(InState);
@@ -14,18 +17,47 @@ void UEpBoundActionButton::NativeOnChangedTabState(EEpButtonState InState)
 
 void UEpBoundActionButton::NativeOnSetTabInfo(const FEpTabParameter& TabDescriptor)
 {
-	if (nullptr != TabButtonIcon)
+	if (nullptr != IconWrapperBox)
 	{
-		TabButtonIcon->SetBrushFromLazyTexture(TabDescriptor.TabIcon);
+		if (false == TabDescriptor.bShowTabIcon)
+		{
+			IconWrapperBox->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		else
+		{
+			if (nullptr != TabButtonIcon)
+			{
+				if (TabDescriptor.bShowTabIcon)
+				{
+					IconWrapperBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					TabButtonIcon->SetBrushFromLazyTexture(TabDescriptor.TabIcon);
+				}
+			}
+		}
+	}
+
+	if (nullptr != ActionWrapperBox)
+	{
+		ActionWrapperBox->SetWidthOverride(TabDescriptor.ActionIconSize.X);
+		ActionWrapperBox->SetHeightOverride(TabDescriptor.ActionIconSize.Y);
 	}
 
 	if (nullptr != ActionWidget)
 	{
+		if (UVerticalBoxSlot* OverlaySlot = Cast<UVerticalBoxSlot>(ActionWidget->Slot))
+		{
+			OverlaySlot->SetPadding(TabDescriptor.ActionIconOffset);
+		}
+
 		ActionWidget->SetEnhancedInputAction(TabDescriptor.InputAction);
 	}
 
 	if (nullptr != Text_ActionName)
 	{
+		FSlateFontInfo NewFontInfo = Text_ActionName->GetFont();
+		NewFontInfo.Size = TabDescriptor.FontSize;
+		Text_ActionName->SetFont(NewFontInfo);
 		Text_ActionName->SetText(TabDescriptor.TabText);
 	}
 }
