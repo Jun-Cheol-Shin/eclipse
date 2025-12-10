@@ -26,6 +26,7 @@ public class GridBasedListViewUI : ModuleRules
 			new string[]
 			{
 				"Core",
+                "Paper2D"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -40,7 +41,8 @@ public class GridBasedListViewUI : ModuleRules
 				"SlateCore",
 				"CommonUI",
 				"UMG",
-                "InputCore"
+                "InputCore",
+
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -20,6 +20,7 @@ class UGridPanel;
 class UCommonHierarchicalScrollBox;
 class UGridBasedFootprint;
 class UCanvasPanelSlot;
+class UPaperSprite;
 
 UENUM(BlueprintType)
 enum class EStorageState : uint8
@@ -158,7 +159,7 @@ private:
 	int32 ColumnCount = 0;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
-	TObjectPtr<UTexture> SlotTexture = nullptr;
+	TObjectPtr<UTexture2D> SlotSprite = nullptr;
 
 	UPROPERTY(EditInstanceOnly, meta = (AllowPrivateAccess = "true", Category = "Inventory Setting"))
 	FLinearColor SlotColor = FLinearColor::White;

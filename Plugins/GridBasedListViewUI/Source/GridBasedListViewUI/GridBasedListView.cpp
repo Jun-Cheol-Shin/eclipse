@@ -15,6 +15,7 @@
 
 #include "HAL/IConsoleManager.h"
 
+
 void UGridBasedListView::NativeOnStartDetectDrag(UUserWidget* InDraggingWidget, const FPointerEvent& InEvent)
 {
 	// DraggableWidget : GridBasedListEntry
@@ -665,7 +666,11 @@ void UGridBasedListView::SetMaterial()
 		{
 			Material->SetScalarParameterValue(TEXT("TileX"), RowCount);
 			Material->SetScalarParameterValue(TEXT("TileY"), ColumnCount);
-			Material->SetTextureParameterValue(TEXT("Pattern"), SlotTexture);
+
+			UPaperSprite* Sprite;
+			Sprite;
+
+			Material->SetTextureParameterValue(TEXT("Pattern"), SlotSprite);
 
 			InventoryBG->SetBrushColor(SlotColor);
 
