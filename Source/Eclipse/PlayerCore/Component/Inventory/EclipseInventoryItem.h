@@ -14,7 +14,7 @@ struct FItemDataRow;
 struct FItemResourceDataRow;
 struct FItemShapeDataRow;
 
-class UEpGameDataSubSystem;
+class UEpGameDataSubsystem;
 
 UCLASS()
 class ECLIPSE_API UEclipseInventoryItem : public UObject
@@ -52,11 +52,12 @@ public:
 
 	bool						IsEqual(UEclipseInventoryItem* OtherItem);
 
-private:
 	const FItemDataRow*			GetItemData() const;
-	const FItemResourceDataRow*	GetItemResourceData() const;
+	const FItemResourceDataRow* GetItemResourceData() const;
 	const FItemShapeDataRow*	GetItemShapeData() const;
-	UEpGameDataSubSystem*		GetGameDataSubSytem() const;
+
+private:
+	UEpGameDataSubsystem*		GetGameDataSubsystem() const;
 
 protected:
 	virtual bool IsSupportedForNetworking() const override { return true; }

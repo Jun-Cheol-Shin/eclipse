@@ -3,7 +3,7 @@
 
 #include "NLGameLayout.h"
 #include "NLGameLayer.h"
-#include "../Subsystems/Input/NLInputManagerSubSystem.h"
+#include "../Subsystems/Input/NLInputManagerSubsystem.h"
 #include "../UI/NLUIStatics.h"
 
 #include "CommonUI/Public/Widgets/CommonActivatableWidgetContainer.h"
@@ -130,7 +130,7 @@ void UNLGameLayout::NativeConstruct()
 	ULocalPlayer* MyLocalPlayer = GetOwningLocalPlayer();
 	if (false == ensure(MyLocalPlayer)) return;
 
-	UNLInputManagerSubSystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
+	UNLInputManagerSubsystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubsystem>();
 	if (ensure(InputSubSystem))
 	{
 		InputSubSystem->OnInputMethodChangedNative.AddUObject(this, &UNLGameLayout::OnChangedInputType);
@@ -144,7 +144,7 @@ void UNLGameLayout::NativeDestruct()
 	ULocalPlayer* MyLocalPlayer = GetOwningLocalPlayer();
 	if (nullptr == MyLocalPlayer) return;
 
-	UNLInputManagerSubSystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
+	UNLInputManagerSubsystem* InputSubSystem = MyLocalPlayer->GetSubsystem<UNLInputManagerSubsystem>();
 	if (ensure(InputSubSystem))
 	{
 		InputSubSystem->OnInputMethodChangedNative.RemoveAll(this);

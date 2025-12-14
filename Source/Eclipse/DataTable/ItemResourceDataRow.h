@@ -3,21 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
+#include "EclipseRowBase.h"
 #include "ItemResourceDataRow.generated.h"
 
 class UStaticMesh;
 class UObject;
 
 USTRUCT(Blueprintable)
-struct FItemResourceDataRow : public FTableRowBase
+struct FItemResourceDataRow : public FEclipseRowBase
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ItemId = 0;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FSoftObjectPath StaticMeshPath = FSoftObjectPath();
 

@@ -38,11 +38,12 @@ struct FEclipseInventoryArray : public FFastArraySerializer
 	GENERATED_BODY()
 
 public:
-	FEclipseInventoryArray() = default;
+	FEclipseInventoryArray() : OwnerComponent(nullptr) {}
+	FEclipseInventoryArray(UActorComponent* InComponent) : OwnerComponent(InComponent) {};
 
 public:
-	void SetInventory(const FIntPoint& InSize);
-	void SetComponent(UActorComponent* InComponent);
+	void SetSize(const FIntPoint& InSize);
+
 
 	TArray<UEclipseInventoryItem*> GetAllItems() const;
 
@@ -54,17 +55,15 @@ public:
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
-		return FFastArraySerializer::FastArrayDeltaSerialize<FEclipseInventoryEntry, FEclipseInventoryArray>(Items, DeltaParms, *this);
+		return FFastArraySerializer::FastArrayDeltaSerialize<FEclipseInventoryEntry, FEclipseInventoryArray>(ItemGrid, DeltaParms, *this);
 	}
 
-	void AddItem(UEclipseInventoryItem* InItem);
+	UEclipseInventoryItem* AddItem(int32 InItemId, int32 InStackCount);
 	void RemoveItem(UEclipseInventoryItem* InItem);
-
 	bool IsEmpty(int Index) const;
-	bool IsValid() const;
 
 private:
-	int32 GetEmptyIndex(OUT TArray<int32>& OutIndexList, UEclipseInventoryItem* InItem) const;
+	int32 GetEmptyIndex(OUT TArray<int32>& OutIndexList, const FIntPoint& InItemSize) const;
 	FIntPoint IndexToPoint(int32 Index) const;
 	int32 PointToIndex(const FIntPoint& InPoint) const;
 	bool IsEmptySpace(const FIntPoint& InTopLeftPoint, const FIntPoint& InSize) const;
@@ -72,18 +71,17 @@ private:
 
 private:
 	UPROPERTY()
-	TArray<FEclipseInventoryEntry>	Items;	/** Step 3: You MUST have a TArray named Items of the struct you made in step 1. */
+	TArray<FEclipseInventoryEntry> ItemGrid;	/** Step 3: You MUST have a TArray named Items of the struct you made in step 1. */
+
+	TSet<UEclipseInventoryItem*> Items;
 
 private:
-	// 클라, 서버 둘 다 아는 변수
-	TWeakObjectPtr<UActorComponent> CachedOwnerComponent = nullptr;
+	TObjectPtr<UActorComponent> OwnerComponent = nullptr;
 
 private:
-	// 서버만 아는 변수
+	UPROPERTY(NotReplicated)
 	FIntPoint InventorySize = FIntPoint(0, 0);
 
-private:
-	// ..
 };
 
 template<>
@@ -103,38 +101,49 @@ class ECLIPSE_API UEpInventoryComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnChangedItemSignature, UEclipseInventoryItem*, InChangedItem);
-	FOnChangedItemSignature OnAddedItemDelegate;
-	FOnChangedItemSignature OnRemovedItemDelegate;
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddedItemSignature, UEclipseInventoryItem*, InChangedItem);
+	FOnAddedItemSignature OnAddedItemDelegate;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemovedItemSignature, int32, InTopLeft);
+	FOnRemovedItemSignature OnRemovedItemDelegate;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFailedItemSignature, const FString&, InFailedMsg);
 	FOnFailedItemSignature OnFailedMessageDelegate;
 
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_AddItem(UEclipseInventoryItem* InAddItem);
+	void Server_AddItem(int32 InItemId, int32 InStackCount);
 
 	UFUNCTION(Server, Reliable)
 	void Server_RemoveItem(UEclipseInventoryItem* InRemovedItem);
 
-	const FIntPoint& GetInventorySize() const;
 	
+public:
+	// TODO : 서버에서 호출이 된다는 전제 하에 호출 해야함. ex ) Lyragame -> GameAbility_Collect
+	//UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	//void AddItem(int32 InItemId);
+
+
 public:	
 	// Sets default values for this component's properties
-	UEpInventoryComponent();
-
+	UEpInventoryComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	
 protected:
 	virtual void InitializeComponent() override;
+
+	// Replicated
 	virtual bool ReplicateSubobjects(UActorChannel* InChannel, FOutBunch* InBunch, FReplicationFlags* InRepFlags) override;
+	virtual void ReadyForReplication() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void TickComponent(float InDeltaTime, ELevelTick InTickType, FActorComponentTickFunction* InTickFunc) override;
+
+public:
+	FORCEINLINE const FIntPoint& GetInventorySize() const { return InventorySize; }
 
 protected:
 	UPROPERTY(Replicated)
 	FEclipseInventoryArray InventoryItemArray;
 
-
 	UPROPERTY(EditAnywhere)
-	FIntPoint InventorySize = FIntPoint(0, 0);
+	FIntPoint InventorySize;
 };
  

@@ -8,9 +8,9 @@
 #include "../DataTable/ItemResourceDataRow.h"
 #include "../DataTable/ItemShapeDataRow.h"
 
-void UEpGameDataSubSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UEpGameDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	UEpResourceSubSystem* ResourceManager = Collection.InitializeDependency<UEpResourceSubSystem>();
+	UEpResourceSubsystem* ResourceManager = Collection.InitializeDependency<UEpResourceSubsystem>();
 
 	if (nullptr != ResourceManager)
 	{
@@ -20,7 +20,7 @@ void UEpGameDataSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-void UEpGameDataSubSystem::Deinitialize()
+void UEpGameDataSubsystem::Deinitialize()
 {
 	DataTables.Reset();
 }

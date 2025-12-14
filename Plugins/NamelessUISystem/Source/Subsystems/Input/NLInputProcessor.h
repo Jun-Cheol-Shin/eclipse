@@ -10,7 +10,7 @@ class FNLInputProcessor : public IInputProcessor
 {
 
 public:
-	FNLInputProcessor(UNLInputManagerSubSystem& InCommonInputSubsystem)
+	FNLInputProcessor(UNLInputManagerSubsystem& InCommonInputSubsystem)
 		: InputSubsystem(InCommonInputSubsystem)
 	{
 		for (uint8 InputTypeIndex = 0; InputTypeIndex < (uint8)ECommonInputType::Count; InputTypeIndex++)
@@ -63,7 +63,7 @@ private:
 
 
 private:
-	UNLInputManagerSubSystem& InputSubsystem;
+	UNLInputManagerSubsystem& InputSubsystem;
 
 	bool InputMethodPermissions[(uint8)ECommonInputType::Count];
 

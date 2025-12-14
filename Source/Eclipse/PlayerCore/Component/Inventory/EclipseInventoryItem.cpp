@@ -155,10 +155,10 @@ TArray<int32> UEclipseInventoryItem::GetItemIndexList() const
 
 const FItemDataRow* UEclipseInventoryItem::GetItemData() const
 {
-	UEpGameDataSubSystem* GameDataSubSystem = GetGameDataSubSytem();
-	if (ensure(GameDataSubSystem))
+	UEpGameDataSubsystem* GameDataSubsystem = GetGameDataSubsystem();
+	if (ensure(GameDataSubsystem))
 	{
-		return GameDataSubSystem->GetGameData<FItemDataRow>(ItemId);
+		return GameDataSubsystem->GetGameData<FItemDataRow>(ItemId);
 	}
 
 	return nullptr;
@@ -166,7 +166,7 @@ const FItemDataRow* UEclipseInventoryItem::GetItemData() const
 
 const FItemResourceDataRow* UEclipseInventoryItem::GetItemResourceData() const
 {
-	UEpGameDataSubSystem* GameDataSubSystem = GetGameDataSubSytem();
+	UEpGameDataSubsystem* GameDataSubSystem = GetGameDataSubsystem();
 	if (ensure(GameDataSubSystem))
 	{
 		return GameDataSubSystem->GetGameData<FItemResourceDataRow>(ItemId);
@@ -177,16 +177,16 @@ const FItemResourceDataRow* UEclipseInventoryItem::GetItemResourceData() const
 
 const FItemShapeDataRow* UEclipseInventoryItem::GetItemShapeData() const
 {
-	UEpGameDataSubSystem* GameDataSubSystem = GetGameDataSubSytem();
-	if (ensure(GameDataSubSystem))
+	UEpGameDataSubsystem* GameDataSubsystem = GetGameDataSubsystem();
+	if (ensure(GameDataSubsystem))
 	{
-		return GameDataSubSystem->GetGameData<FItemShapeDataRow>(ItemId);
+		return GameDataSubsystem->GetGameData<FItemShapeDataRow>(ItemId);
 	}
 
 	return nullptr;
 }
 
-UEpGameDataSubSystem* UEclipseInventoryItem::GetGameDataSubSytem() const
+UEpGameDataSubsystem* UEclipseInventoryItem::GetGameDataSubsystem() const
 {
 	const UWorld* World = GetWorld();
 	if (!ensure(World))
@@ -200,5 +200,5 @@ UEpGameDataSubSystem* UEclipseInventoryItem::GetGameDataSubSytem() const
 		return nullptr;
 	}
 
-	return GameInst->GetSubsystem<UEpGameDataSubSystem>();
+	return GameInst->GetSubsystem<UEpGameDataSubsystem>();
 }

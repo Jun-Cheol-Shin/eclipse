@@ -4,7 +4,7 @@
 #include "NLUIStatics.h"
 
 #include "../NLGameInstance.h"
-#include "../Subsystems/Input/NLInputManagerSubSystem.h"
+#include "../Subsystems/Input/NLInputManagerSubsystem.h"
 #include "../Subsystems/NLUIManagerSubsystem.h"
 
 UNLGameLayout* UNLUIStatics::GetGameLayoutForPlayer(const ULocalPlayer* InLocalPlayer)
@@ -81,7 +81,7 @@ void UNLUIStatics::SetInputLock(const ULocalPlayer* InLocalPlayer, bool bLock)
 {
 	if (nullptr == InLocalPlayer) return;
 
-	UNLInputManagerSubSystem* InputSubSystem = InLocalPlayer->GetSubsystem<UNLInputManagerSubSystem>();
+	UNLInputManagerSubsystem* InputSubSystem = InLocalPlayer->GetSubsystem<UNLInputManagerSubsystem>();
 	if (nullptr != InputSubSystem)
 	{
 		InputSubSystem->SetInputFilter(ECommonInputType::MouseAndKeyboard, bLock);

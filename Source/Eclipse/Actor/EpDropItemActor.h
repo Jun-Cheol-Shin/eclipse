@@ -18,13 +18,13 @@ class ECLIPSE_API AEpDropItemActor : public AActor
 	GENERATED_BODY()
 
 public:
-	const UEclipseInventoryItem* GetItemInstance() const { return ItemData.IsValid() ? ItemData.Get() : nullptr; }
+	//const UEclipseInventoryItem* GetItemInstance() const { return ItemData.IsValid() ? ItemData.Get() : nullptr; }
 	
 public:	
 	// Sets default values for this actor's properties
 	AEpDropItemActor();
 
-	void Set(UEclipseInventoryItem* InItem);
+	void Set(int32 InItemId);
 	void Reset();
 
 
@@ -55,6 +55,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UNiagaraComponent* Particle;
 
-private:
-	TWeakObjectPtr<UEclipseInventoryItem> ItemData = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ItemId = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Count = 1;
 };

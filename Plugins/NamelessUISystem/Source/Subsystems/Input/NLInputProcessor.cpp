@@ -17,11 +17,6 @@ bool FNLInputProcessor::IsRelevantInput(FSlateApplication& SlateApp, const FInpu
 {
 
 #if WITH_EDITOR
-	// 중단점에서 멈췄을 경우, 이 입력 전처리기는 들어오는 모든 입력을 무시해야 합니다.
-	// 이제 편집기에서 게임 루프 외부의 작업을 수행하게 되므로, 이 모든 작업을 차단해서는 안 됩니다.
-	// 대화상자를 생성하는 동안 입력을 일시 중단한 후 다른 중단점에 도달한 후
-	// 편집기를 사용하려고 하면 갑자기 아무 작업도 할 수 없게 될 수 있습니다.
-
 	if (GIntraFrameDebuggingGameThread)
 	{
 		return false;
@@ -36,9 +31,6 @@ bool FNLInputProcessor::IsRelevantInput(FSlateApplication& SlateApp, const FInpu
 		int32 ControllerId = LocalPlayer.GetControllerId();
 
 #if WITH_EDITOR
-		// PIE는 특히 두 개의 클라이언트를 실행할 때 매우 특별한 기능입니다. ControllerId가 0인 두 개의 LocalPlayer가 있습니다.
-		// 편집기에는 이 시나리오를 처리하기 위한 기존 기능이 있으므로, 현재는 해당 기능을 사용하고 있습니다.
-		// 궁극적으로는 편집기가 SlateApplication 수준에서 사용자 지정 ISlateInputMapping 등을 사용하여 이 문제를 해결하는 것이 이상적입니다.
 		GEngine->RemapGamepadControllerIdForPIE(LocalPlayer.ViewportClient, ControllerId);
 #endif
 		return ControllerId == InputEvent.GetUserIndex();
@@ -119,7 +111,7 @@ ECommonInputType FNLInputProcessor::GetInputType(const FKey& InKey)
 	// If the key is a gamepad key or if the key is a Click key (which simulates a click), we should be in Gamepad mode
 	if (InKey.IsGamepadKey())
 	{
-		if (UNLInputManagerSubSystem::IsMobileGamepadKey(InKey))
+		if (UNLInputManagerSubsystem::IsMobileGamepadKey(InKey))
 		{
 			return ECommonInputType::Touch;
 		}

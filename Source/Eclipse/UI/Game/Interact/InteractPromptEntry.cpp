@@ -6,7 +6,7 @@
 #include "CommonTextBlock.h"
 
 #include "InputMappingContext.h"
-#include "../../../Subsystems/EpInputManagerSubSystem.h"
+#include "../../../Subsystems/EpInputManagerSubsystem.h"
 #include "CommonUITypes.h"
 
 void UInteractPromptEntry::Set(const FInteractActionParam& InParam)
@@ -26,7 +26,7 @@ void UInteractPromptEntry::Refresh()
 		return;
 	}
 
-	UEpInputManagerSubSystem* InputManager = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>();
+	UEpInputManagerSubsystem* InputManager = LocalPlayer->GetSubsystem<UEpInputManagerSubsystem>();
 	if (!ensure(InputManager))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid Input Manager! %s"), ANSI_TO_TCHAR(__FUNCTION__));

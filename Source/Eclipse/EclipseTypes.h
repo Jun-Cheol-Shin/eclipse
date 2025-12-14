@@ -25,6 +25,24 @@ enum class EClassType : uint8
 	Berserker = 1 << 3
 };
 
+UENUM(BlueprintType)
+enum class EEquipSlotType : uint8
+{
+	Helmet = 0,
+	Armor,
+	LeftHand,
+	RightHand,
+	Shoes,
+	Belt,
+
+	Count,
+};
+
+namespace EclipseType
+{
+	static int32 Invalid_GameDataId = 0;
+}
+
 
 UCLASS()
 class ECLIPSE_API UColorPaletteDataAsset : public UDataAsset 

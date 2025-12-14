@@ -7,7 +7,7 @@
 #include "Engine/AssetManager.h"
 #include "../EclipseTypes.h"
 #include "Kismet/GameplayStatics.h"
-#include "EpResourceSubSystem.generated.h"
+#include "EpResourceSubsystem.generated.h"
 
 
 #define EPResource(WorldContextObj)															\
@@ -15,7 +15,7 @@
 {                                                                                           \
     UGameInstance* __GI = UGameplayStatics::GetGameInstance(WorldContextObj);               \
     check(__GI);                                                                            \
-    UEpResourceSubSystem* __SS = __GI->GetSubsystem<UEpResourceSubSystem>();                \
+    UEpResourceSubsystem* __SS = __GI->GetSubsystem<UEpResourceSubsystem>();                \
     check(__SS);                                                                            \
     return *__SS;																			\
 }())
@@ -25,7 +25,7 @@
 {                                                                                           \
     UGameInstance* __GI = UGameplayStatics::GetGameInstance(WorldContextObj);               \
     check(__GI);                                                                            \
-    UEpResourceSubSystem* __SS = __GI->GetSubsystem<UEpResourceSubSystem>();                \
+    UEpResourceSubsystem* __SS = __GI->GetSubsystem<UEpResourceSubsystem>();                \
     check(__SS);																			\
 	const UColorPaletteDataAsset* DataAsset = __SS->GetColorPalette();						\
 	check(DataAsset);																		\
@@ -39,7 +39,7 @@ class AEpDropItemActor;
 DECLARE_DELEGATE_OneParam(FOnLoadedFuncSignature, UObject*);
 
 UCLASS()
-class ECLIPSE_API UEpResourceSubSystem : public UGameInstanceSubsystem
+class ECLIPSE_API UEpResourceSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 

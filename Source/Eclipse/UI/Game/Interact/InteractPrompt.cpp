@@ -6,14 +6,16 @@
 #include "Misc/Optional.h"
 
 
-#include "../../../Subsystems/EpInputManagerSubSystem.h"
+#include "../../../Subsystems/EpInputManagerSubsystem.h"
 #include "../../../Actor/EpDropItemActor.h"
 
 #include "Components/DynamicEntryBox.h"
 #include "Components/Image.h"
 #include "Components/WidgetSwitcher.h"
 
-#include "../../../Subsystems/EpGameDataSubSystem.h"
+#include "../../../Subsystems/EpGameDataSubsystem.h"
+
+#include "../../../DataTable/ItemDataRow.h"
 
 void UInteractPrompt::SetItem(int32 InItemId)
 {
@@ -58,7 +60,7 @@ void UInteractPrompt::OnChangedInputDevice(ECommonInputType InType)
 
 			if (nullptr == GetGameInstance()) { return; }
 
-			UEpGameDataSubSystem* GameDataManager = GetGameInstance()->GetSubsystem<UEpGameDataSubSystem>();
+			UEpGameDataSubsystem* GameDataManager = GetGameInstance()->GetSubsystem<UEpGameDataSubsystem>();
 			if (nullptr == GameDataManager) { return; }
 
 			const FItemDataRow* ItemData = GameDataManager->GetGameData<FItemDataRow>(ItemId);
@@ -142,7 +144,7 @@ void UInteractPrompt::SetKeyboardMouseUI()
 
 		if (nullptr == GetGameInstance())	{ return; }
 
-		UEpGameDataSubSystem* GameDataManager = GetGameInstance()->GetSubsystem<UEpGameDataSubSystem>();
+		UEpGameDataSubsystem* GameDataManager = GetGameInstance()->GetSubsystem<UEpGameDataSubsystem>();
 		if (nullptr == GameDataManager)		{ return; }
 
 		const FItemDataRow* ItemData = GameDataManager->GetGameData<FItemDataRow>(ItemId);

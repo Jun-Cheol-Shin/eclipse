@@ -17,30 +17,44 @@
 #include "../PlayerCore/EpPlayerState.h"
 
 #include "../GameModes/EpGameInstance.h"
-
-#include "../Subsystems/EpInputManagerSubSystem.h"
-#include "../Subsystems/EpUIManagerSubsystem.h"
-#include "../Subsystems/EpResourceSubSystem.h"
 #include "../UI/Game/Interact/InteractPrompt.h"
 
-void AEpDropItemActor::Set(UEclipseInventoryItem* InItem)
+#include "../EclipseFunctionLibrary.h"
+#include "../Subsystems/EpGameDataSubsystem.h"
+#include "../Subsystems/EpUIManagerSubsystem.h"
+#include "../DataTable/ItemDataRow.h"
+#include "../DataTable/ItemResourceDataRow.h"
+
+void AEpDropItemActor::Set(int32 InItemId)
 {
-	// TODO : 
-	// Server에서 실행시키자. SetOwner() 필수
-	// 액터 인스턴스는 Pooling할 예정..
-
-	ItemData = InItem;
-	
-	if (ItemData.IsValid())
+	if (!ensure(0 != InItemId))
 	{
-		EItemRarity RarityEnum = ItemData->GetRarity();
-		Particle->SetColorParameter(TEXT("GunPad_Color"), EPColorPalette(GetWorld()).GetColor(RarityEnum));
+		return;
+	}
 
-		// BP_Sword에 여러 Sword mesh가 있다면?
+	UEpGameDataSubsystem* GameDataManager = UEclipseFunctionLibrary::GetGameDataSubSytem(GetWorld());
+	if (!ensure(GameDataManager))
+	{
+		return;
+	}
+
+	const FItemDataRow* ItemData = GameDataManager->GetGameData<FItemDataRow>(InItemId);
+	if (ensure(ItemData))
+	{
+		if (Particle)
+		{
+			Particle->SetColorParameter(TEXT("GunPad_Color"), EPColorPalette(GetWorld()).GetColor(ItemData->Rarity));
+		}
+	}
+
+	const FItemResourceDataRow* ItemResourceData = GameDataManager->GetGameData<FItemResourceDataRow>(InItemId);
+
+	if (ensure(ItemResourceData))
+	{
 		FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
 
-		TSharedPtr<FStreamableHandle> Handle = StreamManager.RequestAsyncLoad(ItemData->GetMeshPath(),
-			FStreamableDelegate::CreateWeakLambda(this, [WeakOuter = TWeakObjectPtr<AEpDropItemActor>(this), Path = ItemData->GetMeshPath()]()
+		TSharedPtr<FStreamableHandle> Handle = StreamManager.RequestAsyncLoad(ItemResourceData->StaticMeshPath,
+			FStreamableDelegate::CreateWeakLambda(this, [WeakOuter = TWeakObjectPtr<AEpDropItemActor>(this), Path = ItemResourceData->StaticMeshPath]()
 				{
 					if (WeakOuter.IsValid() && nullptr != WeakOuter->Mesh)
 					{
@@ -51,14 +65,13 @@ void AEpDropItemActor::Set(UEclipseInventoryItem* InItem)
 					{
 						UE_LOG(LogTemp, Error, TEXT("Invalid DropItemActor. %s"), ANSI_TO_TCHAR(__FUNCTION__));
 					}
-
 				}));
 	}
 }
 
 void AEpDropItemActor::Reset()
 {
-	ItemData.Reset();
+	ItemId = 0;
 
 	Trigger->OnComponentBeginOverlap.RemoveAll(this);
 	Trigger->OnComponentEndOverlap.RemoveAll(this);
@@ -66,14 +79,14 @@ void AEpDropItemActor::Reset()
 
 void AEpDropItemActor::OnInteract(APlayerController* InOwningController)
 {
-	if (ensure(ItemData.IsValid() && InOwningController))
-	{	
+	if (ensure(0 != ItemId && InOwningController))
+	{
 		if (AEpPlayerState* PlayerState = InOwningController->GetPlayerState<AEpPlayerState>())
 		{
 			if (UEpInventoryComponent* InventoryComponent = PlayerState->GetInventoryComponent())
 			{
 				// client to server
-				InventoryComponent->Server_AddItem(ItemData.Get());
+				InventoryComponent->Server_AddItem(ItemId, Count);
 			}
 
 			else
@@ -106,25 +119,13 @@ void AEpDropItemActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActo
 		return;
 	}
 
-
 	// Show Prompt
 	UE_LOG(LogTemp, Display, TEXT("Show Prompt"));
 
-	UEpGameInstance* GameInst = Cast<UEpGameInstance>(GetGameInstance());
-	if (!ensure(GameInst))
+	UEpUIManagerSubsystem* UIManager = UEclipseFunctionLibrary::GetUIManagerSubSystem(GetWorld());
+	if (ensure(UIManager))
 	{
-		return;
-	}
-
-	//if (nullptr == GetItemInstance()) return;
-
-	// todo
-	//int32 ItemId = GetItemInstance()->GetItemId();
-
-	UEpUIManagerSubsystem* UISubSystem = GameInst->GetSubsystem<UEpUIManagerSubsystem>();
-	if (ensure(UISubSystem))
-	{
-		UISubSystem->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [](UCommonActivatableWidget* InPrompt)
+		UIManager->ShowLayerWidget<UInteractPrompt>(FOnCompleteLoadedWidgetSignature::CreateWeakLambda(this, [](UCommonActivatableWidget* InPrompt)
 			{
 				UInteractPrompt* Prompt = Cast<UInteractPrompt>(InPrompt);
 				if (Prompt)
@@ -211,6 +212,8 @@ void AEpDropItemActor::BeginPlay()
 	{
 		Trigger->OnComponentBeginOverlap.AddDynamic(this, &AEpDropItemActor::OnBeginOverlap);
 		Trigger->OnComponentEndOverlap.AddDynamic(this, &AEpDropItemActor::OnEndOverlap);
+
+		Set(ItemId);
 	}
 	break;
 

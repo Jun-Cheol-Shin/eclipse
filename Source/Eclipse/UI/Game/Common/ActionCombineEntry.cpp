@@ -4,7 +4,7 @@
 #include "ActionCombineEntry.h"
 #include "CommonLazyImage.h"
 #include "CommonTextBlock.h"
-#include "../../../Subsystems/EpInputManagerSubSystem.h"
+#include "../../../Subsystems/EpInputManagerSubsystem.h"
 
 #include "Engine/PlatformSettingsManager.h"
 #include "CommonInputBaseTypes.h"
@@ -19,7 +19,7 @@ void UActionCombineEntry::SetKey(const FKey& Key)
 		return;
 	}
 
-	UEpInputManagerSubSystem* Subsystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>();
+	UEpInputManagerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEpInputManagerSubsystem>();
 	if (!ensure(Subsystem))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Invalid Subsystem! %s"), ANSI_TO_TCHAR(__FUNCTION__));

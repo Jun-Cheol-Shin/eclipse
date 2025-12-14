@@ -3,19 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
+#include "EclipseRowBase.h"
 #include "../EclipseTypes.h"
 #include "ItemDataRow.generated.h"
 
 USTRUCT(Blueprintable)
-struct FItemDataRow : public FTableRowBase
+struct FItemDataRow : public FEclipseRowBase
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ItemId = 0;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString ItemName = FString();
 

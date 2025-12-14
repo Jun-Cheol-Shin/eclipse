@@ -39,7 +39,7 @@ void AEpPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 
 	// Add Input Mapping Contexts
-	if (UEpInputManagerSubSystem* Subsystem = ULocalPlayer::GetSubsystem<UEpInputManagerSubSystem>(GetLocalPlayer()))
+	if (UEpInputManagerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEpInputManagerSubsystem>(GetLocalPlayer()))
 	{
 		Subsystem->ClearAllMappings();
 

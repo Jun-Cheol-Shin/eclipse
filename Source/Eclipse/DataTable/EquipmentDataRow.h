@@ -4,28 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "EclipseRowBase.h"
-#include "ItemShapeDataRow.generated.h"
+#include "EquipmentDataRow.generated.h"
 
-/**
- * 
- */
+
 USTRUCT(Blueprintable)
-struct ECLIPSE_API FItemShapeDataRow : public FEclipseRowBase
+struct FEquipmentDataRow : public FEclipseRowBase
 {
 	GENERATED_BODY()
 
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	uint8 Width = 0;
+	FName AttachSocket;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	uint8 Height = 0;
+	FTransform AttachTransform;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSet<uint8> HiddenIndexList = TSet<uint8>();
-
-
-public:
-	FORCEINLINE FIntPoint GetShapeSize() const { return FIntPoint(Width, Height); }
+	FSoftObjectPath ActorToSpawn = FSoftObjectPath();
 };

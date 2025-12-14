@@ -72,7 +72,7 @@ void UEpActivatableWidget::NativeOnActivated()
     ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
     if (ensureAlways(LocalPlayer))
     {
-        if (UEpInputManagerSubSystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>())
+        if (UEpInputManagerSubsystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubsystem>())
         {
             UISubSystem->OnInputMethodChangedNative.AddUObject(this, &UEpActivatableWidget::OnChangedInputDevice);
             OnChangedInputDevice(UISubSystem->GetInputType());
@@ -89,7 +89,7 @@ void UEpActivatableWidget::NativeOnDeactivated()
     ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
     if (LocalPlayer)
     {
-        if (UEpInputManagerSubSystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>())
+        if (UEpInputManagerSubsystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubsystem>())
         {
             UISubSystem->OnInputMethodChangedNative.RemoveAll(this);
         }
@@ -129,7 +129,7 @@ void UEpActivatableWidget::NativeDestruct()
     ULocalPlayer* LocalPlayer = GetOwningLocalPlayer();
     if (LocalPlayer)
     {
-        if (UEpInputManagerSubSystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubSystem>())
+        if (UEpInputManagerSubsystem* UISubSystem = LocalPlayer->GetSubsystem<UEpInputManagerSubsystem>())
         {
             UISubSystem->OnInputMethodChangedNative.RemoveAll(this);
         }

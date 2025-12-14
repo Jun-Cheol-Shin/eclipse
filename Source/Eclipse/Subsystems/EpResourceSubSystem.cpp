@@ -16,7 +16,7 @@ namespace ResourcePath
     const FString StaticMeshPath = TEXT("/Game/Resource/Mesh");
 }
 
-void UEpResourceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UEpResourceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     AssetLibrary = UObjectLibrary::CreateLibrary(UObject::StaticClass(), true, GIsEditor);
     AssetLibrary->LoadAssetDataFromPaths(TArray<FString>(
@@ -48,13 +48,13 @@ void UEpResourceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 }
 
-void UEpResourceSubSystem::Deinitialize()
+void UEpResourceSubsystem::Deinitialize()
 {
     CachedAssetDataList.Reset();
     ColorPalette = nullptr;
 }
 
-const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
+const UColorPaletteDataAsset* UEpResourceSubsystem::GetColorPalette()
 {
     if (nullptr == ColorPalette)
     {
@@ -74,7 +74,7 @@ const UColorPaletteDataAsset* UEpResourceSubSystem::GetColorPalette()
     return ColorPalette;
 }
 
-TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const
+TSharedPtr<FStreamableHandle> UEpResourceSubsystem::AsyncLoadObject(TWeakObjectPtr<UObject> OuterClass, const FAssetData& InAssetData, FOnLoadedFuncSignature OnLoadedDelegate) const
 {
     FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
 
@@ -102,7 +102,7 @@ TSharedPtr<FStreamableHandle> UEpResourceSubSystem::AsyncLoadObject(TWeakObjectP
     return Handle;
 }
 
-UObject* UEpResourceSubSystem::SyncLoadObject(const FAssetData& InAssetData, bool bUseGeneratedClass) const
+UObject* UEpResourceSubsystem::SyncLoadObject(const FAssetData& InAssetData, bool bUseGeneratedClass) const
 {
     FStreamableManager& StreamManager = UAssetManager::GetStreamableManager();
     FString OutValue;

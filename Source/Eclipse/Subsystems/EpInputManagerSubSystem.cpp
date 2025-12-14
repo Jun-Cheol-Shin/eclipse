@@ -1,20 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "EpInputManagerSubSystem.h"
+#include "EpInputManagerSubsystem.h"
 #include "../PlayerCore/EpPlayerController.h"
 
-void UEpInputManagerSubSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UEpInputManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 }
 
-void UEpInputManagerSubSystem::Deinitialize()
+void UEpInputManagerSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 }
 
-void UEpInputManagerSubSystem::PlayerControllerChanged(APlayerController* NewPlayerController)
+void UEpInputManagerSubsystem::PlayerControllerChanged(APlayerController* NewPlayerController)
 {
 	Super::PlayerControllerChanged(NewPlayerController);
 

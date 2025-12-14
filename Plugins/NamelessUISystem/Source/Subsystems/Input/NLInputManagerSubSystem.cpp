@@ -6,7 +6,7 @@
 #include "NLInputProcessor.h"
 
 
-bool UNLInputManagerSubSystem::ShouldCreateSubsystem(UObject* Outer) const
+bool UNLInputManagerSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 #if WITH_EDITOR
 	return true;
@@ -24,7 +24,7 @@ bool UNLInputManagerSubSystem::ShouldCreateSubsystem(UObject* Outer) const
 #endif
 }
 
-void UNLInputManagerSubSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UNLInputManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Initialize InputManager."));
 
@@ -37,7 +37,7 @@ void UNLInputManagerSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 }
 
-void UNLInputManagerSubSystem::Deinitialize()
+void UNLInputManagerSubsystem::Deinitialize()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Deinitialize InputManager."));
 
@@ -50,12 +50,12 @@ void UNLInputManagerSubSystem::Deinitialize()
 	InputProcessor = nullptr;
 }
 
-const FName UNLInputManagerSubSystem::GetCurrentGamepadName() const
+const FName UNLInputManagerSubsystem::GetCurrentGamepadName() const
 {
 	return GamepadInputType;
 }
 
-void UNLInputManagerSubSystem::SetInputFilter(ECommonInputType InputType, bool bIsLock)
+void UNLInputManagerSubsystem::SetInputFilter(ECommonInputType InputType, bool bIsLock)
 {
 	if (InputProcessor.IsValid())
 	{
@@ -63,7 +63,7 @@ void UNLInputManagerSubSystem::SetInputFilter(ECommonInputType InputType, bool b
 	}
 }
 
-void UNLInputManagerSubSystem::SetCurrentInputType(ECommonInputType InputType)
+void UNLInputManagerSubsystem::SetCurrentInputType(ECommonInputType InputType)
 {
 	if (CurrentInputType != InputType)
 	{
@@ -72,7 +72,7 @@ void UNLInputManagerSubSystem::SetCurrentInputType(ECommonInputType InputType)
 	}
 }
 
-void UNLInputManagerSubSystem::SetGamepadInputType(const FName& InGamepadType)
+void UNLInputManagerSubsystem::SetGamepadInputType(const FName& InGamepadType)
 {
 	if (ensure(UCommonInputPlatformSettings::Get()->CanChangeGamepadType()))
 	{
@@ -90,7 +90,7 @@ void UNLInputManagerSubSystem::SetGamepadInputType(const FName& InGamepadType)
 	GamepadInputType = InGamepadType;
 }
 
-bool UNLInputManagerSubSystem::IsMobileGamepadKey(const FKey& InKey)
+bool UNLInputManagerSubsystem::IsMobileGamepadKey(const FKey& InKey)
 {
 	// Mobile keys that can be physically present on the device
 	static TArray<FKey> PhysicalMobileKeys = {
@@ -103,7 +103,7 @@ bool UNLInputManagerSubSystem::IsMobileGamepadKey(const FKey& InKey)
 	return PhysicalMobileKeys.Contains(InKey);
 }
 
-FChangedGamepadDetectedEvent& UNLInputManagerSubSystem::GetOnGamepadChangeDetected()
+FChangedGamepadDetectedEvent& UNLInputManagerSubsystem::GetOnGamepadChangeDetected()
 {
 	return InputProcessor->OnGamepadChangeDetected;
 }

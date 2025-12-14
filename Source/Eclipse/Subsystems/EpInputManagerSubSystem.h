@@ -15,7 +15,7 @@ class FSubsystemCollectionBase;
  * 
  */
 UCLASS()
-class ECLIPSE_API UEpInputManagerSubSystem : public UNLInputManagerSubSystem
+class ECLIPSE_API UEpInputManagerSubsystem : public UNLInputManagerSubsystem
 {
 	GENERATED_BODY()
 

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "CommonInputTypeEnum.h"
 #include "EnhancedInputSubsystems.h"
-#include "NLInputManagerSubSystem.generated.h"
+#include "NLInputManagerSubsystem.generated.h"
 
 /**
  * 
@@ -16,7 +16,7 @@ DECLARE_EVENT_OneParam(FNLInputProcessor, FChangedGamepadDetectedEvent, FName);
 DECLARE_MULTICAST_DELEGATE_OneParam(FChangedInputTypeDetectedEvent, ECommonInputType)
 
 UCLASS(MinimalAPI, Abstract)
-class UNLInputManagerSubSystem : public UEnhancedInputLocalPlayerSubsystem
+class UNLInputManagerSubsystem : public UEnhancedInputLocalPlayerSubsystem
 {
 	GENERATED_BODY()
 	
@@ -27,7 +27,7 @@ public:
 	void SetInputFilter(ECommonInputType InputType, bool bIsLock);
 
 public:
-	DECLARE_EVENT_OneParam(UNLInputManagerSubSystem, FInputMethodChangedEvent, ECommonInputType);
+	DECLARE_EVENT_OneParam(UNLInputManagerSubsystem, FInputMethodChangedEvent, ECommonInputType);
 	FInputMethodChangedEvent OnInputMethodChangedNative;
 
 	// XSX, PS5...
